@@ -25,7 +25,7 @@ SECRET_KEY = 'm*+du*&cs1d%sq@9dmk)tn%cgla-%c7l0dnrbj*(zo)v&972mi'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','0.0.0.0',]
+ALLOWED_HOSTS = ['localhost','0.0.0.0','raspjml',]
 
 
 # Application definition
