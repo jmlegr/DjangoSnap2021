@@ -18,9 +18,14 @@ from django.urls import path
 from django.conf.urls.static import static
 from django.conf import settings
 from django.urls.conf import include
+from django.contrib.auth import views as auth_views
+
 
 
 urlpatterns = [
+    #path('accounts/login/', auth_views.LoginView.as_view()),
+     path('accounts/', include('django.contrib.auth.urls')),
+     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html')),
     path('admin/', admin.site.urls),
     path('snap/',include('snap.urls')),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
