@@ -9,4 +9,5 @@ from . import views
 
 urlpatterns = [
     path('test',views.testsnap),
+    path('ajax',views.ajax,)
     ]

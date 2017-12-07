@@ -92,6 +92,8 @@ var StageHandleMorph;
 var PaletteHandleMorph;
 var CamSnapshotDialogMorph;
 
+
+
 // IDE_Morph ///////////////////////////////////////////////////////////
 
 // I am SNAP's top-level frame, the Editor window
@@ -3150,7 +3152,7 @@ IDE_Morph.prototype.resourceURL = function () {
     // Take in variadic inputs that represent an a nested folder structure.
     // Method can be easily overridden if running in a custom location.
     // Default Snap! simply returns a path (relative to snap.html)
-    var args = Array.prototype.slice.call(arguments, 0);
+    var args = Array.prototype.slice.call(arguments, 0);    
     return '/static/snap/'+args.join('/');
 };
 
