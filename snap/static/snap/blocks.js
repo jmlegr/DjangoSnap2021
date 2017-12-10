@@ -411,7 +411,7 @@ SyntaxElementMorph.prototype.replaceInput = function (oldArg, newArg) {
         replacement = newArg,
         idx = this.children.indexOf(oldArg),
         i = 0;
-
+    console.log('replacemetn'+oldArg);
     // try to find the ArgLabel embedding the newArg,
     // used for the undrop() feature
     if (idx === -1 && newArg instanceof MultiArgMorph) {
@@ -4509,10 +4509,14 @@ CommandBlockMorph.prototype.userDestroy = function () {
 
     // for undrop / redrop
     if (scripts) {
+    	//console.info('userdestroy script'+JSON.stringify(scripts.lastDroppedBlock,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
         scripts.clearDropInfo();
         scripts.lastDroppedBlock = this;
         scripts.recordDrop(this.situation());
         scripts.dropRecord.action = 'delete';
+        var donnee=new scripts.donnee(scripts.dropRecord);
+        console.info('userdestroy '+JSON.stringify(donnee));
+        
     }
 
     if (ide) {
@@ -4542,11 +4546,15 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
 
     // for undrop / redrop
     if (scripts) {
+    	console.info('userdestroyjustthis script'+JSON.stringify(this,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
         scripts.clearDropInfo();
         scripts.lastDroppedBlock = this;
         scripts.recordDrop(this.situation());
         scripts.dropRecord.lastNextBlock = nb;
         scripts.dropRecord.action = 'delete';
+        var donnee=new scripts.donnee(scripts.dropRecord);
+        console.info('userdestroyjustthis script'+JSON.stringify(donnee));
+        
     }
 
     this.topBlock().fullChanged();
@@ -4555,8 +4563,10 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
     }
     if (pb && (pb.nextBlock() === this)) {
         above = pb;
+        console.info('aboce pb');
     } else if (cs && (cs.nestedBlock() === this)) {
         above = cs;
+        console.info('aboce cs');
     }
     if (ide) {
         // also stop all active processes hatted by this block
@@ -4565,11 +4575,15 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
         this.destroy(true); // just this block
     }
     if (nb) {
+    	
         if (above instanceof CommandSlotMorph) {
+        	console.info('aboce nb slot');
             above.nestedBlock(nb);
         } else if (above instanceof CommandBlockMorph) {
+        	console.info('aboce nb bloc');
             above.nextBlock(nb);
         } else {
+        	console.info('script addnb');
             scripts.add(nb);
         }
     } else if (cslot) {
@@ -5365,6 +5379,8 @@ ReporterBlockMorph.prototype.userDestroy = function () {
         scripts.lastDroppedBlock = this;
         scripts.recordDrop(this.situation());
         scripts.dropRecord.action = 'delete';
+        var donnee=new scripts.donnee(scripts.dropRecord);
+        console.info('userdestroy'+JSON.stringify(donnee));
     }
 
     this.topBlock().fullChanged();
@@ -6478,7 +6494,10 @@ ScriptsMorph.prototype.undrop = function () {
             myself.isAnimating = false;
         }
     );
+    console.info('undrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
     this.dropRecord = this.dropRecord.lastRecord;
+    
+    sendJsonData(this.dropRecord);
 };
 
 ScriptsMorph.prototype.redrop = function () {
@@ -6502,6 +6521,8 @@ ScriptsMorph.prototype.redrop = function () {
             }
         );
     }
+    //console.info('redrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
+    console.info('redrop' + stringify(this.dropRecord,null,'  '));
 };
 
 ScriptsMorph.prototype.recoverLastDrop = function (forRedrop) {
@@ -6630,6 +6651,7 @@ ScriptsMorph.prototype.recoverLastDrop = function (forRedrop) {
             dropped.moveBy(new Point(-100, -20));
         }
     }
+    console.info('recoverlastdrop');
     return onBeforeDrop;
 };
 
@@ -6642,6 +6664,70 @@ ScriptsMorph.prototype.clearDropInfo = function () {
     this.lastWrapParent = null;
 };
 
+
+//données à envoyer
+ScriptsMorph.prototype.donnee = function(record) {
+	if (record.lastDroppedBlock) {
+		newdate=new Date();
+		this.time=newdate.getTime()-date_debut;
+		console.log('time:'+date_debut.getTime());
+    	this.lastDroppedBlock={
+    		id: record.lastDroppedBlock.id,    
+    		blockSpec: record.lastDroppedBlock.blockSpec,
+    		category: record.lastDroppedBlock.category,
+    		bounds: record.lastDroppedBlock.bounds,
+    		parent: record.lastDroppedBlock.parent?record.lastDroppedBlock.parent.id:null,
+    		
+    	}
+    	if (record.lastDropTarget) {
+    		//console.log((record.lastDroppedBlock instanceof ReporterBlockMorph)+'-'+typeof record.lastDropTarget);
+    		this.lastDropTarget={
+    				id: record.lastDropTarget.element?record.lastDropTarget.element.id:record.lastDropTarget.id,
+    				loc: record.lastDropTarget.loc,
+    				point: record.lastDropTarget.point,
+    				type: record.lastDropTarget.type
+    		}
+    	}    
+    	this.action= record.action;
+    	this.situation= record.situation;
+    	
+    	if (record.lastDroppedBlock instanceof CommandBlockMorph) {
+    	    this.typeMorph='CommandBlockMorph';
+    	} else if (record.lastDroppedBlock instanceof CommandSlotMorph) {
+    		this.typeMorph='CommandSlotMorph';
+    	} else if (record.lastDroppedBlock instanceof ReporterBlockMorph) {
+    	    this.typeMorph='ReporterBlockMorph';
+    	} else if (record.lastDroppedBlock instanceof CommentMorph) {
+    	    this.typeMorph='CommentMorph';
+    	} else this.typeMorph='??';	
+    	t=record.lastDroppedBlock.inputs();
+    	inputs= new Array();
+    	t.forEach(function(input,i) {    			
+    			if (input instanceof InputSlotMorph) {    				
+    				typeInput='constante';
+    				//typeInput=input.category;
+    				valeurInput=input.children[0].text;
+    			} else if (input instanceof ReporterBlockMorph) {
+    				typeInput=input.category;
+    				valeurInput=input.children[0].text;
+    			} else if (input instanceof MultiArgMorph) {
+    				typeInput='Multi Arguments';
+    				//typeInput=input.category;
+    				valeurInput='non evalue';
+    			} else {
+    				typeInput='Inconnu';
+    				valeurInput='non evalue';
+    			}    			
+    			inputs.push({id:input.id,type:typeInput,valeur:valeurInput});
+    			//console.log('donnee'+input+'-'+typeInput+':'+valeurInput);
+    		}
+    	);
+    	this.lastDroppedBlock.inputs=inputs;    
+    	//console.log('input 1:'+( t[0] instanceof ReporterBlockMorph)+'-'+(t[0] instanceof InputSlotMorph));
+    	sendJsonData(this);
+    }
+    
+}
 ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
     // support for "undrop" / "redrop"
      var record = {
@@ -6657,10 +6743,24 @@ ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
         lastRecord: this.dropRecord,
         nextRecord: null
     };
+     //si le block n'a pas encore d'id, il est nouvellement créé
+     if (record.lastDroppedBlock && !record.lastDroppedBlock.id) {
+     	record.lastDroppedBlock.id=record.lastDroppedBlock.lastTime;
+     	record.action="creation";
+     }
     if (this.dropRecord) {
         this.dropRecord.nextRecord = record;
     }
     this.dropRecord = record;
+    
+    //console.info('record'+JSON.stringify(record,['lastDroppedBlock','blockSpec','action','allInputs','children','text']));
+    //alert('record \n'+stringifySafe(record,['lastDroppedBlock','blockSpec','action','allInputs','children','text'],'  '));
+    
+    //préparation des données à envoyer
+    donnee=new this.donnee(record);
+    //console.info('donnee:'+JSON.stringify(donnee,null,' '));
+    
+    
     this.updateToolbar();
 };
 

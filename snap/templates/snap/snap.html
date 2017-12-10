@@ -8,16 +8,18 @@
 		<script type="text/javascript">
 		  var userid={{ request.user.id }}
 		  var csrf_token="{{ csrf_token }}";
+		  var newdate=new Date();
+		  var date_debut=newdate;
 		  console.info("csrf"+csrf_token);
 		//Test envoi
 		  function sendJsonData(data) {
 		        var XHR = new XMLHttpRequest();
-		        var response = {data:[{"a":1, "b":2},{"a":2, "b":2}]}
-		        var string = JSON.stringify(response);
+		        //var response = {data:[{"a":1, "b":2},{"a":2, "b":2}]}
+		        var string = JSON.stringify(data);
 
 		        // Define what happens on successful data submission
 		        XHR.addEventListener('load', function(event) {
-		          alert('Yeah! Data sent and response loaded.');
+		          //alert('Yeah! Data sent and response loaded.');
 		        });
 
 		        // Define what happens in case of error
@@ -34,9 +36,11 @@
 		        //XHR.setRequestHeader("Content-length", string.length);
 		        // Finally, send our data.
 		        console.info('String:'+string)
-		        XHR.send(JSON.stringify({ email: "hello@user.com", response: { name: "Tester" } }));
+		        XHR.send(string);
 		      }
+		  
 		</script>
+		<script type="text/javascript" src="{% static "snap/safe-json-stringify.js" %}"></script>
 		<script type="text/javascript" src="{% static "snap/morphic.js" %}"></script>
 		<script type="text/javascript" src="{% static "snap/widgets.js" %}"></script>
 		<script type="text/javascript" src="{% static "snap/blocks.js" %}"></script>
