@@ -411,7 +411,7 @@ SyntaxElementMorph.prototype.replaceInput = function (oldArg, newArg) {
         replacement = newArg,
         idx = this.children.indexOf(oldArg),
         i = 0;
-    console.log('replacemetn'+oldArg);
+    console.log('replacemetn'+oldArg.id+'par'+newArg.id);
     // try to find the ArgLabel embedding the newArg,
     // used for the undrop() feature
     if (idx === -1 && newArg instanceof MultiArgMorph) {
@@ -6670,7 +6670,6 @@ ScriptsMorph.prototype.donnee = function(record) {
 	if (record.lastDroppedBlock) {
 		newdate=new Date();
 		this.time=newdate.getTime()-date_debut;
-		console.log('time:'+date_debut.getTime());
     	this.lastDroppedBlock={
     		id: record.lastDroppedBlock.id,    
     		blockSpec: record.lastDroppedBlock.blockSpec,
@@ -6689,6 +6688,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     		}
     	}    
     	this.action= record.action;
+    	this .detailAction=record.detailAction;
     	this.situation= record.situation;
     	
     	if (record.lastDroppedBlock instanceof CommandBlockMorph) {
@@ -8280,6 +8280,7 @@ InputSlotMorph.prototype.setContents = function (aStringOrFloat) {
     } else if (dta.toString) {
         cnts.text = dta.toString();
     }
+    
     cnts.drawNew();
 
     // adjust to zebra coloring:
@@ -8845,6 +8846,24 @@ InputSlotMorph.prototype.reactToKeystroke = function () {
 
 InputSlotMorph.prototype.reactToEdit = function () {
     this.contents().clearSelection();
+    //si la valeur a été changée on envoit
+    // TODO: corriger bloquage undrop
+    this.children.forEach (function (v){
+    	if (v instanceof StringMorph) val=v.text;
+    	if (v instanceof CursorMorph) {
+    		orig=v.originalContents;
+    	}   	
+    });
+    if (val != orig) {
+    	var scripts = this.parentThatIsA(ScriptsMorph);  
+    	scripts.clearDropInfo();     
+        scripts.dropRecord=this.parent;
+        scripts.dropRecord.lastDroppedBlock = this.parent;
+        scripts.dropRecord.action = 'valeur';
+        scripts.dropRecord.detailAction={originale:orig,nouvelle:val};        
+        var donnee=new scripts.donnee(scripts.dropRecord);
+        //console.log('donne'+JSON.stringify(donnee));
+    }
 };
 
 InputSlotMorph.prototype.freshTextEdit = function (aStringOrTextMorph) {
