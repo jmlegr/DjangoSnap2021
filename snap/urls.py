@@ -9,5 +9,7 @@ from . import views
 
 urlpatterns = [
     path('test',views.testsnap),
-    path('ajax',views.ajax,)
+    path('ajax',views.ajax),
+    path('pageref',views.pageref),
+     path('pagedon',views.pagedon),
     ]
