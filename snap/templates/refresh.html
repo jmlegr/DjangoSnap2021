@@ -1,0 +1,64 @@
+{% extends "registration/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/login.css" %}" />
+<script src="{% static 'js/jquery-3.2.1.min.js' %}"></script> 
+{{ form.media }}
+<script type="text/javascript">
+
+//window.setTimeout(function () {
+//    location.href = "http://localhost:8000/snap/pageref";
+//}, 2000); //
+     (function worker() { 
+
+      $.ajax({    url: '/snap/pagedon', 
+
+        success: function(data) { 
+            //alert(data);
+          $('#bidule').append(data); 
+
+        },    complete: function() { 
+
+       // Schedule the next request when the current one's complete       
+       setTimeout(worker, 2000); 
+
+      } 
+
+      }); 
+
+    })();
+
+</script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} pageref{% endblock %}
+
+{% block usertools %}{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+{% if form.errors and not form.non_field_errors %}
+<p class="errornote">
+{% if form.errors.items|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+</p>
+{% endif %}
+
+{% if form.non_field_errors %}
+{% for error in form.non_field_errors %}
+<p class="errornote">
+    {{ error }}
+</p>
+{% endfor %}
+{% endif %}
+
+<div id="content-main">
+<h2>truc {{value}} mm</h2>
+<div id=bidule></div>
+
+</div>
+{% endblock %}
