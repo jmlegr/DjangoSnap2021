@@ -7,7 +7,9 @@ import datetime
 from django.contrib.auth.decorators import login_required
 import json
 import random
-from snap.models import InfoReceived
+from snap.models import InfoReceived, ActionProgrammation, DroppedBlock, Bounds, \
+                        Inputs, Point
+                        
 from django.template.loader import render_to_string
 
 def current_datetime(request):
@@ -32,11 +34,40 @@ def ajax(request):
         info=InfoReceived (action=r['action'],blockSpec=r['lastDroppedBlock']['blockSpec'],
                                   time=r['time'],block_id=r['lastDroppedBlock']['id'],user='%s' % request.user)
         info.save()
+        ap=ActionProgrammation()    
+        ap.user=request.user    
+        ap.action=r['action']
+        ap.time=r['time']
+        if 'situation' in r: ap.situation=r['situation']
+        ap.typeMorph=r['typeMorph']
+        db=DroppedBlock()
+        db.block_id=r['lastDroppedBlock']['id']
+        db.blockSpec=r['lastDroppedBlock']['blockSpec']
+        db.category=r['lastDroppedBlock']['category']
+        rb=r['lastDroppedBlock']['bounds']
+        origin=Point(x=rb['origin']['x'],y=rb['origin']['y'])
+        origin.save()
+        corner=Point(x=rb['corner']['x'],y=rb['corner']['y'])
+        corner.save()
+        b=Bounds(origin=origin,corner=corner)
+        b.save()
+        db.bounds=b
+        db.save()
+        ap.lastDroppedBlock=db
+        if 'inputs' in r['lastDroppedBlock']:
+            for i in r['lastDroppedBlock']['inputs']:
+                ip=Inputs(valeur=i['valeur'],type=i['type']) 
+                ip.save()               
+                db.inputs.add(ip)
+        
+        ap.save()        
+        
+        
     return HttpResponse("OK %s" % info.id)
     #
     
 def pageref(request):
-    return render_to_response('refresh.html', {'value':'zyva'})
+    return render_to_response('refresh.html', {'value':'test'})
 def pagedon(request):
     obj=InfoReceived.objects.all()
     if not obj.exists():
