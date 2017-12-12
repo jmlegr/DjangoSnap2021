@@ -16,6 +16,8 @@ class InfoReceived(models.Model):
 class Point(models.Model):
     x=models.IntegerField()
     y=models.IntegerField()
+    def __str__(self):
+        return '(%s,%s)' % (self.x,self.y)
     
 class Bounds(models.Model):
     origin=models.OneToOneField(Point,related_name='origin',on_delete=models.CASCADE)
@@ -24,6 +26,8 @@ class Bounds(models.Model):
 class Inputs(models.Model):
     valeur=models.CharField(max_length=30,blank=True)
     type=models.CharField(max_length=30,blank=True)
+    def __str__(self):
+        return '%s (%s)' % (self.valeur,self.type)
     
 class DroppedBlock(models.Model):
     block_id=models.IntegerField()    
@@ -31,6 +35,8 @@ class DroppedBlock(models.Model):
     category=models.CharField(max_length=30,null=True,blank=True)
     inputs=models.ManyToManyField(Inputs,null=True)
     bounds=models.OneToOneField(Bounds,on_delete=models.CASCADE)
+    def __str__(self):
+        return '%s (%s)' % (self.blockSpec,self.block_id)
     
 class ActionProgrammation(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
@@ -39,6 +45,9 @@ class ActionProgrammation(models.Model):
     situation=models.CharField(max_length=30,null=True,blank=True)
     typeMorph=models.CharField(max_length=30,null=True,blank=True)
     lastDroppedBlock=models.OneToOneField(DroppedBlock,on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return '(%s) %s %s' % (self.user_id,self.time,self.action)
     
     
     
