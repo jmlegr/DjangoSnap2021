@@ -35,6 +35,7 @@ class DroppedBlock(models.Model):
     category=models.CharField(max_length=30,null=True,blank=True)
     inputs=models.ManyToManyField(Inputs,null=True)
     bounds=models.OneToOneField(Bounds,on_delete=models.CASCADE)
+    parent_id=models.IntegerField(null=True)
     def __str__(self):
         return '%s (%s)' % (self.blockSpec,self.block_id)
     

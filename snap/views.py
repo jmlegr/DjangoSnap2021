@@ -52,8 +52,11 @@ def ajax(request):
         b=Bounds(origin=origin,corner=corner)
         b.save()
         db.bounds=b
+        if 'parent' in r['lastDroppedBlock']:
+            db.parent_id=r['lastDroppedBlock']['parent']
         db.save()
         ap.lastDroppedBlock=db
+        
         if 'inputs' in r['lastDroppedBlock']:
             for i in r['lastDroppedBlock']['inputs']:
                 ip=Inputs(valeur=i['valeur'],type=i['type']) 

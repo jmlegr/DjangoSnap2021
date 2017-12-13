@@ -213,7 +213,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     MorphicPreferences.globalFontFamily = 'Helvetica, Arial';
 
     // restore saved user preferences
-    this.userLanguage = null; // user language preference for startup
+    this.userLanguage = 'fr'; // user language preference for startup
     this.projectsInURLs = false;
     this.applySavedSettings();
 
