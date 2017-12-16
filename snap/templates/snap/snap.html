@@ -15,6 +15,9 @@
 		  function sendJsonData(data) {
 		        var XHR = new XMLHttpRequest();
 		        //var response = {data:[{"a":1, "b":2},{"a":2, "b":2}]}
+		        console.info('data',data);
+		        newdate=new Date();
+		        data.time=newdate.getTime()-date_debut;
 		        var string = JSON.stringify(data);
 
 		        // Define what happens on successful data submission
