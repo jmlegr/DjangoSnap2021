@@ -3038,6 +3038,7 @@ SpriteMorph.prototype.addVariable = function (name, isGlobal) {
         this.variables.addVar(name);
         this.blocksCache.variables = null;
     }
+    sendJsonData({action:'creation',type:'variable',globale:isGlobal,valeur:name});
 };
 
 SpriteMorph.prototype.deleteVariable = function (varName) {
@@ -3051,6 +3052,7 @@ SpriteMorph.prototype.deleteVariable = function (varName) {
         ide.flushBlocksCache('variables'); // b/c the var could be global
         ide.refreshPalette();
     }
+    sendJsonData({action:'delete',type:'variable',valeur:varName});
 };
 
 // SpriteMorph costume management
