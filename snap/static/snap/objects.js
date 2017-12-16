@@ -1851,6 +1851,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         var ide;
         if (pair) {
             if (myself.isVariableNameInUse(pair[0], pair[1])) {
+            	sendJsonData({action:'erreur',type:'creation variable existante',globale:pair[1],valeur:pair[0]});
                 myself.inform('that name is already in use');
             } else {
                 ide = myself.parentThatIsA(IDE_Morph);

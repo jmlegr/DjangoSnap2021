@@ -176,6 +176,13 @@ var ArgLabelMorph;
 var TextSlotMorph;
 var ScriptFocusMorph;
 
+///ajout unique id
+var objIdMap=new WeakMap, objectCount = 0;
+function objectId(object){
+  if (!objIdMap.has(object)) objIdMap.set(object,++objectCount);
+  return objIdMap.get(object);
+}
+
 // SyntaxElementMorph //////////////////////////////////////////////////
 
 // I am the ancestor of all blocks and input slots
@@ -411,7 +418,10 @@ SyntaxElementMorph.prototype.replaceInput = function (oldArg, newArg) {
         replacement = newArg,
         idx = this.children.indexOf(oldArg),
         i = 0;
-    console.log('replacemetn'+oldArg.id+'par'+newArg.id);
+    console.info('replacemetn'+oldArg+'par'+newArg);
+    console.info('replacemetn',oldArg,newArg);
+    if (oldArg instanceof InputSlotMorph) console.log('childre:'+oldArg.children[0]);
+    if (oldArg instanceof ReporterBlockMorph) console.log('childrep',oldArg.parent.id);
     // try to find the ArgLabel embedding the newArg,
     // used for the undrop() feature
     if (idx === -1 && newArg instanceof MultiArgMorph) {
@@ -3271,8 +3281,10 @@ BlockMorph.prototype.refactorThisVar = function (justTheTemplate) {
             }
         } else if (receiver.hasSpriteVariable(oldName)) {
             this.doRefactorSpriteVar(oldName, newName, justTheTemplate);
+            sendJsonData({action:'rename',type:'variable',globale:false,valeur:oldName,newValeur:newName});
         } else {
             this.doRefactorGlobalVar(oldName, newName, justTheTemplate);
+            sendJsonData({action:'rename',type:'variable',globale:true,valeur:oldName,newValeur:newName});
         }
     }
 };
@@ -6494,16 +6506,19 @@ ScriptsMorph.prototype.undrop = function () {
             myself.isAnimating = false;
         }
     );
-    console.info('undrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
+    this
+    //console.info('undrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
     this.dropRecord = this.dropRecord.lastRecord;
-    
-    sendJsonData(this.dropRecord);
+    this.dropRecord.sens=-1
+    this.donnee(this.dropRecord);
+    //sendJsonData(this.dropRecord);
+    console.info('undrop');
 };
 
 ScriptsMorph.prototype.redrop = function () {
     var myself = this;
     if (this.isAnimating) {return; }
-    if (!this.dropRecord || !this.dropRecord.nextRecord) {return; }
+    if (!this.dropRecord || !this.dropRecord.nextRecord) {return; } //envoyer l'essai quand même?
     this.dropRecord = this.dropRecord.nextRecord;
     if (this.dropRecord.action === 'delete') {
         this.recoverLastDrop(true);
@@ -6521,8 +6536,12 @@ ScriptsMorph.prototype.redrop = function () {
             }
         );
     }
+    this.dropRecord.sens=+1
+    this.donnee(this.dropRecord);
+    
+    
     //console.info('redrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
-    console.info('redrop' + stringify(this.dropRecord,null,'  '));
+    //console.info('redrop' + stringify(this.dropRecord,null,'  '));
 };
 
 ScriptsMorph.prototype.recoverLastDrop = function (forRedrop) {
@@ -6651,7 +6670,7 @@ ScriptsMorph.prototype.recoverLastDrop = function (forRedrop) {
             dropped.moveBy(new Point(-100, -20));
         }
     }
-    console.info('recoverlastdrop');
+    //console.info('recoverlastdrop');
     return onBeforeDrop;
 };
 
@@ -6667,9 +6686,8 @@ ScriptsMorph.prototype.clearDropInfo = function () {
 
 //données à envoyer
 ScriptsMorph.prototype.donnee = function(record) {
+	console.info('record',record);	
 	if (record.lastDroppedBlock) {
-		newdate=new Date();
-		this.time=newdate.getTime()-date_debut;
     	this.lastDroppedBlock={
     		id: record.lastDroppedBlock.id,    
     		blockSpec: record.lastDroppedBlock.blockSpec,
@@ -6724,6 +6742,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     	);
     	this.lastDroppedBlock.inputs=inputs;    
     	//console.log('input 1:'+( t[0] instanceof ReporterBlockMorph)+'-'+(t[0] instanceof InputSlotMorph));
+    	console.info('record2',record);
     	sendJsonData(this);
     }
     
@@ -6741,11 +6760,13 @@ ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
         action: null,
         situation: null,
         lastRecord: this.dropRecord,
-        nextRecord: null
+        nextRecord: null        
     };
      //si le block n'a pas encore d'id, il est nouvellement créé
      if (record.lastDroppedBlock && !record.lastDroppedBlock.id) {
-     	record.lastDroppedBlock.id=record.lastDroppedBlock.lastTime;
+     	
+    	 //record.lastDroppedBlock.id=record.lastDroppedBlock.lastTime;
+    	record.lastDroppedBlock.id=objectId(record.lastDroppedBlock);
      	record.action="creation";
      }
     if (this.dropRecord) {
