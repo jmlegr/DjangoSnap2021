@@ -309,9 +309,11 @@ SnapTranslator.dict.fr = {
     'turn %counterclockwise %n degrees':
         'tourner de %n degr\u00E9s %counterclockwise',
     'point in direction %dir':
-        'se diriger en faisant un angle de %dir',
+     //   'se diriger en faisant un angle de %dir',
+    	's\'orienter en faisant un angle de %dir',
     'point towards %dst':
-        'se diriger vers %dst',
+        //'se diriger vers %dst',
+    	's\'orienter vers %dst',
     'go to x: %n y: %n':
         'aller \u00E0 x: %n y: %n',
     'go to %dst':
