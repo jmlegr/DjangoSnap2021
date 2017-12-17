@@ -676,7 +676,9 @@ SnapTranslator.dict.fr = {
     'Export project as plain text...':
         'Exporter le projet comme texte...',
     'Export project...':
-        'Exporter le projet...',
+        'Exporter (Sauvegarder) le projet...',
+    'Export Project As...':
+            'Exporter le projet avec le nom...',
     'save project data as XML\nto your downloads folder':
         'sauvegarder le projet au\nformat XML dans votre\ndossier T\u00E9l\u00E9chargements',
     'show project data as XML\nin a new browser window':
