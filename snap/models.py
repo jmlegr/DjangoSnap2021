@@ -43,13 +43,24 @@ class ActionProgrammation(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
     time=models.IntegerField()
     action=models.CharField(max_length=30,null=True,blank=True)
+    sens=models.SmallIntegerField(default=0), #0: normal, -1:undo, +1:redo
     situation=models.CharField(max_length=30,null=True,blank=True)
     typeMorph=models.CharField(max_length=30,null=True,blank=True)
     lastDroppedBlock=models.OneToOneField(DroppedBlock,on_delete=models.CASCADE)
     
     def __str__(self):
         return '(%s) %s %s' % (self.user_id,self.time,self.action)
-    
-    
+
+def user_directory_path(instance, filename):
+    # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
+    return 'user_{0}/{1}'.format(instance.user.id, filename)
+
+class Document(models.Model):
+    description = models.CharField(max_length=255, blank=True)
+    user=models.ForeignKey(User,null=True,on_delete=models.CASCADE)
+    document = models.FileField(upload_to=user_directory_path)
+    uploaded_at = models.DateTimeField(auto_now_add=True)    
+    def __str__(self):
+        return '{0} ({1}, {2})'.format(self.description,self.user,self.uploaded_at.strftime('%Y-%m-%d à %H:%M:%S'))
     
     

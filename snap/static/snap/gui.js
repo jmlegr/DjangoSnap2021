@@ -3678,6 +3678,8 @@ IDE_Morph.prototype.rawSaveProject = function (name) {
 };
 
 
+
+
 IDE_Morph.prototype.exportProject = function (name, plain) {
     // Export project XML, saving a file to disk
     // newWindow requests displaying the project in a new tab.
@@ -3689,8 +3691,9 @@ IDE_Morph.prototype.exportProject = function (name, plain) {
         try {
             menu = this.showMessage('Exporting');
             str = this.serializer.serialize(this.stage);
-            this.setURL('#open:' + dataPrefix + encodeURIComponent(str));
-            this.saveXMLAs(str, name);
+            UploadXML(str,name);
+            //this.setURL('#open:' + dataPrefix + encodeURIComponent(str));
+            //this.saveXMLAs(str, name);
             menu.destroy();
             this.showMessage('Exported!', 1);
         } catch (err) {

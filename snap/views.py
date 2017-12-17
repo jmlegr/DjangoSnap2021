@@ -1,4 +1,4 @@
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render, render_to_response, redirect
 
 # Create your views here.
 
@@ -9,8 +9,10 @@ import json
 import random
 from snap.models import InfoReceived, ActionProgrammation, DroppedBlock, Bounds, \
                         Inputs, Point
+from snap.forms import DocumentForm
                         
 from django.template.loader import render_to_string
+from django.core.files.storage import FileSystemStorage
 
 def current_datetime(request):
     now = datetime.datetime.now()
@@ -38,8 +40,10 @@ def ajax(request):
         ap.user=request.user    
         ap.action=r['action']
         ap.time=r['time']
-        if 'situation' in r: ap.situation=r['situation']
         ap.typeMorph=r['typeMorph']
+        if 'sens' in r: ap.sens=r['sens']        
+        if 'situation' in r: ap.situation=r['situation']
+        
         db=DroppedBlock()
         db.block_id=r['lastDroppedBlock']['id']
         db.blockSpec=r['lastDroppedBlock']['blockSpec']
@@ -80,3 +84,30 @@ def pagedon(request):
         obj.delete()
         #return render_to_response(html_result)
         return HttpResponse(html_result)
+    
+def simple_upload(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        myfile = request.FILES['myfile']
+        fs = FileSystemStorage()
+        filename = fs.save(myfile.name, myfile)
+        uploaded_file_url = fs.url(filename)
+        return render(request, 'simple_upload.html', {
+            'uploaded_file_url': uploaded_file_url
+        })
+    return render(request, 'simple_upload.html')
+
+def model_form_upload(request):
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)       
+        if form.is_valid():
+            instance=form.save(commit=False)
+            instance.user=request.user
+            instance.save()
+            return HttpResponse(json.dumps({'success': True,'file':instance.document.name}), content_type="application/json")
+    #else:
+    #    form = DocumentForm()
+    #return render(request, 'model_form_upload.html', {
+    #    'form': form
+    #})
+    
+

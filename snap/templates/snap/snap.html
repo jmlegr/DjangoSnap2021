@@ -5,6 +5,7 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">		
 		<title>Snap!4Gironde {{ request.user}}</title>		
 		<link rel="shortcut icon" href="favicon.ico">
+		<script src="{% static 'snap/js/jquery-3.2.1.min.js' %}"></script> 
 		<script type="text/javascript">
 		  var userid={{ request.user.id }}
 		  var csrf_token="{{ csrf_token }}";
@@ -42,6 +43,42 @@
 		        XHR.send(string);
 		      }
 		  
+		</script>
+		<script type="text/javascript">
+		//ajout JML
+		var UploadXML = function(xml,name) {
+		    var form = new FormData();
+		  
+		    // getCookie: https://docs.djangoproject.com/en/dev/ref/csrf/#acquiring-the-token-if-csrf-use-sessions-is-false
+		    form.append('csrfmiddlewaretoken',"{{ csrf_token }}");
+		    form.append('description',name);
+		    var blob = new Blob([xml], { type: "text/xml"});
+		    form.append('document',blob);
+		    $.ajax({
+		        url: 'up',
+		        type: 'POST',
+		        data: form,
+		        async: true,
+		        cache: false,
+		        contentType: false,
+		        enctype: 'multipart/form-data',
+		        processData: false,
+		        beforeSend: function() {
+		            console.log('Uploading...');
+		            //$('.upload-progress').show();
+		        },
+		        success: function (response) {
+		            //$('.upload-progress').hide();
+		            console.log('reponse',response);		            
+		        },
+		        error: function(response) {
+		            console.log("error", response);
+		            $('.upload-progress').hide();
+		        }
+		    });
+		    return false;
+		}
+		//fin ajout JML
 		</script>
 		<script type="text/javascript" src="{% static "snap/safe-json-stringify.js" %}"></script>
 		<script type="text/javascript" src="{% static "snap/morphic.js" %}"></script>

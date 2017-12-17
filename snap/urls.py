@@ -12,4 +12,7 @@ urlpatterns = [
     path('ajax',views.ajax),
     path('pageref',views.pageref),
      path('pagedon',views.pagedon),
+     path('ups',views.simple_upload),  
+     path('up',views.model_form_upload),
+    # path('upload',views.upload),
     ]
