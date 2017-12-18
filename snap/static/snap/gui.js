@@ -2995,6 +2995,29 @@ IDE_Morph.prototype.projectMenu = function () {
     //menu.addItem('Save As...', 'saveProjectsBrowser');
     menu.addLine();
     menu.addItem(
+            'cherge depuis servuer...',
+            function () {
+            	$.ajax({
+                    type: "GET",
+                    url: "fichier",
+                    dataType: "xml",
+                    success: function upon_success(xml) {
+                        console.log('xml recu',xml.getElementsByTagName('project')[0]);
+                        //world.hand.processDrop(xml);
+                       var target=world.hand.morphAtPointer(),
+                       		xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
+                            while (!target.droppedText) {
+                                target = target.parent;
+                            }
+                           
+                       target.droppedText(xmltxt, 'oki');                            
+                        
+                    }
+                });
+            },
+            'truc a trouver hint' // looks up the actual text in the translator
+        );
+    menu.addItem(
         'Import...',
         function () {
             var inp = document.createElement('input');
