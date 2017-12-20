@@ -8,11 +8,13 @@ from django.contrib.auth.decorators import login_required
 import json
 import random
 from snap.models import InfoReceived, ActionProgrammation, DroppedBlock, Bounds, \
-                        Inputs, Point
+                        Inputs, Point, Document
 from snap.forms import DocumentForm
                         
 from django.template.loader import render_to_string
 from django.core.files.storage import FileSystemStorage
+from wsgiref.util import FileWrapper
+from django.template.context_processors import request
 
 def current_datetime(request):
     now = datetime.datetime.now()
@@ -110,4 +112,25 @@ def model_form_upload(request):
     #    'form': form
     #})
     
-
+def return_fichier(request):
+    if request.method=='GET':
+        wrapper = FileWrapper(open('media/documents/sierpinski-programme1.xml'))
+        #content_type = mimetypes.guess_type(filename)[0]
+        response = HttpResponse(wrapper, content_type='text/xml')
+        #response['Content-Length'] = os.path.getsize(filename)
+        response['Content-Disposition'] = "attachment; filename=%s" % 'gi'
+        return response
+def return_fichier_eleve(request,file_id):
+    print('ok',file_id)
+    if request.method=='GET':
+        doc=Document.objects.get(id=file_id);
+        #wrapper = FileWrapper(open('media/documents/sierpinski-programme1.xml'))
+        wrapper = FileWrapper(open('media/%s' %doc.document))
+        #content_type = mimetypes.guess_type(filename)[0]
+        response = HttpResponse(wrapper, content_type='text/xml')
+        #response['Content-Length'] = os.path.getsize(filename)
+        response['Content-Disposition'] = "attachment; filename=%s" % 'doc.description'
+        return response    
+def return_files(request):
+    fics=Document.objects.order_by('-uploaded_at')
+    return render(request,'file_user.html',{'files':fics});

@@ -2995,27 +2995,111 @@ IDE_Morph.prototype.projectMenu = function () {
     //menu.addItem('Save As...', 'saveProjectsBrowser');
     menu.addLine();
     menu.addItem(
-            'cherge depuis servuer...',
+    		'test html jquery dialog',
+    		function() {
+    			var dialog=$( '#trucdialog' );    			
+    			dialog.html('<b>En attente....</b>');
+    			dialog.dialog({
+    			      //autoOpen: false,
+    				  title:"Charger un programme",
+    			      height: 400,
+    			      width: 350,
+    			      modal: true,
+    			      buttons: {    			       
+    			    	"Charger":function () {
+    			    		file_id=$("input[name=file]:checked" ).val();
+    		            	if (file_id) {
+    		            		$.ajax({
+    		            			type: "GET",
+    		            			url: "fichier/" + file_id,
+    		            			dataType: "xml",
+    		            			success: function upon_success(xml) {
+    		            				var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
+    		            				//console.log('xml recu',xml);
+    		            				var target=world.hand.morphAtPointer(),
+    		            				xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
+    		            				while (!target.droppedText) {
+    		                                target = target.parent;
+    		            				}   
+    		            				target.droppedText(xmltxt,name);
+    		            				dialog.dialog('close');
+    		                        
+    		            			}
+    		            		});
+    		            	}
+    		            },
+    			        "Annuler" : function() {
+    			          dialog.dialog( "close" );
+    			        }
+    			      },
+    			      close: function() {
+    			    	  console.log('closed');
+    			      }
+    			    
+    				});
+    			
+    			$.ajax({
+                        type: "GET",
+                        url:'cd',  //'pageref',
+                        dataType:'text',
+                        success: function upon_success(html) {
+                        	//console.info('recu',html);
+                        	dialog.html(html);                        	
+                        }
+                    });
+    			
+    			
+    			
+    			//window.open('cd','nom_de_ma_popup','menubar=no, scrollbars=no, top=100, left=100, width=300, height=200');
+    		} 
+    );
+    menu.addItem(
+    		'test html',
+    		function() {
+    			w=window.open('','nom_de_ma_popup','menubar=no, scrollbars=no, top=100, left=100, width=300, height=200');
+    			w.document.write('<div> en attente </div>');
+    			w.document.close();
+    			 w.focus();
+    			setTimeout(function() {
+    				$.ajax({
+                        type: "GET",
+                        url: 'cd',
+                        dataType:'text',
+                        success: function upon_success(html) {
+                        	console.info('recu',html);
+                        	w.document.write(html);
+                        	w.document.close();
+                        	//w.document.write(html);
+                        	//w.document.body=html;
+                        }
+                    });
+    			}, 2000);
+    			
+    			
+    			//window.open('cd','nom_de_ma_popup','menubar=no, scrollbars=no, top=100, left=100, width=300, height=200');
+    		} 
+    );
+    menu.addItem(
+            'charger le programme de la séance',
             function () {
             	$.ajax({
                     type: "GET",
                     url: "fichier",
                     dataType: "xml",
                     success: function upon_success(xml) {
-                        console.log('xml recu',xml.getElementsByTagName('project')[0]);
-                        //world.hand.processDrop(xml);
+                    	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
+                        //console.log('xml recu',xml);
                        var target=world.hand.morphAtPointer(),
-                       		xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
-                            while (!target.droppedText) {
+                       xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
+                       while (!target.droppedText) {
                                 target = target.parent;
-                            }
-                           
-                       target.droppedText(xmltxt, 'oki');                            
+                       }   
+                       target.droppedText(xmltxt,name);                            
                         
                     }
                 });
             },
-            'truc a trouver hint' // looks up the actual text in the translator
+            'Charge le programme prévu comme base de travail\npour cette séance pour '+userName // looks up the actual text in the translator
         );
     menu.addItem(
         'Import...',

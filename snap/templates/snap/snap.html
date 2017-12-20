@@ -6,8 +6,14 @@
 		<title>Snap!4Gironde {{ request.user}}</title>		
 		<link rel="shortcut icon" href="favicon.ico">
 		<script src="{% static 'snap/js/jquery-3.2.1.min.js' %}"></script> 
+		<script
+              src="http://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+              integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+              crossorigin="anonymous"></script>
+              <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 		<script type="text/javascript">
-		  var userid={{ request.user.id }}
+		  var userid={{ request.user.id }};
+		  var userName="{{ request.user.username }}";
 		  var csrf_token="{{ csrf_token }}";
 		  var newdate=new Date();
 		  var date_debut=newdate;
@@ -109,10 +115,11 @@
 			function loop() {
         requestAnimationFrame(loop);
 				world.doOneCycle();
-			}
+			}			
 		</script>
 	</head>
 	<body style="margin: 0;">
 		<canvas id="world" tabindex="1" style="position: absolute;" />
 	</body>
 </html>
+<div id="trucdialog" title="Dialog Title">ee</div>

@@ -15,4 +15,8 @@ urlpatterns = [
      path('ups',views.simple_upload),  
      path('up',views.model_form_upload),
     # path('upload',views.upload),
+    path('fichier',views.return_fichier),
+    path('fichier/<int:file_id>', views.return_fichier_eleve),
+    #path('cd',views.current_datetime),
+    path('cd',views.return_files),
     ]

@@ -1,0 +1,22 @@
+{% load static %}
+<script src="{% static 'snap/js/jquery-3.2.1.min.js' %}"></script> 
+        <script
+              src="http://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+              integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+              crossorigin="anonymous"></script>
+              <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<h1>Liste des fichiers de {{user.username}}</h1>
+{% for file in files %}
+<ul>
+<input type="radio" id={{file.id}} name="file" value="{{file.id}}">
+<b>{{file.description}}</b> ({{file.uploaded_at}})
+</ul>
+{% endfor %}
+<script>
+<!--
+$( "input[name=file]:radio" ).change(function(){
+	console.log('change',$(this).attr('id'));
+	console.log('_>',$( "input[name=file]:checked" ).val());
+	})
+-->
+</script>
