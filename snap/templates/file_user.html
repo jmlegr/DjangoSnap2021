@@ -5,13 +5,21 @@
               integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
               crossorigin="anonymous"></script>
               <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<h1>Liste des fichiers de {{user.username}}</h1>
+<h3>Liste des fichiers de {{user.username}}</h3>
+<table align="left">
 {% for file in files %}
-<ul>
-<input type="radio" id={{file.id}} name="file" value="{{file.id}}">
-<b>{{file.description}}</b> ({{file.uploaded_at}})
-</ul>
+<tr>
+<td><input type="radio" id={{file.id}} name="file" value="{{file.id}}" ></td>
+<td> <div>
+        <b>{{file.description}}</b> 
+    </div>
+    <div>
+        <span style="font-size:70%">({{file.uploaded_at}})</span>
+    </div>
+</td>
+</tr>
 {% endfor %}
+</table>
 <script>
 <!--
 $( "input[name=file]:radio" ).change(function(){

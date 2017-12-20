@@ -2993,9 +2993,31 @@ IDE_Morph.prototype.projectMenu = function () {
     //menu.addPair('Open...', 'openProjectsBrowser', '^O');
     //menu.addPair('Save', "save", '^S');
     //menu.addItem('Save As...', 'saveProjectsBrowser');
-    menu.addLine();
+    menu.addLine();   
     menu.addItem(
-    		'test html jquery dialog',
+            'Charger le programme de la séance',
+            function () {
+            	$.ajax({
+                    type: "GET",
+                    url: "fichier",
+                    dataType: "xml",
+                    success: function upon_success(xml) {
+                    	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
+                        //console.log('xml recu',xml);
+                       var target=world.hand.morphAtPointer(),
+                       xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
+                       while (!target.droppedText) {
+                                target = target.parent;
+                       }   
+                       target.droppedText(xmltxt,name);                            
+                        
+                    }
+                });
+            },
+            'Charge le programme prévu comme base de travail\npour cette séance pour '+userName // looks up the actual text in the translator
+        );
+    menu.addItem(
+    		'Charger un de mes programmes...',
     		function() {
     			var dialog=$( '#trucdialog' );    			
     			dialog.html('<b>En attente....</b>');
@@ -3051,56 +3073,24 @@ IDE_Morph.prototype.projectMenu = function () {
     			
     			
     			//window.open('cd','nom_de_ma_popup','menubar=no, scrollbars=no, top=100, left=100, width=300, height=200');
-    		} 
+    		} ,
+    		'Charge un des programmes préalablement sauvegardés'
     );
     menu.addItem(
-    		'test html',
-    		function() {
-    			w=window.open('','nom_de_ma_popup','menubar=no, scrollbars=no, top=100, left=100, width=300, height=200');
-    			w.document.write('<div> en attente </div>');
-    			w.document.close();
-    			 w.focus();
-    			setTimeout(function() {
-    				$.ajax({
-                        type: "GET",
-                        url: 'cd',
-                        dataType:'text',
-                        success: function upon_success(html) {
-                        	console.info('recu',html);
-                        	w.document.write(html);
-                        	w.document.close();
-                        	//w.document.write(html);
-                        	//w.document.body=html;
-                        }
-                    });
-    			}, 2000);
-    			
-    			
-    			//window.open('cd','nom_de_ma_popup','menubar=no, scrollbars=no, top=100, left=100, width=300, height=200');
-    		} 
-    );
-    menu.addItem(
-            'charger le programme de la séance',
+            'Sauvegarder le programme...',
             function () {
-            	$.ajax({
-                    type: "GET",
-                    url: "fichier",
-                    dataType: "xml",
-                    success: function upon_success(xml) {
-                    	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
-                        //console.log('xml recu',xml);
-                       var target=world.hand.morphAtPointer(),
-                       xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
-                       while (!target.droppedText) {
-                                target = target.parent;
-                       }   
-                       target.droppedText(xmltxt,name);                            
-                        
-                    }
-                });
+                if (myself.projectName) {
+                    myself.exportProjectToDjango(myself.projectName, shiftClicked);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectToDjango(name, shiftClicked);
+                    }, null, 'exportProject');
+                }
             },
-            'Charge le programme prévu comme base de travail\npour cette séance pour '+userName // looks up the actual text in the translator
+            'Sauvegarder une version du programme',
+            shiftClicked ? new Color(100, 0, 0) : null
         );
+    menu.addLine();   
     menu.addItem(
         'Import...',
         function () {
@@ -3211,6 +3201,7 @@ IDE_Morph.prototype.projectMenu = function () {
     }
 
     menu.addLine();
+    /* suppression des menus inutiles
     menu.addItem(
         'Import tools',
         function () {
@@ -3251,7 +3242,7 @@ IDE_Morph.prototype.projectMenu = function () {
         },
         'Select a sound from the media library'
     );
-
+	*/
     menu.popup(world, pos);
 };
 
@@ -3785,7 +3776,29 @@ IDE_Morph.prototype.rawSaveProject = function (name) {
 };
 
 
+IDE_Morph.prototype.exportProjectToDjango = function (name, plain) {
+    // Export project XML, saving a file to disk
+    // newWindow requests displaying the project in a new tab.
+    var menu, str, dataPrefix;
 
+    if (name) {
+        this.setProjectName(name);
+        dataPrefix = 'data:text/' + plain ? 'plain,' : 'xml,';
+        try {
+            menu = this.showMessage('Sauvegarde en cours');
+            str = this.serializer.serialize(this.stage);
+            UploadXML(str,name);            
+            menu.destroy();
+            this.showMessage('Sauvegardé!', 1);
+        } catch (err) {
+            if (Process.prototype.isCatchingErrors) {
+                this.showMessage('Erreur de sauvegarde: ' + err);
+            } else {
+                throw err;
+            }
+        }
+    }
+};
 
 IDE_Morph.prototype.exportProject = function (name, plain) {
     // Export project XML, saving a file to disk
@@ -3798,9 +3811,8 @@ IDE_Morph.prototype.exportProject = function (name, plain) {
         try {
             menu = this.showMessage('Exporting');
             str = this.serializer.serialize(this.stage);
-            UploadXML(str,name);
-            //this.setURL('#open:' + dataPrefix + encodeURIComponent(str));
-            //this.saveXMLAs(str, name);
+            this.setURL('#open:' + dataPrefix + encodeURIComponent(str));
+            this.saveXMLAs(str, name);
             menu.destroy();
             this.showMessage('Exported!', 1);
         } catch (err) {
