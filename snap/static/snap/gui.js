@@ -2997,22 +2997,30 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
             'Charger le programme de la séance',
             function () {
-            	$.ajax({
-                    type: "GET",
-                    url: "fichier",
-                    dataType: "xml",
-                    success: function upon_success(xml) {
-                    	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
-                        //console.log('xml recu',xml);
-                       var target=world.hand.morphAtPointer(),
-                       xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
-                       while (!target.droppedText) {
-                                target = target.parent;
-                       }   
-                       target.droppedText(xmltxt,name);                            
-                        
-                    }
-                });
+            	this.confirm(
+            	        'Remplacer le projet actuel par le programme de base?',
+            	        'Charger le programme',
+            	        function () {
+            	        	$.ajax({
+                                type: "GET",
+                                url: "fichier",
+                                dataType: "xml",
+                                success: function upon_success(xml) {
+                                	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
+                                    //console.log('xml recu',xml);
+                                   var target=world.hand.morphAtPointer(),
+                                   xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
+                                   while (!target.droppedText) {
+                                            target = target.parent;
+                                   }   
+                                   target.droppedText(xmltxt,name);                            
+                                    
+                                }
+                            });
+            	        	
+            	        }
+            	    );
+            	
             },
             'Charge le programme prévu comme base de travail\npour cette séance pour '+userName // looks up the actual text in the translator
         );
