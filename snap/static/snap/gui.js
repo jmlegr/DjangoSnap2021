@@ -880,8 +880,8 @@ IDE_Morph.prototype.createControlBar = function () {
     // button.hint = 'cloud operations';
     button.fixLayout();
     cloudButton = button;
-    this.controlBar.add(cloudButton);
-    this.controlBar.cloudButton = cloudButton; // for menu positioning
+    //this.controlBar.add(cloudButton);
+    //this.controlBar.cloudButton = cloudButton; // for menu positioning
 
     this.controlBar.fixLayout = function () {
         x = this.right() - padding;
@@ -2629,6 +2629,7 @@ IDE_Morph.prototype.settingsMenu = function () {
             'check for higher resolution,\nuses more computing resources'
         );
     }
+    /* modif jml
     addPreference(
         'Input sliders',
         'toggleInputSliders',
@@ -2652,6 +2653,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'uncheck to run scripts\nat normal speed',
         'check to prioritize\nscript execution'
     );
+    */
     addPreference(
         'Visible stepping',
         'toggleSingleStepping',
@@ -2660,6 +2662,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to turn on\n visible stepping (slow)',
         false
     );
+    /* modif jml
     addPreference(
         'Ternary Boolean slots',
         function () {
@@ -2847,6 +2850,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to enable support\n for first-class sprite',
         true
     );
+    */
     addPreference(
         'Keyboard Editing',
         function () {
@@ -2864,6 +2868,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to enable\nkeyboard editing support',
         true
     );
+    /* modif jml
     addPreference(
         'Table support',
         function () {
@@ -2974,6 +2979,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to enable\nsaving linked sublist identities',
         true
     );
+    */
     menu.popup(world, pos);
 };
 
