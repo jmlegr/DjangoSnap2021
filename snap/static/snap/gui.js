@@ -3012,8 +3012,8 @@ IDE_Morph.prototype.projectMenu = function () {
                                 url: "fichier",
                                 dataType: "xml",
                                 success: function upon_success(xml) {
-                                	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
-                                    //console.log('xml recu',xml);
+                                	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
+                                	sendEvt({type:"LOAD",click:false,detail:name},url='env/');
                                    var target=world.hand.morphAtPointer(),
                                    xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
                                    while (!target.droppedText) {

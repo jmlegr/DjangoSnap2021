@@ -15,6 +15,61 @@ from django.template.loader import render_to_string
 from django.core.files.storage import FileSystemStorage
 from wsgiref.util import FileWrapper
 from django.template.context_processors import request
+from rest_framework import viewsets
+from snap.serializers import ProgrammeBaseSerializer, UserSerializer, GroupSerializer,\
+            EvenementSerializer, ProgrammeBaseSuperuserSerializer,\
+            EvenementEPRSerializer, EvenementENVSerializer
+from snap.models import ProgrammeBase, Evenement, EvenementEPR, EvenementENV
+from django.contrib.auth.models import User, Group
+
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserSerializer
+
+
+class GroupViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    
+class ProgrammeBaseViewset(viewsets.ModelViewSet):
+    """
+    API Endpoint pour Programme de Base
+    """
+    queryset=ProgrammeBase.objects.all();
+    #serializer_class=ProgrammeBaseSerializer
+    def get_serializer_class(self):
+        if self.request.user.is_superuser:
+            return ProgrammeBaseSuperuserSerializer
+        return ProgrammeBaseSerializer
+        
+class EvenementViewset(viewsets.ModelViewSet):
+    """
+    API Endpoint pour Evenement
+    """
+    queryset=Evenement.objects.all()
+    serializer_class=EvenementSerializer
+    
+class EvenementEPRViewset(viewsets.ModelViewSet):
+    """
+    API Endpoint pour EvenementEPR (Evenement Etat du Programme)
+    """
+    queryset=EvenementEPR.objects.all()
+    serializer_class=EvenementEPRSerializer
+    
+class EvenementENVViewset(viewsets.ModelViewSet):
+    """
+    API Endpoint pour EvenementENV (Evenement Changement de l'environnement)
+    """
+    queryset=EvenementENV.objects.all()
+    serializer_class=EvenementENVSerializer
 
 def current_datetime(request):
     now = datetime.datetime.now()

@@ -198,6 +198,9 @@ ThreadManager.prototype.startProcess = function (
     isClicked,
     rightAway
 ) {
+	var click=isClicked?isClicked:false
+	console.log('start',block,receiver,isClicked?isClicked:false);
+	sendEvt({type:"RUN",click:isClicked?isClicked:false,detail:receiver.name},url='epr/');
     var top = block.topBlock(),
         active = this.findProcess(top, receiver),
         glow,

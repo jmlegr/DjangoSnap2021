@@ -84,6 +84,39 @@
 		    });
 		    return false;
 		}
+		
+        var numero_evt=0
+        var sendEvt = function(data,url='evenement/') {
+            var newdate=new Date();
+            var time=newdate.getTime()-date_debut;
+            
+            numero_evt+=1;
+            data['evenement']={time:time,numero:numero_evt};
+            $.ajax({
+                url: url,
+                type: 'POST',
+                headers:{"X-CSRFToken":"{{ csrf_token }}"},
+                data: JSON.stringify(data),
+                async: true,
+                cache: false,
+                contentType: 'application/json',
+                dataType: 'json',
+                //processData: true,
+                beforeSend: function() {
+                    console.log('Uploading...');
+                    //$('.upload-progress').show();
+                },
+                success: function (response) {
+                    //$('.upload-progress').hide();
+                    console.log('reponse',response);                    
+                },
+                error: function(response) {
+                    console.log("error", response);
+                    $('.upload-progress').hide();
+                }
+            });
+            return false;
+        }
 		//fin ajout JML
 		</script>
 		<script type="text/javascript" src="{% static "snap/safe-json-stringify.js" %}"></script>

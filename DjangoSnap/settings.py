@@ -37,8 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     'rest_framework',
-    'snap.apps.SnapConfig',
+    
+    'snap.apps.SnapConfig', 
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -101,6 +102,28 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+   
+    
+    'DEFAULT_PERMISSION_CLASSES': (
+        #'rest_framework.permissions.IsAuthenticated',
+        
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': ( 
+        #'knox.auth.TokenAuthentication',                                             
+        
+        'rest_framework.authentication.SessionAuthentication', 
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+                    'DEFAULT_RENDERER_CLASSES': (
+        #'rest_framework.renderers.TemplateHTMLRenderer',
+        'rest_framework.renderers.JSONRenderer',
+        #'rest_framework.renderers.TemplateHTMLRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    )
+    #'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    #'PAGE_SIZE': 5,
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/

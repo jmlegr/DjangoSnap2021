@@ -20,11 +20,14 @@ from django.conf import settings
 from django.urls.conf import include
 from django.contrib.auth import views as auth_views
 from DjangoSnap.settings import DEBUG
+from django.conf.urls import url
 
 
 
 urlpatterns = [
     #path('accounts/login/', auth_views.LoginView.as_view()),
+    
+     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
      path('accounts/', include('django.contrib.auth.urls')),
      path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html')),
     path('admin/', admin.site.urls),
