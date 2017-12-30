@@ -19,11 +19,13 @@ class Evenement(models.Model):
     ENVIRONNEMENT='ENV'
     ETAT_PROGRAMME='EPR'
     STRUCTURE_PROGRAMME='SPR'
+    SCRIPT='SCR'
     AUTRE='AUT'
     TYPE_EVENEMENT_CHOICES=(
         (ENVIRONNEMENT,'Environnement'),
         (ETAT_PROGRAMME,'Etat du Programme'),
         (STRUCTURE_PROGRAMME,'Structure du Programme'),
+        (SCRIPT,'Script'),
         (AUTRE,'Autre évènement'),
         )
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
@@ -56,7 +58,7 @@ class EvenementENV(models.Model):
         ('PAUSE','Clic Mise en pause'),
         ('REPR','Clic Reprise'),
         ('STOP','Clic Stop'),
-        ('KEY','Lancement par une touche'),
+        ('KEY','Evènement Clavier'),
         ('AFFBL','Affichage Blocs'),
         ('AFFVAR','Affichage ou non Variable'), #avec nom en option et valeur en bool        
         ('AUTRE','(Non identifié)'),
@@ -70,6 +72,9 @@ class EvenementENV(models.Model):
     valueInt=models.IntegerField(null=True)
     valueChar=models.CharField(max_length=30,null=True,blank=True)
     #block=models.ForeignKey(Block,on_delete=models.CASCADE)
+    def __str__(self):
+        return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
+    
     class Meta:
         ordering=('-evenement__creation',)
 
@@ -93,6 +98,9 @@ class EvenementEPR(models.Model):
     click=models.BooleanField()
     detail=models.CharField(max_length=30,null=True,blank=True)
     #block=models.ForeignKey(Block,on_delete=models.CASCADE)
+    def __str__(self):
+        return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
+    
     class Meta:
         ordering=('-evenement__creation',)
 
