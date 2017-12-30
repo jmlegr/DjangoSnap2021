@@ -3274,6 +3274,8 @@ BlockMorph.prototype.refactorThisVar = function (justTheTemplate) {
                     newName,
                     justTheTemplate
                 );
+                console.info('kk',this.parent);
+                sendJsonData({action:'rename',type:'entree block',block:true,valeur:oldName,newValeur:newName});
             } else if (this.parentThatIsA(RingMorph)) {
                 this.doRefactorRingParameter(oldName, newName, justTheTemplate);
             } else {
@@ -4288,6 +4290,7 @@ CommandBlockMorph.prototype.dentCenter = function () {
 CommandBlockMorph.prototype.attachTargets = function () {
     var answer = [],
         tp;
+    
     if (!(this instanceof HatBlockMorph)) {
         tp = this.topAttachPoint();
         if (!(this.parent instanceof SyntaxElementMorph)) {
@@ -4555,7 +4558,7 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
         above,
         parent = this.parentThatIsA(SyntaxElementMorph),
         cslot = this.parentThatIsA(CSlotMorph);
-
+    
     // for undrop / redrop
     if (scripts) {
     	console.info('userdestroyjustthis script'+JSON.stringify(this,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
@@ -6316,7 +6319,14 @@ ScriptsMorph.prototype.userMenu = function () {
                     ),
                     localize('undrop')
                 ],
-                'undrop',
+                /**
+		 * Modification JML (duff,  30 déc. 2017)
+		 **/
+                //'undrop',
+                function() {this.undrop(origine='menu')},
+		/**
+		 * Fin Modification JML
+		 **/
                 '^Z',
                 'undo the last\nblock drop\nin this pane'
             );
@@ -6331,7 +6341,14 @@ ScriptsMorph.prototype.userMenu = function () {
                     ),
                     localize('redrop')
                 ],
-                'redrop',
+                /**
+		 * Modification JML (duff,  30 déc. 2017)
+		 **/
+		//'redrop',
+                function() {this.redrop(origine='menu')},
+		/**
+		 * Fin Modification JML
+		 **/
                 '^Y',
                 'redo the last undone\nblock drop\nin this pane'
             );
@@ -6487,8 +6504,15 @@ ScriptsMorph.prototype.addComment = function () {
 };
 
 // ScriptsMorph undrop / redrop
-
-ScriptsMorph.prototype.undrop = function () {
+/**
+ * Modification JML (duff,  30 déc. 2017)
+ **/
+//ScriptsMorph.prototype.undrop = function () {
+ScriptsMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
+    console.log('unrop:',origine,key,clic);
+/**
+ * Fin Modification JML
+ **/
     var myself = this;
     if (this.isAnimating) {return; }
     if (!this.dropRecord || !this.dropRecord.lastRecord) {return; }
@@ -6507,15 +6531,34 @@ ScriptsMorph.prototype.undrop = function () {
         }
     );
     this
-    //console.info('undrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    
+    sendEvenement(type='ENV',
+	    data={type:'UNDROP',detail:origine,
+	    	key:key,clic:clic,
+	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
+	    	valueInt:this.dropRecord.lastDroppedBlock.id
+	    	});    
+    /**
+     * Fin Modification JML
+     **/
     this.dropRecord = this.dropRecord.lastRecord;
-    this.dropRecord.sens=-1
-    this.donnee(this.dropRecord);
-    //sendJsonData(this.dropRecord);
-    console.info('undrop');
+    
+
 };
 
-ScriptsMorph.prototype.redrop = function () {
+/**
+ * Modification JML (duff,  30 déc. 2017)
+ **/
+//ScriptsMorph.prototype.redrop = function () {
+ScriptsMorph.prototype.redrop = function (origine=null,key=false,clic=false) {
+/**
+ * Fin Modification JML
+ **/
+
+
     var myself = this;
     if (this.isAnimating) {return; }
     if (!this.dropRecord || !this.dropRecord.nextRecord) {return; } //envoyer l'essai quand même?
@@ -6536,12 +6579,18 @@ ScriptsMorph.prototype.redrop = function () {
             }
         );
     }
-    this.dropRecord.sens=+1
-    this.donnee(this.dropRecord);
-    
-    
-    //console.info('redrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
-    //console.info('redrop' + stringify(this.dropRecord,null,'  '));
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement(type='ENV',
+	    data={type:'REDROP',detail:origine,
+	    	key:key,clic:clic,
+	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
+	    	valueInt:this.dropRecord.lastDroppedBlock.id
+	    	});    
+    /**
+     * Fin Modification JML
+     **/
 };
 
 ScriptsMorph.prototype.recoverLastDrop = function (forRedrop) {
@@ -6740,9 +6789,8 @@ ScriptsMorph.prototype.donnee = function(record) {
     			//console.log('donnee'+input+'-'+typeInput+':'+valeurInput);
     		}
     	);
-    	this.lastDroppedBlock.inputs=inputs;    
-    	//console.log('input 1:'+( t[0] instanceof ReporterBlockMorph)+'-'+(t[0] instanceof InputSlotMorph));
-    	console.info('record2',record);
+    	this.lastDroppedBlock.inputs=inputs;  
+    	
     	sendJsonData(this);
     }
     
@@ -6793,7 +6841,15 @@ ScriptsMorph.prototype.addToolbar = function () {
     toolBar.respectHiddens = true;
     toolBar.undoButton = new PushButtonMorph(
         this,
-        "undrop",
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //"undrop"
+        function() {this.undrop(origine='Button',key=false,clic=true)},	
+	/**
+	 * Fin Modification JML
+	 **/
+
         new SymbolMorph("turnBack", 12)
     );
     toolBar.undoButton.alpha = 0.2;
@@ -6806,7 +6862,16 @@ ScriptsMorph.prototype.addToolbar = function () {
 
     toolBar.redoButton = new PushButtonMorph(
         this,
-        "redrop",
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//"redrop",
+        function() {this.redrop(origine='Button',key=false,clic=true)},
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
         new SymbolMorph("turnForward", 12)
     );
     toolBar.redoButton.alpha = 0.2;
@@ -12733,14 +12798,30 @@ ScriptFocusMorph.prototype.sortedScripts = function () {
 };
 
 // ScriptFocusMorph undo / redo
-
-ScriptFocusMorph.prototype.undrop = function () {
-    this.editor.undrop();
+/**
+ * Modification JML (duff,  30 déc. 2017)
+ **/
+//ScriptFocusMorph.prototype.undrop = function () {
+//    this.editor.undrop();
+//};
+ScriptFocusMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
+    this.editor.undrop(origine,key,clic);
 };
 
-ScriptFocusMorph.prototype.redrop = function () {
-    this.editor.redrop();
+
+//ScriptFocusMorph.prototype.redrop = function () {
+//    this.editor.redrop();
+//};
+
+ScriptFocusMorph.prototype.redrop = function (origine=null,key=false,clic=false) {
+    this.editor.redrop(origine,key,clic);
 };
+
+
+/**
+ * Fin Modification JML
+ **/
+
 
 // ScriptFocusMorph block types
 
@@ -12886,10 +12967,26 @@ ScriptFocusMorph.prototype.reactToKeyEvent = function (key) {
     case 'backspace':
         return this.deleteLastElement();
     case 'ctrl z':
-        return this.undrop();
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//return this.undrop();
+	return this.undrop(origine='ctrl z',key=true);
+	/**
+	 * Fin Modification JML
+	 **/        
     case 'ctrl y':
     case 'ctrl shift z':
-        return this.redrop();
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//return this.redrop();
+	return this.redrop(origine=evt,key=true);
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
     case 'ctrl [': // ignore the first press of the Mac cmd key
         return;
     default:

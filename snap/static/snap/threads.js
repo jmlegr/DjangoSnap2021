@@ -181,8 +181,24 @@ function ThreadManager() {
 ThreadManager.prototype.pauseCustomHatBlocks = false;
 
 ThreadManager.prototype.toggleProcess = function (block, receiver) {
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     **/
+    console.log('toggle',block,receiver);
+    /**
+     * Fin Modification JML
+     **/
+
     var active = this.findProcess(block, receiver);
     if (active) {
+	/**
+	 * Modification JML (duff,  29 déc. 2017)
+	 **/
+	console.log('stop:',active);
+	/**
+	 * Fin Modification JML
+	 **/
+
         active.stop();
     } else {
         return this.startProcess(block, receiver, null, null, null, true);
@@ -197,10 +213,7 @@ ThreadManager.prototype.startProcess = function (
     callback,
     isClicked,
     rightAway
-) {
-	var click=isClicked?isClicked:false
-	console.log('start',block,receiver,isClicked?isClicked:false);
-	sendEvt({type:"RUN",click:isClicked?isClicked:false,detail:receiver.name},url='epr/');
+) {  
     var top = block.topBlock(),
         active = this.findProcess(top, receiver),
         glow,
@@ -232,11 +245,25 @@ ThreadManager.prototype.startProcess = function (
     if (rightAway) {
         newProc.runStep();
     }
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    var click=isClicked?isClicked:false
+	console.log('start',top,receiver,isClicked?isClicked:false);
+    	console.log('process:',newProc,this.processes);
+    	//envoyer run+liste des processes (numero,receiver,topblock,nb processes)
+	//sendEvt({type:"RUN",click:isClicked?isClicked:false,detail:receiver.name},url='epr/');
+    
+    /**
+     * Fin Modification JML
+     **/
+	
     return newProc;
 };
 
 ThreadManager.prototype.stopAll = function (excpt) {
     // excpt is optional
+	console.log('stopAll');
     this.processes.forEach(function (proc) {
         if (proc !== excpt) {
             proc.stop();
@@ -246,6 +273,7 @@ ThreadManager.prototype.stopAll = function (excpt) {
 
 ThreadManager.prototype.stopAllForReceiver = function (rcvr, excpt) {
     // excpt is optional
+	console.log('stopall for receiver');
     this.processes.forEach(function (proc) {
         if (proc.homeContext.receiver === rcvr && proc !== excpt) {
             proc.stop();
@@ -257,6 +285,14 @@ ThreadManager.prototype.stopAllForReceiver = function (rcvr, excpt) {
 };
 
 ThreadManager.prototype.stopAllForBlock = function (aTopBlock) {
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     **/
+    console.log('stopAll',aTopBlock,aTopBlock.JMLfrom);
+    /**
+     * Fin Modification JML
+     **/
+
     this.processesForBlock(aTopBlock, true).forEach(function (proc) {
         proc.stop();
     });
@@ -264,12 +300,14 @@ ThreadManager.prototype.stopAllForBlock = function (aTopBlock) {
 
 ThreadManager.prototype.stopProcess = function (block, receiver) {
     var active = this.findProcess(block, receiver);
+    console.log('stopProcess');
     if (active) {
         active.stop();
     }
 };
 
 ThreadManager.prototype.pauseAll = function (stage) {
+	console.log('pause all');
     this.processes.forEach(function (proc) {
         proc.pause();
     });
@@ -284,6 +322,7 @@ ThreadManager.prototype.isPaused = function () {
 };
 
 ThreadManager.prototype.resumeAll = function (stage) {
+	console.log('resume all');
     this.processes.forEach(function (proc) {
         proc.resume();
     });
@@ -1675,7 +1714,7 @@ Process.prototype.doTellTo = function (sprite, context, args) {
 };
 
 Process.prototype.reportAskFor = function (sprite, context, args) {
-    this.evaluate(
+	this.evaluate(
         this.reportAttributeOf(context, sprite),
         args
     );
@@ -2226,7 +2265,7 @@ Process.prototype.doAsk = function (data) {
         isStage = rcvr instanceof StageMorph,
         isHiddenSprite = rcvr instanceof SpriteMorph && !rcvr.isVisible,
         activePrompter;
-
+    
     stage.keysPressed = {};
     if (!this.prompter) {
         activePrompter = detect(
@@ -2234,7 +2273,8 @@ Process.prototype.doAsk = function (data) {
             function (morph) {return morph instanceof StagePrompterMorph; }
         );
         if (!activePrompter) {
-            if (!isStage && !isHiddenSprite) {
+        	console.log('debut entrée');
+        	if (!isStage && !isHiddenSprite) {
                 rcvr.bubble(data, false, true);
             }
             this.prompter = new StagePrompterMorph(
@@ -2255,6 +2295,7 @@ Process.prototype.doAsk = function (data) {
     } else {
         if (this.prompter.isDone) {
             stage.lastAnswer = this.prompter.inputField.getValue();
+            console.log('fini:',stage.lastAnswer);
             this.prompter.destroy();
             this.prompter = null;
             if (!isStage) {rcvr.stopTalking(); }

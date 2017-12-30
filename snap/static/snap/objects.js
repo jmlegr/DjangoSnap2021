@@ -6717,9 +6717,18 @@ StageMorph.prototype.processKeyUp = function (event) {
     );
 };
 
+StageMorph.keyanc=null;
 StageMorph.prototype.processKeyEvent = function (event, action) {
     var keyName;
 
+    // ajout jml
+    // pour n'envoyer un evenement keydown sur le serveur que si c'est le permier appui
+    if (event.type=='keydown' && !this.keyanc) {
+    	this.keyanc=event.keyCode;
+    	console.log('keydown:',this.keyanc);
+    } else if (event.type=='keyup') {this.keyanc=null; console.log('ann')};
+    //console.log('process key',event.type,event.keyCode,action);
+    //fin jml
     // this.inspectKeyEvent(event);
     switch (event.keyCode) {
     case 13:
@@ -6762,7 +6771,10 @@ StageMorph.prototype.fireKeyEvent = function (key) {
         procs = [],
         ide = this.parentThatIsA(IDE_Morph),
         myself = this;
-
+    //ajout jml
+    //console.log('key',key);
+    //sendEvt({key:evt});
+    //fin jml
     this.keysPressed[evt] = true;
     if (evt === 'ctrl enter') {
         return this.fireGreenFlagEvent();
@@ -6775,11 +6787,25 @@ StageMorph.prototype.fireKeyEvent = function (key) {
         return;
     }
     if (evt === 'ctrl z') {
-        if (!ide.isAppMode) {ide.currentSprite.scripts.undrop(); }
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	 //if (!ide.isAppMode) {ide.currentSprite.scripts.undrop(); }
+	 if (!ide.isAppMode) {ide.currentSprite.scripts.undrop(origine=evt,key=true); }
+	/**
+	 * Fin Modification JML
+	 **/       
          return;
     }
     if (evt === 'ctrl shift z' || (evt === 'ctrl y')) {
-        if (!ide.isAppMode) {ide.currentSprite.scripts.redrop(); }
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//if (!ide.isAppMode) {ide.currentSprite.scripts.redrop(); }
+	if (!ide.isAppMode) {ide.currentSprite.scripts.redrop(origine=evt,key=true); }
+	/**
+	 * Fin Modification JML
+	 **/        
          return;
     }
     if (evt === 'ctrl n') {

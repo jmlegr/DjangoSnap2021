@@ -674,7 +674,7 @@ IDE_Morph.prototype.createControlBar = function () {
     button = new ToggleButtonMorph(
         null, //colors,
         myself, // the IDE is the target
-        'toggleSingleStepping',
+        'toggleSingleStepping', //action
         [
             new SymbolMorph('footprints', 16),
             new SymbolMorph('footprints', 16)
@@ -748,7 +748,7 @@ IDE_Morph.prototype.createControlBar = function () {
             new SymbolMorph('pointRight', 14)
         ],
         function () {  // query
-            return myself.isPaused();
+        	return myself.isPaused();
         }
     );
 
@@ -1010,6 +1010,13 @@ IDE_Morph.prototype.createCategories = function () {
             colors,
             myself, // the IDE is the target
             function () {
+            	/**
+		 * Modification JML (duff,  29 déc. 2017)
+		 **/
+        	sendEvenement("ENV",{type:"AFFBL",click:true,detail:category});
+		/**
+		 * Fin Modification JML
+		 **/
                 myself.currentCategory = category;
                 myself.categories.children.forEach(function (each) {
                     each.refresh();
@@ -1122,17 +1129,74 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
     this.palette.contents.acceptsDrops = false;
 
     this.palette.reactToDropOf = function (droppedMorph, hand) {
+    	if (droppedMorph.JMLfrom) {droppedMorph.JMLfrom=null}
         if (droppedMorph instanceof DialogBoxMorph) {
             myself.world().add(droppedMorph);
         } else if (droppedMorph instanceof SpriteMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+	    //console.log('suppr lutin',droppedMorph.name,droppedMorph.version);
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"sprite",
+        	    	valueChar:droppedMorph.name,
+        	    	valueInt:droppedMorph.version
+        	    	});
+            
+	    droppedMorph.JMLfrom='DropSprite';
+	    /**
+	     * Fin Modification JML
+	     **/
             myself.removeSprite(droppedMorph);
         } else if (droppedMorph instanceof SpriteIconMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+            //console.log('suppr sptriteicon',droppedMorph.labelString,droppedMorph.version);
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"spriteIcon",
+        	    	valueChar:droppedMorph.object.name,
+        	    	valueInt:droppedMorph.object.version
+        	    	});
+            
+            droppedMorph.object.JMLfrom='DropIcon';
+	    /**
+	     * Fin Modification JML
+	     **/
             droppedMorph.destroy();
             myself.removeSprite(droppedMorph.object);
         } else if (droppedMorph instanceof CostumeIconMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"costume",
+        	    	valueChar:droppedMorph.object.name,
+        	    	valueInt:droppedMorph.object.version
+        	    	});
+            
+	    /**
+	     * Fin Modification JML
+	     **/
+
             myself.currentSprite.wearCostume(null);
             droppedMorph.perish();
         } else if (droppedMorph instanceof BlockMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     * note: fait aussi un stopall
+	     **/
+            //console.log('suppr block',droppedMorph);
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"block",
+        	    	valueChar:droppedMorph.selector,
+        	    	valueInt:droppedMorph.id
+        	    	});
+            droppedMorph.JMLfrom='DropBlock';
+	    /**
+	     * Fin Modification JML
+	     **/
+
             myself.stage.threads.stopAllForBlock(droppedMorph);
             if (hand && hand.grabOrigin.origin instanceof ScriptsMorph) {
                 hand.grabOrigin.origin.clearDropInfo();
@@ -1141,13 +1205,25 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
             }
             droppedMorph.perish();
         } else {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"autre",
+        	    	valueChar:droppedMorph        	    	
+        	    	});
+	    /**
+	     * Fin Modification JML
+	     **/
+
             droppedMorph.perish();
         }
     };
 
     this.palette.contents.reactToDropOf = function (droppedMorph) {
-        // for "undrop" operation
-        if (droppedMorph instanceof BlockMorph) {
+    	        // for "undrop" operation    	
+
+        if (droppedMorph instanceof BlockMorph) {            
             droppedMorph.destroy();
         }
     };
@@ -1956,6 +2032,14 @@ IDE_Morph.prototype.refreshPalette = function (shouldIgnorePosition) {
 };
 
 IDE_Morph.prototype.pressStart = function () {
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement(type='ENV',data={type:'GREEN',detail:'button'})
+    /**
+     * Fin Modification JML
+     **/
+
     if (this.world().currentKey === 16) { // shiftClicked
         this.toggleFastTracking();
     } else {
@@ -1966,6 +2050,7 @@ IDE_Morph.prototype.pressStart = function () {
 };
 
 IDE_Morph.prototype.toggleFastTracking = function () {
+	console.log('toggle fast',this.stage.isFastTracked);
     if (this.stage.isFastTracked) {
         this.stopFastTracking();
     } else {
@@ -1974,6 +2059,7 @@ IDE_Morph.prototype.toggleFastTracking = function () {
 };
 
 IDE_Morph.prototype.toggleVariableFrameRate = function () {
+	console.log('toggle variable',StageMorph.prototype.frameRate);
     if (StageMorph.prototype.frameRate) {
         StageMorph.prototype.frameRate = 0;
         this.stage.fps = 0;
@@ -1984,6 +2070,7 @@ IDE_Morph.prototype.toggleVariableFrameRate = function () {
 };
 
 IDE_Morph.prototype.toggleSingleStepping = function () {
+	console.log('toggle step');
     this.stage.threads.toggleSingleStepping();
     this.controlBar.steppingButton.refresh();
     this.controlBar.refreshSlider();
@@ -1998,6 +2085,7 @@ IDE_Morph.prototype.toggleCameraSupport = function () {
 };
 
 IDE_Morph.prototype.startFastTracking = function () {
+	console.log('toggle startfast',this.stage.isFastTracked);
     this.stage.isFastTracked = true;
     this.stage.fps = 0;
     this.controlBar.startButton.labelString = new SymbolMorph('flash', 14);
@@ -2006,6 +2094,7 @@ IDE_Morph.prototype.startFastTracking = function () {
 };
 
 IDE_Morph.prototype.stopFastTracking = function () {
+	console.log('stop fast',this.stage.isFastTracked);
     this.stage.isFastTracked = false;
     this.stage.fps = this.stage.frameRate;
     this.controlBar.startButton.labelString = new SymbolMorph('flag', 14);
@@ -2018,6 +2107,7 @@ IDE_Morph.prototype.runScripts = function () {
 };
 
 IDE_Morph.prototype.togglePauseResume = function () {
+	console.log('toggle pause',this.stage.threads.isPaused());
     if (this.stage.threads.isPaused()) {
         this.stage.threads.resumeAll(this.stage);
     } else {
@@ -2032,6 +2122,8 @@ IDE_Morph.prototype.isPaused = function () {
 };
 
 IDE_Morph.prototype.stopAllScripts = function () {
+	console.log('stop all');
+	this.stage.threads.isPaused()
     if (this.stage.enableCustomHatBlocks) {
         this.stage.threads.pauseCustomHatBlocks =
             !this.stage.threads.pauseCustomHatBlocks;
@@ -2320,6 +2412,16 @@ IDE_Morph.prototype.instantiateSprite = function (sprite) {
 
 IDE_Morph.prototype.removeSprite = function (sprite) {
     var idx, myself = this;
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     * provenance de la suppression dans sprite.JMLfrom:
+     * 'Drop', 'Drop Icon', 'Menu', 'Remove Clone', et dans ce cas JMLblock=block d'origine 
+     **/
+    console.log('removesprite',sprite,sprite.JMLfrom);
+    /**
+     * Fin Modification JML
+     **/
+
     sprite.parts.forEach(function (part) {myself.removeSprite(part); });
     idx = this.sprites.asArray().indexOf(sprite) + 1;
     this.stage.threads.stopAllForReceiver(sprite);
@@ -6957,6 +7059,13 @@ function SpriteIconMorph(aSprite, aTemplate) {
 
 SpriteIconMorph.prototype.init = function (aSprite, aTemplate) {
     var colors, action, query, hover, myself = this;
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     **/
+    console.log('creation sprite');
+    /**
+     * Fin Modification JML
+     **/
 
     if (!aTemplate) {
         colors = [
@@ -7237,6 +7346,14 @@ SpriteIconMorph.prototype.instantiateSprite = function () {
 SpriteIconMorph.prototype.removeSprite = function () {
     var ide = this.parentThatIsA(IDE_Morph);
     if (ide) {
+	/**
+	 * Modification JML (duff,  29 déc. 2017)
+	 **/
+	console.log('supprresion sprite',this.object,this.object.from);
+	/**
+	 * Fin Modification JML
+	 **/
+
         ide.removeSprite(this.object);
     }
 };
