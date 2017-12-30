@@ -59,8 +59,11 @@ class EvenementENV(models.Model):
         ('REPR','Clic Reprise'),
         ('STOP','Clic Stop'),
         ('KEY','Evènement Clavier'),
-        ('AFFBL','Affichage Blocs'),
-        ('AFFVAR','Affichage ou non Variable'), #avec nom en option et valeur en bool        
+        ('AFFBL','Affichage Blocs'), # category  detail?
+        ('AFFVAR','Affichage ou non Variable'), #avec nom en option et valeur en bool   
+        ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression 
+        ('UNDROP','Undrop'), #origine dans detail
+        ('REDROP','Redrop'),    
         ('AUTRE','(Non identifié)'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
