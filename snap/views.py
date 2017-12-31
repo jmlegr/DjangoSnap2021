@@ -160,7 +160,7 @@ def model_form_upload(request):
             instance=form.save(commit=False)
             instance.user=request.user
             instance.save()
-            return HttpResponse(json.dumps({'success': True,'file':instance.document.name}), content_type="application/json")
+            return HttpResponse(json.dumps({'success': True,'id':instance.id}), content_type="application/json")
     #else:
     #    form = DocumentForm()
     #return render(request, 'model_form_upload.html', {

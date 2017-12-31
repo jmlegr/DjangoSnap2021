@@ -3182,6 +3182,10 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem('Project notes...', 'editProjectNotes');
     menu.addLine();
     menu.addPair('New', 'createNewProject', '^N');
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    
     //menu.addPair('Open...', 'openProjectsBrowser', '^O');
     //menu.addPair('Save', "save", '^S');
     //menu.addItem('Save As...', 'saveProjectsBrowser');
@@ -3199,7 +3203,8 @@ IDE_Morph.prototype.projectMenu = function () {
                                 dataType: "xml",
                                 success: function upon_success(xml) {
                                 	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
-                                	sendEvt({type:"LOAD",click:false,detail:name},url='env/');
+                                	sendEvenement('EPR',{type:'LOAD',detail:name});
+                                	//sendEvt({type:"LOAD",click:false,detail:name},url='env/');
                                    var target=world.hand.morphAtPointer(),
                                    xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
                                    while (!target.droppedText) {
@@ -3236,7 +3241,9 @@ IDE_Morph.prototype.projectMenu = function () {
     		            			url: "fichier/" + file_id,
     		            			dataType: "xml",
     		            			success: function upon_success(xml) {
-    		            				var name=xml.getElementsByTagName('project')[0].attributes['name'].value;    
+    		            			    	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
+    		            			    	sendEvenement('EPR',{type:'LOAD',detail:file_id});
+		            				
     		            				//console.log('xml recu',xml);
     		            				var target=world.hand.morphAtPointer(),
     		            				xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
@@ -3290,6 +3297,11 @@ IDE_Morph.prototype.projectMenu = function () {
             'Sauvegarder une version du programme',
             shiftClicked ? new Color(100, 0, 0) : null
         );
+
+    /**
+     * Fin Modification JML
+     **/
+
     menu.addLine();   
     menu.addItem(
         'Import...',
@@ -3975,7 +3987,9 @@ IDE_Morph.prototype.rawSaveProject = function (name) {
     }
 };
 
-
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
 IDE_Morph.prototype.exportProjectToDjango = function (name, plain) {
     // Export project XML, saving a file to disk
     // newWindow requests displaying the project in a new tab.
@@ -3999,6 +4013,11 @@ IDE_Morph.prototype.exportProjectToDjango = function (name, plain) {
         }
     }
 };
+
+/**
+ * Fin Modification JML
+ **/
+
 
 IDE_Morph.prototype.exportProject = function (name, plain) {
     // Export project XML, saving a file to disk

@@ -75,7 +75,8 @@
 		        },
 		        success: function (response) {
 		            //$('.upload-progress').hide();
-		            console.log('reponse',response);		            
+		            sendEvenement('EPR',{type:'SAVE',detail:response.id});
+		            //console.log('reponse',response);		            
 		        },
 		        error: function(response) {
 		            console.log("error", response);

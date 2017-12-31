@@ -86,9 +86,9 @@ class SnapProcess(models.Model):
     """
         Process de Snap
     """
-    receiver=models.CharField(max_length=30) #lutin en cause
-    topBlockSelector=models.CharField(max_length=30) #slector du bloc du haut
-    topBlockId=models.PositiveIntegerField() # id du bloc du haut
+    receiver=models.CharField(max_length=30,null=True) #lutin en cause
+    topBlockSelector=models.CharField(max_length=30,null=True,) #slector du bloc du haut
+    topBlockId=models.PositiveIntegerField(null=True) # id du bloc du haut
     click=models.BooleanField(default=False) #lancement arret sur clic du script
     errorFlag=models.BooleanField(default=False)
     class Meta:
@@ -102,6 +102,7 @@ class EvenementEPR(SnapProcess):
     EPR_CHOICES=(
         ('NEW','Nouveau programme vide'),
         ('LOAD','Programme chargé'),
+        ('SAVE','Programme sauvegardé'),
         ('START','Lancement'),
         ('STOP','Arrêt'), #arrêt manuel
         ('FIN','Terminaison'),
