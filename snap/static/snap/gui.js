@@ -610,7 +610,17 @@ IDE_Morph.prototype.createControlBar = function () {
     button = new ToggleButtonMorph(
         null, //colors,
         myself, // the IDE is the target
-        'toggleStageSize',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//'toggleStageSize',
+        function() {
+            sendEvenement('ENV',{type:myself.isSmallStage?'NSCRN':'SSCRN',detail:'button'});
+            this.toggleStageSize();
+        },
+	/**
+	 * Fin Modification JML
+	 **/
         [
             new SymbolMorph('smallStage', 14),
             new SymbolMorph('normalStage', 14)
@@ -642,7 +652,18 @@ IDE_Morph.prototype.createControlBar = function () {
     button = new ToggleButtonMorph(
         null, //colors,
         myself, // the IDE is the target
-        'toggleAppMode',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //'toggleAppMode',
+        function(){
+          sendEvenement('ENV',{type:myself.isAppMode?'APP':'FULL',detail:'button'});
+          this.toggleAppMode();
+        },
+	/**
+	 * Fin Modification JML
+	 **/
+
         [
             new SymbolMorph('fullScreen', 14),
             new SymbolMorph('normalScreen', 14)
@@ -801,7 +822,22 @@ IDE_Morph.prototype.createControlBar = function () {
         6,
         'horizontal'
     );
-    slider.action = function (num) {
+    slider.action = function (num) {	        
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //on envoie l'évènement qu'une fois le slider fixé
+        var id=setTimeout(function(){
+            	sendEvenement('ENV',{type:'SBS',detail:'slider',valueInt:num});
+            	slider.ancId=null;
+        	},500); //delay is in milliseconds 
+        if (slider.ancId) {
+            clearTimeout(slider.ancId);
+        }
+        slider.ancId=id;    	
+	/**
+	 * Fin Modification JML
+	 **/
         Process.prototype.flashTime = (num - 1) / 100;
         myself.controlBar.refreshResumeSymbol();
     };
@@ -815,7 +851,17 @@ IDE_Morph.prototype.createControlBar = function () {
     // projectButton
     button = new PushButtonMorph(
         this,
-        'projectMenu',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //'projectMenu',
+        function() {
+            sendEvenement('ENV',{type:'MENU',detail:'button',valueChar:'projectMenu'});
+            this.projectMenu();
+        },        
+	/**
+	 * Fin Modification JML
+	 **/        
         new SymbolMorph('file', 14)
         //'\u270E'
     );
@@ -839,7 +885,19 @@ IDE_Morph.prototype.createControlBar = function () {
     // settingsButton
     button = new PushButtonMorph(
         this,
-        'settingsMenu',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//'settingsMenu',
+        function() {
+            sendEvenement('ENV',{type:'MENU',detail:'button',valueChar:'settingsMenu'});
+            this.settingsMenu();
+        },
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
         new SymbolMorph('gears', 14)
         //'\u2699'
     );
@@ -2070,7 +2128,14 @@ IDE_Morph.prototype.toggleVariableFrameRate = function () {
 };
 
 IDE_Morph.prototype.toggleSingleStepping = function () {
-	console.log('toggle step');
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/   
+    sendEvenement(type='ENV',data={type:'SBS',detail:'button',valueBool:!Process.prototype.enableSingleStepping});
+    /**
+     * Fin Modification JML
+     **/
+
     this.stage.threads.toggleSingleStepping();
     this.controlBar.steppingButton.refresh();
     this.controlBar.refreshSlider();
@@ -2107,7 +2172,17 @@ IDE_Morph.prototype.runScripts = function () {
 };
 
 IDE_Morph.prototype.togglePauseResume = function () {
-	console.log('toggle pause',this.stage.threads.isPaused());
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/    
+    evt=this.stage.threads.isPaused()?'REPR':'PAUSE';
+    sendEvenement(type='ENV',data={type:evt,detail:'button'});
+   
+    /**
+     * Fin Modification JML
+     **/
+
+    
     if (this.stage.threads.isPaused()) {
         this.stage.threads.resumeAll(this.stage);
     } else {
@@ -2122,8 +2197,14 @@ IDE_Morph.prototype.isPaused = function () {
 };
 
 IDE_Morph.prototype.stopAllScripts = function () {
-	console.log('stop all');
-	this.stage.threads.isPaused()
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement(type='ENV',data={type:'STOP',detail:'button',valueChar:'all'});
+    /**
+     * Fin Modification JML
+     **/
+
     if (this.stage.enableCustomHatBlocks) {
         this.stage.threads.pauseCustomHatBlocks =
             !this.stage.threads.pauseCustomHatBlocks;
@@ -2731,8 +2812,11 @@ IDE_Morph.prototype.settingsMenu = function () {
             'check for higher resolution,\nuses more computing resources'
         );
     }
-    /* modif jml
-    addPreference(
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+    **/  
+
+    /*addPreference(
         'Input sliders',
         'toggleInputSliders',
         MorphicPreferences.useSliderForInput,
@@ -2754,8 +2838,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         this.stage.isFastTracked,
         'uncheck to run scripts\nat normal speed',
         'check to prioritize\nscript execution'
-    );
-    */
+    );    
     addPreference(
         'Visible stepping',
         'toggleSingleStepping',
@@ -2763,8 +2846,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'uncheck to turn off\nvisible stepping',
         'check to turn on\n visible stepping (slow)',
         false
-    );
-    /* modif jml
+    );    
     addPreference(
         'Ternary Boolean slots',
         function () {
@@ -2951,8 +3033,10 @@ IDE_Morph.prototype.settingsMenu = function () {
         'uncheck to disable support\nfor first-class sprites',
         'check to enable support\n for first-class sprite',
         true
-    );
-    */
+    );*/    
+    /**
+     * Fin Modification JML
+     **/
     addPreference(
         'Keyboard Editing',
         function () {
@@ -4889,7 +4973,14 @@ IDE_Morph.prototype.toggleAppMode = function (appMode) {
         this.controlBar.setColor(this.color);
         this.controlBar.appModeButton.refresh();
         elements.forEach(function (e) {
-            e.hide();
+            /**
+	     * Modification JML (duff,  30 déc. 2017)
+	     **/
+            //e.hide(); bizarre.. une element undifined rajouté par erreur?
+            if (e) e.hide();
+	    /**
+	     * Fin Modification JML
+	     **/            
         });
         world.children.forEach(function (morph) {
             if (morph instanceof DialogBoxMorph) {
@@ -8343,7 +8434,7 @@ SoundIconMorph.prototype.userMenu = function () {
 };
 
 
-SoundIconMorph.prototype.renameSound = function () {
+SoundIconMorph.prototype.stSound = function () {
     var sound = this.object,
         ide = this.parentThatIsA(IDE_Morph),
         myself = this;

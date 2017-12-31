@@ -179,12 +179,21 @@ function ThreadManager() {
 }
 
 ThreadManager.prototype.pauseCustomHatBlocks = false;
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
 
-ThreadManager.prototype.toggleProcess = function (block, receiver) {
+//ThreadManager.prototype.toggleProcess = function (block, receiver) {
+
+ThreadManager.prototype.toggleProcess = function (block, receiver,click=false) {
+/**
+ * Fin Modification JML
+ **/
+
     /**
      * Modification JML (duff,  29 déc. 2017)
      **/
-    console.log('toggle',block,receiver);
+    //console.log('toggle',block,receiver,click);
     /**
      * Fin Modification JML
      **/
@@ -194,12 +203,14 @@ ThreadManager.prototype.toggleProcess = function (block, receiver) {
 	/**
 	 * Modification JML (duff,  29 déc. 2017)
 	 **/
-	console.log('stop:',active);
+	//console.log('stop:',active);
+	//active.stop();
+	active.stop(click);
 	/**
 	 * Fin Modification JML
 	 **/
 
-        active.stop();
+        
     } else {
         return this.startProcess(block, receiver, null, null, null, true);
     }
@@ -228,7 +239,7 @@ ThreadManager.prototype.startProcess = function (
     newProc = new Process(top, receiver, callback, isClicked);
     newProc.exportResult = exportResult;
     newProc.isClicked = isClicked || false;
-
+   
     // show a highlight around the running stack
     // if there are more than one active processes
     // for a block, display the thread count
@@ -249,11 +260,13 @@ ThreadManager.prototype.startProcess = function (
      * Modification JML (duff,  30 déc. 2017)
      **/
     var click=isClicked?isClicked:false
-	console.log('start',top,receiver,isClicked?isClicked:false);
-    	console.log('process:',newProc,this.processes);
-    	//envoyer run+liste des processes (numero,receiver,topblock,nb processes)
-	//sendEvt({type:"RUN",click:isClicked?isClicked:false,detail:receiver.name},url='epr/');
-    
+    liste="";
+    this.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
+    sendEvenement('EPR',{type:'START',receiver:receiver.name,
+    	    topBlockId:top.JMLid, topBlockSelector:top.selector,
+    	    click:click,
+    	    processes:liste
+    	    });
     /**
      * Fin Modification JML
      **/
@@ -262,8 +275,7 @@ ThreadManager.prototype.startProcess = function (
 };
 
 ThreadManager.prototype.stopAll = function (excpt) {
-    // excpt is optional
-	console.log('stopAll');
+    // excpt is optional    
     this.processes.forEach(function (proc) {
         if (proc !== excpt) {
             proc.stop();
@@ -273,7 +285,7 @@ ThreadManager.prototype.stopAll = function (excpt) {
 
 ThreadManager.prototype.stopAllForReceiver = function (rcvr, excpt) {
     // excpt is optional
-	console.log('stopall for receiver');
+	//console.log('stopall for receiver',excpt);
     this.processes.forEach(function (proc) {
         if (proc.homeContext.receiver === rcvr && proc !== excpt) {
             proc.stop();
@@ -288,7 +300,7 @@ ThreadManager.prototype.stopAllForBlock = function (aTopBlock) {
     /**
      * Modification JML (duff,  29 déc. 2017)
      **/
-    console.log('stopAll',aTopBlock,aTopBlock.JMLfrom);
+    //console.log('stopAll',aTopBlock,aTopBlock.JMLfrom);
     /**
      * Fin Modification JML
      **/
@@ -300,14 +312,14 @@ ThreadManager.prototype.stopAllForBlock = function (aTopBlock) {
 
 ThreadManager.prototype.stopProcess = function (block, receiver) {
     var active = this.findProcess(block, receiver);
-    console.log('stopProcess');
+    //console.log('stopProcess',active,bloc,receiver);
     if (active) {
         active.stop();
     }
 };
 
 ThreadManager.prototype.pauseAll = function (stage) {
-	console.log('pause all');
+	//console.log('pause all');
     this.processes.forEach(function (proc) {
         proc.pause();
     });
@@ -322,7 +334,7 @@ ThreadManager.prototype.isPaused = function () {
 };
 
 ThreadManager.prototype.resumeAll = function (stage) {
-	console.log('resume all');
+	//console.log('resume all');
     this.processes.forEach(function (proc) {
         proc.resume();
     });
@@ -372,6 +384,21 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
         var result,
             glow;
         if ((!proc.isRunning() && !proc.errorFlag) || proc.isDead) {
+            /**
+	     * Modification JML (duff,  31 déc. 2017)
+	     **/
+            //c'est un arrêt normal (non déclenché) si readyToTerminate est faux
+            if (!proc.readyToTerminate) {
+        	sendEvenement('EPR',{type:'FIN', receiver:proc.receiver.name,
+        	    topBlockSelector:proc.topBlock.selector,
+        	    topBlockId:proc.topBlock.JMLid,
+        	});
+            }
+            
+	    /**
+	     * Fin Modification JML
+	     **/
+
             if (proc.topBlock instanceof BlockMorph) {
                 proc.unflash();
                 // adjust the thread count indicator, if any
@@ -670,8 +697,28 @@ Process.prototype.runStep = function (deadline) {
         }
     }
 };
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
 
-Process.prototype.stop = function () {
+//Process.prototype.stop = function () {
+Process.prototype.stop = function (click=false) {
+/**
+ * Fin Modification JML
+ **/
+
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    sendEvenement('EPR',{type:'STOP',receiver:this.receiver.name,
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	click:click
+	});
+    
+    /**
+     * Fin Modification JML
+     **/
+
     this.readyToYield = true;
     this.readyToTerminate = true;
     this.errorFlag = false;
@@ -684,6 +731,16 @@ Process.prototype.pause = function () {
     if (this.readyToTerminate) {
         return;
     }
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    sendEvenement('EPR',{type:'PAUSE',receiver:this.receiver.name,
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	});
+    /**
+     * Fin Modification JML
+     **/
+
     this.isPaused = true;
     this.flashPausedContext();
     if (this.context && this.context.startTime) {
@@ -695,6 +752,15 @@ Process.prototype.resume = function () {
     if (!this.enableSingleStepping) {
         this.unflash();
     }
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    sendEvenement('EPR',{type:'REPR',receiver:this.receiver.name,
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	});
+    /**
+     * Fin Modification JML
+     **/
     this.isPaused = false;
     this.pauseOffset = null;
 };

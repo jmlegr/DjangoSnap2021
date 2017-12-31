@@ -2170,6 +2170,13 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         button = new PushButtonMorph(
             null,
             function () {
+        	/**
+		 * Modification JML (duff,  30 déc. 2017)
+		 **/
+		sendEvenement('ENV',{type:'POPUP',detail:'button',valueChar:'addVariable'});
+		/**
+		 * Fin Modification JML
+		 **/
                 new VariableDialogMorph(
                     null,
                     addVar,
@@ -2191,6 +2198,13 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             button = new PushButtonMorph(
                 null,
                 function () {
+                    /**
+                     * Modification JML (duff,  30 déc. 2017)
+    		    **/
+    		    sendEvenement('ENV',{type:'POPUP',detail:'button',valueChar:'deleteVariable'});
+    		    /**
+    		     * Fin Modification JML
+    		    **/
                     var menu = new MenuMorph(
                         myself.deleteVariable,
                         null,
@@ -2339,9 +2353,24 @@ SpriteMorph.prototype.makeBlock = function () {
             each.setColor(clr);
         each.refresh();
         });
-    }
+    }    
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement('ENV',{type:'POPUP',detail:'button',valueChar:'MakeABlock'});
+    /**
+     * Fin Modification JML
+     **/
+
     dlg.prompt(
-        'Make a block',
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	**/
+	//'Make a block',
+	localize('Make a block'),
+	/**
+	 * Fin Modification JML
+	**/
         null,
         myself.world()
     );

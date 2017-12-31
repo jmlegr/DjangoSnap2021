@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import validate_comma_separated_integer_list
 
 
 def user_directory_path(instance, filename):
@@ -81,14 +82,27 @@ class EvenementENV(models.Model):
     class Meta:
         ordering=('-evenement__creation',)
 
-class EvenementEPR(models.Model):
+class SnapProcess(models.Model):
+    """
+        Process de Snap
+    """
+    receiver=models.CharField(max_length=30) #lutin en cause
+    topBlockSelector=models.CharField(max_length=30) #slector du bloc du haut
+    topBlockId=models.PositiveIntegerField() # id du bloc du haut
+    click=models.BooleanField(default=False) #lancement arret sur clic du script
+    errorFlag=models.BooleanField(default=False)
+    class Meta:
+        abstract = True
+        ordering = ['receiver','+topBlockId']
+    
+class EvenementEPR(SnapProcess):
     """
         Evenement lié à la modification de l'état du programme
     """
     EPR_CHOICES=(
         ('NEW','Nouveau programme vide'),
         ('LOAD','Programme chargé'),
-        ('RUN','Lancement'),
+        ('START','Lancement'),
         ('STOP','Arrêt'), #arrêt manuel
         ('FIN','Terminaison'),
         ('PAUSE','Pause'),
@@ -97,10 +111,9 @@ class EvenementEPR(models.Model):
         ('AUTRE','(Non identifié)'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
-    type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement
-    click=models.BooleanField()
+    type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement    
     detail=models.CharField(max_length=30,null=True,blank=True)
-    #block=models.ForeignKey(Block,on_delete=models.CASCADE)
+    processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
     def __str__(self):
         return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
     

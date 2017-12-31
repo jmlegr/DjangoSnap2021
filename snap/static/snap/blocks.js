@@ -176,12 +176,21 @@ var ArgLabelMorph;
 var TextSlotMorph;
 var ScriptFocusMorph;
 
+
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
 ///ajout unique id
 var objIdMap=new WeakMap, objectCount = 0;
 function objectId(object){
   if (!objIdMap.has(object)) objIdMap.set(object,++objectCount);
   return objIdMap.get(object);
 }
+/**
+ * Fin Modification JML
+ **/
+
+
 
 // SyntaxElementMorph //////////////////////////////////////////////////
 
@@ -308,6 +317,15 @@ SyntaxElementMorph.prototype.init = function (silently) {
 
     this.defaults = [];
     this.cachedInputs = null;
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    // ajout d'un id unique
+    this.JMLid=objectId(this);    
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 // SyntaxElementMorph accessing:
@@ -2375,6 +2393,14 @@ BlockMorph.prototype.userMenu = function () {
     function renameVar() {
         var blck = myself.fullCopy();
         blck.addShadow();
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	sendEvenement('ENV',{type:'POPUP',detail:'menu block',valueChar:'renameVar'});
+	/**
+	 * Fin Modification JML
+	 **/
+
         new DialogBoxMorph(
             myself,
             myself.userSetSpec,
@@ -2413,6 +2439,14 @@ BlockMorph.prototype.userMenu = function () {
                 menu.addItem(
                     'rename...',
                     function () {
+                	/**
+			 * Modification JML (duff,  30 déc. 2017)
+			 **/
+
+                	console.log('blokcs 2416)');			
+			/**
+			 * Fin Modification JML
+			 **/
                         myself.refactorThisVar(true); // just the template
                     },
                     'rename only\nthis reporter'
@@ -2459,7 +2493,7 @@ BlockMorph.prototype.userMenu = function () {
                     menu.addLine();
                     menu.addItem(
                         'rename...',
-                        function () {
+                        function () {                           
                             myself.refactorThisVar(true); // just the template
                         },
                         'rename only\nthis reporter'
@@ -3255,6 +3289,15 @@ BlockMorph.prototype.refactorThisVar = function (justTheTemplate) {
     var receiver = this.scriptTarget(),
         oldName = this.instantiationSpec || this.blockSpec,
         cpy = this.fullCopy();
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement('ENV',{type:'POPUP',detail:'menu palette',
+	valueChar:'renameVariable',valueBool:justTheTemplate?false:true});
+    
+    /**
+     * Fin Modification JML
+     **/
 
     cpy.addShadow();
 
@@ -3876,7 +3919,16 @@ BlockMorph.prototype.mouseClickLeft = function () {
     if (receiver) {
         stage = receiver.parentThatIsA(StageMorph);
         if (stage) {
-            stage.threads.toggleProcess(top, receiver);
+            /**
+	     * Modification JML (duff,  31 déc. 2017)
+	     **/
+            //stage.threads.toggleProcess(top, receiver);
+            stage.threads.toggleProcess(top, receiver,true);
+	    /**
+	     * Fin Modification JML
+	     **/
+
+            
         }
     }
 };
@@ -6394,6 +6446,13 @@ ScriptsMorph.prototype.userMenu = function () {
         menu.addItem(
             'make a block...',
             function () {
+        	/**
+        	 * Modification JML (duff,  30 déc. 2017)
+        	 **/
+		sendEvenement('ENV',{type:'POPUP',valueChar:'MakeABlock',detail:'menu'});
+		/**
+		 * Fin Modification JML
+		**/
                 new BlockDialogMorph(
                     null,
                     function (definition) {
@@ -6404,13 +6463,20 @@ ScriptsMorph.prototype.userMenu = function () {
                                 obj.customBlocks.push(definition);
                             }
                             ide.flushPaletteCache();
-                            ide.refreshPalette();
+                            ide.refreshPalette();                            
                             new BlockEditorMorph(definition, obj).popUp();
                         }
                     },
                     myself
                 ).prompt(
-                    'Make a block',
+                    /**
+		     * Modification JML (duff,  30 déc. 2017)
+		     **/
+                    //'Make a block',
+                    localize('Make a block'),
+		    /**
+		     * Fin Modification JML
+		     **/
                     null,
                     myself.world()
                 );
@@ -6539,7 +6605,7 @@ ScriptsMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
 	    data={type:'UNDROP',detail:origine,
 	    	key:key,clic:clic,
 	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
-	    	valueInt:this.dropRecord.lastDroppedBlock.id
+	    	valueInt:this.dropRecord.lastDroppedBlock.JMLid
 	    	});    
     /**
      * Fin Modification JML
@@ -6586,7 +6652,7 @@ ScriptsMorph.prototype.redrop = function (origine=null,key=false,clic=false) {
 	    data={type:'REDROP',detail:origine,
 	    	key:key,clic:clic,
 	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
-	    	valueInt:this.dropRecord.lastDroppedBlock.id
+	    	valueInt:this.dropRecord.lastDroppedBlock.JMLid
 	    	});    
     /**
      * Fin Modification JML
@@ -6738,7 +6804,7 @@ ScriptsMorph.prototype.donnee = function(record) {
 	console.info('record',record);	
 	if (record.lastDroppedBlock) {
     	this.lastDroppedBlock={
-    		id: record.lastDroppedBlock.id,    
+    		id: record.lastDroppedBlock.JMLid,    
     		blockSpec: record.lastDroppedBlock.blockSpec,
     		category: record.lastDroppedBlock.category,
     		bounds: record.lastDroppedBlock.bounds,
@@ -6810,13 +6876,19 @@ ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
         lastRecord: this.dropRecord,
         nextRecord: null        
     };
-     //si le block n'a pas encore d'id, il est nouvellement créé
-     if (record.lastDroppedBlock && !record.lastDroppedBlock.id) {
-     	
-    	 //record.lastDroppedBlock.id=record.lastDroppedBlock.lastTime;
-    	record.lastDroppedBlock.id=objectId(record.lastDroppedBlock);
+     /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+     //si le block n'a pas encore d'id de drop, c'est qu' il est nouvellement créé
+     if (record.lastDroppedBlock && !record.lastDroppedBlock.JMLdroppedId) {    
+    	record.lastDroppedBlock.JMLid=objectId(record.lastDroppedBlock);
+    	record.lastDroppedBlock.JMLdroppedId=objectId(record.lastDroppedBlock);
      	record.action="creation";
      }
+    
+    /**
+     * Fin Modification JML
+     **/
     if (this.dropRecord) {
         this.dropRecord.nextRecord = record;
     }
