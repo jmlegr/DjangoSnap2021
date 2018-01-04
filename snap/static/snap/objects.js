@@ -1851,7 +1851,18 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         var ide;
         if (pair) {
             if (myself.isVariableNameInUse(pair[0], pair[1])) {
-            	sendJsonData({action:'erreur',type:'creation variable existante',globale:pair[1],valeur:pair[0]});
+        	/**
+		 * Modification JML (duff,  4 janv. 2018)
+		 **/
+        	sendEvenement('SPR',{type:'ERR',detail:'creation variable existante ('+
+        	    pair[0]+pair[1]?"-globale":'locale'+')'});
+        	
+        	//sendJsonData({action:'erreur',type:,globale:pair[1],valeur:pair[0]});
+		/**
+		 * Fin Modification JML
+		 **/
+
+            	
                 myself.inform('that name is already in use');
             } else {
                 ide = myself.parentThatIsA(IDE_Morph);
@@ -3068,7 +3079,15 @@ SpriteMorph.prototype.addVariable = function (name, isGlobal) {
         this.variables.addVar(name);
         this.blocksCache.variables = null;
     }
-    sendJsonData({action:'creation',type:'variable',globale:isGlobal,valeur:name});
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    sendEvenement('SPR',{type:isGlobal?'NEWVAR':'NEWVARL',detail:name});
+    //sendJsonData({action:'creation',type:'variable',globale:isGlobal,valeur:name});    
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 SpriteMorph.prototype.deleteVariable = function (varName) {
@@ -3082,7 +3101,15 @@ SpriteMorph.prototype.deleteVariable = function (varName) {
         ide.flushBlocksCache('variables'); // b/c the var could be global
         ide.refreshPalette();
     }
-    sendJsonData({action:'delete',type:'variable',valeur:varName});
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    sendEvenement('SPR',{type:'DELVAR',detail:varName});
+    //sendJsonData({action:'delete',type:'variable',valeur:varName});    
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 // SpriteMorph costume management
@@ -6750,14 +6777,21 @@ StageMorph.keyanc=null;
 StageMorph.prototype.processKeyEvent = function (event, action) {
     var keyName;
 
-    // ajout jml
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
     // pour n'envoyer un evenement keydown sur le serveur que si c'est le permier appui
     if (event.type=='keydown' && !this.keyanc) {
     	this.keyanc=event.keyCode;
-    	console.log('keydown:',this.keyanc);
-    } else if (event.type=='keyup') {this.keyanc=null; console.log('ann')};
+    	//console.log('keydown:',this.keyanc);
+    } else if (event.type=='keyup') {this.keyanc=null; };
     //console.log('process key',event.type,event.keyCode,action);
     //fin jml
+    
+    /**
+     * Fin Modification JML
+     **/
+
     // this.inspectKeyEvent(event);
     switch (event.keyCode) {
     case 13:
@@ -6800,10 +6834,15 @@ StageMorph.prototype.fireKeyEvent = function (key) {
         procs = [],
         ide = this.parentThatIsA(IDE_Morph),
         myself = this;
-    //ajout jml
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
     //console.log('key',key);
     //sendEvt({key:evt});
-    //fin jml
+    sendEvenement('ENV',{type:'KEY',key:true,detail:evt});
+    /**
+     * Fin Modification JML
+     **/
     this.keysPressed[evt] = true;
     if (evt === 'ctrl enter') {
         return this.fireGreenFlagEvent();

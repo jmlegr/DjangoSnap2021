@@ -702,7 +702,7 @@ Process.prototype.runStep = function (deadline) {
  **/
 
 //Process.prototype.stop = function () {
-Process.prototype.stop = function (click=false) {
+Process.prototype.stop = function (click=false,onError=false) {
 /**
  * Fin Modification JML
  **/
@@ -710,10 +710,15 @@ Process.prototype.stop = function (click=false) {
     /**
      * Modification JML (duff,  31 déc. 2017)
      **/
-    sendEvenement('EPR',{type:'STOP',receiver:this.receiver.name,
-	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
-	click:click
-	});
+    if (onError) {
+	//c'est le handelError qui se charge de l'envoi
+
+    } else {
+	sendEvenement('EPR',{type:'STOP',receiver:this.receiver.name,
+	    topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	    click:click
+		});
+    }
     
     /**
      * Fin Modification JML
@@ -1068,10 +1073,30 @@ Process.prototype.expectReport = function () {
 
 Process.prototype.handleError = function (error, element) {
     var m = element;
-    this.stop();
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    //this.stop();
+    this.stop(false,true);    
+    /**
+     * Fin Modification JML
+     **/
+
     this.errorFlag = true;
     this.topBlock.addErrorHighlight();
     if (isNil(m) || isNil(m.world())) {m = this.topBlock; }
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    sendEvenement('EPR',{type:'ERR',receiver:this.receiver.name,
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid, 
+	detail:(m === element ? '' : 'Inside: ')    
+        + error.name+ ' : '+ error.message
+		});
+    /**
+     * Fin Modification JML
+     **/
+
     m.showBubble(
         (m === element ? '' : 'Inside: ')
             + error.name

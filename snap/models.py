@@ -64,14 +64,15 @@ class EvenementENV(models.Model):
         ('AFFVAR','Affichage ou non Variable'), #avec nom en option et valeur en bool   
         ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression 
         ('UNDROP','Undrop'), #origine dans detail
-        ('REDROP','Redrop'),    
+        ('REDROP','Redrop'),   
+        ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) 
         ('AUTRE','(Non identifié)'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
     type=models.CharField(max_length=6,choices=ENV_CHOICES, default='AUTRE') #type d'évènement
     click=models.BooleanField(default=False)
     key=models.BooleanField(default=False)    
-    detail=models.CharField(max_length=30,null=True,blank=True)
+    detail=models.CharField(max_length=100,null=True,blank=True)
     valueBool=models.NullBooleanField(null=True)
     valueInt=models.IntegerField(null=True)
     valueChar=models.CharField(max_length=30,null=True,blank=True)
@@ -113,7 +114,7 @@ class EvenementEPR(SnapProcess):
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
     type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement    
-    detail=models.CharField(max_length=30,null=True,blank=True)
+    detail=models.CharField(max_length=100,null=True,blank=True)
     processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
     def __str__(self):
         return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
@@ -121,7 +122,65 @@ class EvenementEPR(SnapProcess):
     class Meta:
         ordering=('-evenement__creation',)
 
-       
+class BlockInput(models.Model):
+    """
+        Entrée d'une brique
+    """
+    JMLid=models.IntegerField(null=True) #JMLid du block en cause
+    typeMorph=models.CharField(max_length=30,null=True,blank=True)
+    rang=models.IntegerField(default=0) #rang de l'entrée
+    contenu=models.CharField(max_length=30,null=True,blank=True)#contenu de l'entrée
+    isNumeric=models.BooleanField(default=True) 
+    isPredicate=models.BooleanField(default=False)
+    
+class EvenementSPR(models.Model):
+    """
+        Evenement lié à la modification de la structure du programme
+        pour des raisons d'efficacité à l'enregistrement,
+        on ne crée les inputs que lors de la création de la brique,
+        ou lors du changement d'une entrée. On pourra les retrouver ensuite.
+    """
+    SPR_CHOICES=(
+        ('DROP','Déplacement d\'une brique'), #si insertion, droppedTarget indiqué, location=
+        ('NEW','Création d\'une brique'),                 
+        ('DEL','Suppression d\'une brique'),
+        ('NEWVAR','Création nouvelle variable globale'), #nom dans detail
+        ('NEWVARL','Création nouvelle variable locale'), #nom dans detail
+        ('DELVAR','Suppression variable'), #nom dans detail
+        ('RENVAR','renommage variable'), #nouveau nom dans detail, ancien dans location
+        ('RENVARL','renommage variable locale'), #nouveau nom dans detail, ancien dans location
+        ('RENVARB','renommage variable de bloc'), #nouveau nom dans detail, ancien dans location
+        ('RENVAT','renommage variable, juste le template'), #nouveau nom dans detail, ancien dans location
+        ('RENVATL','renommage variable locale, juste le template'), #nouveau nom dans detail, ancien dans location
+        ('RENVATB','renommage variable de bloc, juste le template'), #nouveau nom dans detail, ancien dans location
+        ('VAL','Changement d\'une valeur'), # on renvois le blockmorph, id de l'entrée dans detailAction 
+        ('+IN','Ajout d\'une entrée'),
+        ('-IN','Suppression d\'une entrée'),
+        ('NEWVAL','Création et insertion d\'une entrée'), #création + remplacement d'une entrée existante (id remplacée dans détailAction
+        ('DROPVAL','Déplacement et insertion d\'une entrée'), #déplacement + remplacement d'une entrée existante (id remplacée dans détailAction
+        ('ERR','Erreur'), #erreur détectée, précision dans détail
+        ('AUTRE','(Non identifié'),
+        )
+    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
+    type=models.CharField(max_length=7,choices=SPR_CHOICES, default='AUTRE') #type d'évènement    
+    detail=models.CharField(max_length=100,null=True,blank=True)
+    location=models.CharField(max_length=30,null=True,blank=True)
+    #Informations sur le block
+    blockId=models.IntegerField(null=True) #JMLid du block en cause
+    typeMorph=models.CharField(max_length=30,null=True,blank=True) #type du block
+    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block
+    blockSpec=models.CharField(max_length=30,null=True,blank=True) #blockSpec du block
+    category=models.CharField(max_length=30,null=True,blank=True) #categorie du block
+    parentId=models.IntegerField(null=True) #JMLid du block parent (ou lieu d'insertion)
+    nextBlockId=models.IntegerField(null=True) #JMLid du block suivant
+    childId=models.IntegerField(null=True) #JMLid du block enfant (si wrap)
+    inputs=models.ManyToManyField(BlockInput,null=True, related_name='evenementSPR') #entrée(s) du block
+    def __str__(self):
+        return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
+    
+    class Meta:
+        ordering=('-evenement__creation',)
+    
 class InfoReceived(models.Model):
     block_id=models.IntegerField()
     time=models.IntegerField()

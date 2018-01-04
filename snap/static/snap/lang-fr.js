@@ -608,7 +608,7 @@ SnapTranslator.dict.fr = {
         'cacher la variable %var',
     'script variables %scriptVars':
         'variables du script %scriptVars',
-
+    
     // lists:
     'list %exp':
         'liste %exp',
@@ -923,7 +923,7 @@ SnapTranslator.dict.fr = {
     'Are you sure you want to delete':
         'Souhaitez-vous vraiment supprimer ?',
     'rename...':
-        'Renommer...',
+        'RenoMMer...',
 
      // costume editor
     'Costume Editor':
@@ -966,7 +966,11 @@ SnapTranslator.dict.fr = {
         'pour tous les lutins',
     'for this sprite only':
         'pour ce lutin uniquement',
-
+    'rename only\nthis reporter':
+	'renommer seulement le modèle',   
+    'renaSSme...': 'IJKJ',
+    'rename all...':
+    	'renommer toutes les occurences',
     // block dialog
     'Change block':
         'Changer le bloc',
