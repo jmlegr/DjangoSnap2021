@@ -25,7 +25,8 @@ SECRET_KEY = 'm*+du*&cs1d%sq@9dmk)tn%cgla-%c7l0dnrbj*(zo)v&972mi'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1','0.0.0.0','raspjml',]
+ALLOWED_HOSTS = ['localhost','127.0.0.1','0.0.0.0','raspjml',
+                 'raspjml.local', '172.16.78.8']
 
 
 # Application definition
@@ -142,6 +143,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 LOGIN_REDIRECT_URL='/login'
 STATIC_URL = '/static/'
+#STATIC_ROOT = '/webapps/homeauto_django/DjangoSnap/static/' #sur rasp
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 #STATICFILES_DIRS = [
 #    os.path.join(BASE_DIR, "static"),
