@@ -739,7 +739,7 @@ Process.prototype.pause = function () {
     /**
      * Modification JML (duff,  31 déc. 2017)
      **/
-    sendEvenement('EPR',{type:'PAUSE',receiver:this.receiver.name,
+    if (!this.isPaused) sendEvenement('EPR',{type:'PAUSE',receiver:this.receiver.name,
 	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
 	});
     /**
@@ -2364,8 +2364,17 @@ Process.prototype.doAsk = function (data) {
             function (morph) {return morph instanceof StagePrompterMorph; }
         );
         if (!activePrompter) {
-        	console.log('debut entrée');
-        	if (!isStage && !isHiddenSprite) {
+            /**
+             * Modification JML (duff,  5 janv. 2018)
+             **/
+            liste="";
+            stage.threads.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
+            sendEvenement('EPR',{type:'ASK',processes:liste})
+    	    //console.log('debut entrée');		
+            /**
+             * Fin Modification JML
+             **/
+            if (!isStage && !isHiddenSprite) {
                 rcvr.bubble(data, false, true);
             }
             this.prompter = new StagePrompterMorph(
@@ -2386,7 +2395,16 @@ Process.prototype.doAsk = function (data) {
     } else {
         if (this.prompter.isDone) {
             stage.lastAnswer = this.prompter.inputField.getValue();
-            console.log('fini:',stage.lastAnswer);
+            /**
+	     * Modification JML (duff,  5 janv. 2018)
+	     **/
+            liste="";
+            stage.threads.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
+            sendEvenement('EPR',{type:'ANSW',detail:stage.lastAnswer,processes:liste})
+            //console.log('fini:',stage.lastAnswer);
+	    /**
+	     * Fin Modification JML
+	     **/
             this.prompter.destroy();
             this.prompter = null;
             if (!isStage) {rcvr.stopTalking(); }

@@ -2637,13 +2637,13 @@ BlockMorph.prototype.userMenu = function () {
             /**
 	     * Modification JML (duff,  4 janv. 2018)
 	     **/
-            dup.printStruct();
+            //dup.printStruct();
             //dup.JMLid=objectId(dup);
             //replace=myself.JMLid+"-"+dup.JMLid+";"; //chaine de remplacement
             replace="";
             dup.allChildren().filter(function (block) {        	
                 if (block instanceof SyntaxElementMorph) {
-                    console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
+                    //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
                     replace+=block.JMLid+"-";
                     block.JMLdroppedId=null;
                     block.JMLid=objectId(block);

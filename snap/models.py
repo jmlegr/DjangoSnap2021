@@ -1,8 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import validate_comma_separated_integer_list
+from django.db.models import signals
 
 
+class Classe(models.Model):
+    nom= models.CharField(max_length=10)
+    def __str__(self):
+        return '%s' % self.nom
+    
+class Eleve(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    classe =models.ForeignKey(Classe,on_delete=models.CASCADE)
+    prg=models.ForeignKey('ProgrammeBase',null=True,blank=True,
+                          on_delete=models.CASCADE,verbose_name='Programme de la séance')
+    def __str__(self):
+        return '%s' % self.user.username
+    
+
+    
 def user_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
     return 'user_{0}/{1}'.format(instance.user.id, filename)
@@ -45,6 +61,7 @@ class EvenementENV(models.Model):
         (chargement/sauvegarde, clics divers )
     """
     ENV_CHOICES=(
+        ('LANCE','Lancement (ou relancement) de Snap'),
         ('MENU', 'Clic Menu'),
         ('PARAM','Clic Menu paramètres'),
         ('NEW','Nouveau programme vide'),
@@ -52,8 +69,10 @@ class EvenementENV(models.Model):
         ('LOVER','Chargement d\'une version sauvegardée'),
         ('IMPORT','Importation fichier local'),
         ('EXPORT','Exportation fichier local'),
-        ('FSCR','Plein écran'),
-        ('SSCR','Ecran réduit'),
+        ('FULL','Plein écran'),
+        ('APP','Ecran application'),
+        ('SSCRN','Ecran réduit'),
+        ('NSCRN','Ecran normal'),
         ('SBS','Pas à pas'),
         ('GREEN','Clic Green Flag'),
         ('PAUSE','Clic Mise en pause'),
@@ -66,6 +85,7 @@ class EvenementENV(models.Model):
         ('UNDROP','Undrop'), #origine dans detail
         ('REDROP','Redrop'),   
         ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) 
+        ('POPUP','Ouverture popup'),
         ('AUTRE','(Non identifié)'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
@@ -110,6 +130,8 @@ class EvenementEPR(SnapProcess):
         ('PAUSE','Pause'),
         ('REPR','Reprise'),
         ('ERR','Erreur'),
+        ('ASK','Demande d\'une entrée utilisateur'),
+        ('ANSW','Entrée de l\'utilisateur'), #strockée dans detail
         ('AUTRE','(Non identifié)'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
@@ -129,7 +151,7 @@ class BlockInput(models.Model):
     JMLid=models.IntegerField(null=True) #JMLid du block en cause
     typeMorph=models.CharField(max_length=30,null=True,blank=True)
     rang=models.IntegerField(default=0) #rang de l'entrée
-    contenu=models.CharField(max_length=30,null=True,blank=True)#contenu de l'entrée
+    contenu=models.CharField(max_length=50,null=True,blank=True)#contenu de l'entrée
     isNumeric=models.BooleanField(default=True) 
     isPredicate=models.BooleanField(default=False)
     
@@ -169,7 +191,7 @@ class EvenementSPR(models.Model):
     blockId=models.IntegerField(null=True) #JMLid du block en cause
     typeMorph=models.CharField(max_length=30,null=True,blank=True) #type du block
     selector=models.CharField(max_length=30,null=True,blank=True) #selector du block
-    blockSpec=models.CharField(max_length=30,null=True,blank=True) #blockSpec du block
+    blockSpec=models.CharField(max_length=50,null=True,blank=True) #blockSpec du block
     category=models.CharField(max_length=30,null=True,blank=True) #categorie du block
     parentId=models.IntegerField(null=True) #JMLid du block parent (ou lieu d'insertion)
     nextBlockId=models.IntegerField(null=True) #JMLid du block suivant
@@ -188,43 +210,7 @@ class InfoReceived(models.Model):
     blockSpec=models.CharField(max_length=100,null=True,blank=True)
     user=models.CharField(max_length=10)
     
-class Point(models.Model):
-    x=models.IntegerField()
-    y=models.IntegerField()
-    def __str__(self):
-        return '(%s,%s)' % (self.x,self.y)
-    
-class Bounds(models.Model):
-    origin=models.OneToOneField(Point,related_name='origin',on_delete=models.CASCADE)
-    corner=models.OneToOneField(Point,related_name='corner',on_delete=models.CASCADE)
-    
-class Inputs(models.Model):
-    valeur=models.CharField(max_length=30,blank=True)
-    type=models.CharField(max_length=30,blank=True)
-    def __str__(self):
-        return '%s (%s)' % (self.valeur,self.type)
-    
-class DroppedBlock(models.Model):
-    block_id=models.IntegerField()    
-    blockSpec=models.CharField(max_length=100,null=True,blank=True)
-    category=models.CharField(max_length=30,null=True,blank=True)
-    inputs=models.ManyToManyField(Inputs,null=True)
-    bounds=models.OneToOneField(Bounds,on_delete=models.CASCADE)
-    parent_id=models.IntegerField(null=True)
-    def __str__(self):
-        return '%s (%s)' % (self.blockSpec,self.block_id)
-    
-class ActionProgrammation(models.Model):
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
-    time=models.IntegerField()
-    action=models.CharField(max_length=30,null=True,blank=True)
-    sens=models.SmallIntegerField(default=0), #0: normal, -1:undo, +1:redo
-    situation=models.CharField(max_length=30,null=True,blank=True)
-    typeMorph=models.CharField(max_length=30,null=True,blank=True)
-    lastDroppedBlock=models.OneToOneField(DroppedBlock,on_delete=models.CASCADE)
-    
-    def __str__(self):
-        return '(%s) %s %s' % (self.user_id,self.time,self.action)
+   
 
 
 
@@ -232,8 +218,7 @@ class Document(models.Model):
     description = models.CharField(max_length=255, blank=True)
     user=models.ForeignKey(User,null=True,on_delete=models.CASCADE)
     document = models.FileField(upload_to=user_directory_path)
-    uploaded_at = models.DateTimeField(auto_now_add=True)    
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='Date de sauvegarde')    
     def __str__(self):
         return '{0} ({1}, {2})'.format(self.description,self.user,self.uploaded_at.strftime('%Y-%m-%d à %H:%M:%S'))
-    
-    
+

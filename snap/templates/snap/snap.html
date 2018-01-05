@@ -125,11 +125,41 @@
             
             numero_evt+=1;
             var json={
-        	    evenement:{type:type,time:time,numero:numero_evt},            
-        	    data:data
+        	    evenement:{type:type,time:time,numero:numero_evt},        	   
         	    }
-            console.info("envoi",json)
-            return false;
+            for (var k in data) json[k]=data[k];
+            console.info("envoi",json);
+            switch (type) {
+               case ('ENV'): url='env/'; break;
+               case ('SPR'): url='spr/'; break;
+               case ('EPR'): url='epr/'; break;
+               default: url='evenement/'; break;            
+            }
+            $.ajax({
+        	    url: url,
+        	    type: 'POST',
+        	    headers:{"X-CSRFToken":"{{ csrf_token }}"},
+        	    data: JSON.stringify(json),
+        	    async: true,
+        	    cache: false,
+        	    contentType: 'application/json',
+        	    dataType: 'json',
+        	    //processData: true,
+                beforeSend: function() {
+                    console.log('Uploading...',json);
+                    //$('.upload-progress').show();
+                    },
+                success: function (response) {
+                //$('.upload-progress').hide();
+                    console.log('reponse',response);                    
+                    },
+                error: function(response) {
+                    console.log("error", response);
+                    alert('oups, quelque chose n\'a pas fonctionné');
+                    $('.upload-progress').hide();
+                }
+             }); 
+            return false;            
         }
         	    
             
@@ -160,7 +190,8 @@
 				world = new WorldMorph(document.getElementById('world'));
                 world.worldCanvas.focus();
 				new IDE_Morph().openIn(world);
-        loop();
+				sendEvenement('ENV',{type:'LANCE'});
+				loop();
 			};
 			function loop() {
         requestAnimationFrame(loop);

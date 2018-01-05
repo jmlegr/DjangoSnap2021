@@ -3201,7 +3201,12 @@ IDE_Morph.prototype.projectMenu = function () {
                                 type: "GET",
                                 url: "fichier",
                                 dataType: "xml",
-                                success: function upon_success(xml) {
+                                statusCode: {
+                                    404: function() {
+                                      alert( "Programme non existant" );
+                                    }
+                                  },
+                                success: function upon_success(xml) {                                    
                                 	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
                                 	sendEvenement('EPR',{type:'LOAD',detail:name});
                                 	//sendEvt({type:"LOAD",click:false,detail:name},url='env/');

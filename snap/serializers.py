@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 from snap.models import ProgrammeBase, Evenement,  EvenementEPR,\
-    EvenementENV
+    EvenementENV,Classe , EvenementSPR, BlockInput
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -14,6 +14,10 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Group
         fields = ('url', 'name')
+
+class ClasseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Classe        
         
 class ProgrammeBaseSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -58,13 +62,33 @@ class EvenementEPRSerializer(serializers.ModelSerializer):
         evt_data=validated_data.pop('evenement')
         evt_data['type']='EPR'
         evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
-        epr=EvenementEPR.objects.create(evenement=evt,**validated_data)
+        epr=EvenementEPR.objects.create(evenement=evt,**validated_data)        
         return epr
 
 class EvenementENVSerializer(serializers.ModelSerializer):
-    evenement=EvenementSerializer(required=False)
+    evenement=EvenementSerializer(required=False)    
     class Meta:
         model=EvenementENV
+        fields='__all__'
+        #read_only_fields=('evenement',)
+    
+    def create(self, validated_data):    
+        evt_data=validated_data.pop('evenement')
+        evt_data['type']='ENV'
+        evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
+        env=EvenementENV.objects.create(evenement=evt,**validated_data)
+        return env
+
+class BlockInputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=BlockInput
+        fields='__all__'
+        
+class EvenementSPRSerializer(serializers.ModelSerializer):
+    evenement=EvenementSerializer(required=False)    
+    inputs=BlockInputSerializer(required=False, many=True)
+    class Meta:
+        model=EvenementSPR
         fields='__all__'
         #read_only_fields=('evenement',)
     
@@ -72,5 +96,9 @@ class EvenementENVSerializer(serializers.ModelSerializer):
         evt_data=validated_data.pop('evenement')
         evt_data['type']='ENV'
         evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
-        env=EvenementENV.objects.create(evenement=evt,**validated_data)
+        inputs_data=validated_data.pop('inputs',[])
+        env=EvenementSPR.objects.create(evenement=evt,**validated_data)        
+        for input_data in inputs_data:
+            inp=BlockInput.objects.create(**input_data)
+            env.inputs.add(inp)
         return env

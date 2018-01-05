@@ -6,4 +6,3 @@ class DocumentForm(forms.ModelForm):
         model = Document
         fields = ('description', 'document',  )
     
-    

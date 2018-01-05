@@ -21,6 +21,8 @@ from django.urls.conf import include
 from django.contrib.auth import views as auth_views
 from DjangoSnap.settings import DEBUG
 from django.conf.urls import url
+from django.views.generic.base import RedirectView
+import snap
 
 
 
@@ -32,6 +34,9 @@ urlpatterns = [
      path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html')),
     path('admin/', admin.site.urls),
     path('snap/',include('snap.urls')),
+    path('login/',snap.views.login_redirect),
+    path(r'',auth_views.LoginView.as_view()),
+         #RedirectView.as_view(url='/accounts/login/')),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 if DEBUG:
     urlpatterns=urlpatterns+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
