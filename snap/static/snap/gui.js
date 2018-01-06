@@ -2555,7 +2555,7 @@ IDE_Morph.prototype.removeBlock = function (aBlock, justThis) {
 // IDE_Morph menus
 
 IDE_Morph.prototype.userMenu = function () {
-    var menu = new MenuMorph(this);
+    var menu = new MenuMorph(this);   
     // menu.addItem('help', 'nop');
     return menu;
 };
@@ -2609,6 +2609,12 @@ IDE_Morph.prototype.snapMenu = function () {
             new Color(100, 0, 0)
         );
     }
+    menu.addLine();
+    menu.addItem(
+	        'Changer de mot de passe',
+	        function () {
+	            window.open(url_passwordchange, 'Snap4Gironde');
+	        });
     menu.popup(world, this.logo.bottomLeft());
 };
 
