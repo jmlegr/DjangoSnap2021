@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 from .models import Document, Evenement, EvenementEPR, EvenementENV, \
-        Eleve, Classe
+        Eleve, Classe, EvenementSPR, ProgrammeBase
 
 
 class DocumentAdmin(admin.ModelAdmin):
@@ -27,11 +27,13 @@ class EleveAdmin(admin.ModelAdmin):
     
 
     
-
-admin.site.register(Document,DocumentAdmin)
-admin.site.register(Evenement)
-admin.site.register(EvenementEPR)
-admin.site.register(EvenementENV)
 admin.site.register(Classe,ClasseAdmin)
 admin.site.register(Eleve,EleveAdmin)
+admin.site.register(Document,DocumentAdmin)
+admin.site.register(ProgrammeBase)
+admin.site.register(Evenement)
+admin.site.register(EvenementENV)
+admin.site.register(EvenementEPR)
+admin.site.register(EvenementSPR)
+
 
