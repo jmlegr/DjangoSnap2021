@@ -6,11 +6,8 @@
 		<title>Snap!4Gironde {{ request.user}}</title>		
 		<link rel="shortcut icon" href="favicon.ico">
 		<script src="{% static 'snap/js/jquery-3.2.1.min.js' %}"></script> 
-		<script
-              src="http://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
-              integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
-              crossorigin="anonymous"></script>
-              <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+		<script src="{% static 'snap/js/jquery-ui-1.12.1.min.js' %}"></script>
+		<link rel="stylesheet" href="{% static 'snap/js/jquery-ui.css' %}">
 		<script type="text/javascript">
 		  var userid={{ request.user.id }};
 		  var userName="{{ request.user.username }}";
@@ -59,7 +56,7 @@
 		    form.append('csrfmiddlewaretoken',"{{ csrf_token }}");
 		    form.append('description',name);
 		    var blob = new Blob([xml], { type: "text/xml"});
-		    form.append('document',blob);
+		    form.append('document',blob,userName+"_"+name.replace(/\W+/g,"_")+".xml");
 		    $.ajax({
 		        url: 'up',
 		        type: 'POST',
