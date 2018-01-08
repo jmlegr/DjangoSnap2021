@@ -166,8 +166,7 @@ class BlockSerializer(serializers.ModelSerializer):
                 )
    
     
-    def save(self):
-        validated_data=self.validated_data
+    def create(self,validated_data):
         parent=validated_data.pop('parent',None)
         blocks_data=validated_data.pop('inputsBlock',[])
         n_data=validated_data.pop('nextBlock',None)        
