@@ -20,6 +20,7 @@ router.register(r'evenement',views.EvenementViewset)
 router.register(r'epr',views.EvenementEPRViewset)
 router.register(r'env',views.EvenementENVViewset)
 router.register(r'spr',views.EvenementSPRViewset)
+router.register(r'spr/block',views.BlockViewSet)
 
 urlpatterns = [
    

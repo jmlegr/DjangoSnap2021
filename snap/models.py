@@ -68,7 +68,7 @@ class EvenementENV(models.Model):
         ('LOBA','Chargement programme de Base'),
         ('LOVER','Chargement d\'une version sauvegardée'),
         ('IMPORT','Importation fichier local'),
-        ('EXPORT','Exportation fichier local'),
+        ('EXPORT','Exportation fichier local'),        
         ('FULL','Plein écran'),
         ('APP','Ecran application'),
         ('SSCRN','Ecran réduit'),
@@ -155,6 +155,8 @@ class BlockInput(models.Model):
     isNumeric=models.BooleanField(default=True) 
     isPredicate=models.BooleanField(default=False)
     
+
+    
 class EvenementSPR(models.Model):
     """
         Evenement lié à la modification de la structure du programme
@@ -181,13 +183,14 @@ class EvenementSPR(models.Model):
         ('NEWVAL','Création et insertion d\'une entrée'), #création + remplacement d'une entrée existante (id remplacée dans détailAction
         ('DROPVAL','Déplacement et insertion d\'une entrée'), #déplacement + remplacement d'une entrée existante (id remplacée dans détailAction
         ('ERR','Erreur'), #erreur détectée, précision dans détail
+        ('OPEN','Ouverture de Scripts'),
         ('AUTRE','(Non identifié'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
     type=models.CharField(max_length=7,choices=SPR_CHOICES, default='AUTRE') #type d'évènement    
     detail=models.CharField(max_length=100,null=True,blank=True)
     location=models.CharField(max_length=30,null=True,blank=True)
-    #Informations sur le block
+    #Informations sur le block    
     blockId=models.IntegerField(null=True) #JMLid du block en cause
     typeMorph=models.CharField(max_length=30,null=True,blank=True) #type du block
     selector=models.CharField(max_length=30,null=True,blank=True) #selector du block
@@ -196,13 +199,31 @@ class EvenementSPR(models.Model):
     parentId=models.IntegerField(null=True) #JMLid du block parent (ou lieu d'insertion)
     nextBlockId=models.IntegerField(null=True) #JMLid du block suivant
     childId=models.IntegerField(null=True) #JMLid du block enfant (si wrap)
-    inputs=models.ManyToManyField(BlockInput,null=True, related_name='evenementSPR') #entrée(s) du block
+    targetId=models.IntegerField(null=True) #JMLid du block cible (si location)
+    inputs=models.ManyToManyField(BlockInput,null=True) #entrée(s) du block
+    scripts=models.ManyToManyField('Block') #les blocks de départ des scripts
     def __str__(self):
-        return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
+        return '%s: %s' % (self.type,self.detail if self.detail else '--')
     
     class Meta:
         ordering=('-evenement__creation',)
-    
+
+class Block(models.Model):
+    """
+        definition de base d'un block
+    """
+    JMLid=models.IntegerField(null=True) #JMLid du block en cause
+    typeMorph=models.CharField(max_length=30,null=True,blank=True) #type du block
+    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block
+    blockSpec=models.CharField(max_length=50,null=True,blank=True) #blockSpec du block
+    category=models.CharField(max_length=30,null=True,blank=True) #categorie du block
+    #parent=models.OneToOneField('self',null=True,on_delete=models.CASCADE,related_name='fils') #block parent (ou lieu d'insertion)
+    parent=models.IntegerField(null=True)
+    nextBlock=models.OneToOneField('self',null=True,on_delete=models.CASCADE,related_name='prec') #block suivant
+    #child=models.ForeignKey('Block',null=True,on_delete=models.CASCADE,related_name='child_Block') #block enfant (si wrap)
+    inputs=models.ManyToManyField(BlockInput,null=True) #entrée(s) du block (inputSlotMorph ou Cslotmorph
+    inputsBlock=models.ManyToManyField('self',null=True,symmetrical=False) #entrée(s) du block qui sont des blocks
+ 
 class InfoReceived(models.Model):
     block_id=models.IntegerField()
     time=models.IntegerField()

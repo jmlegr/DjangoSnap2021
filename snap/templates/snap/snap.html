@@ -126,13 +126,18 @@
                 },
             error: function(response) {
                 console.log("error", response);
-                alert('oups, quelque chose n\'a pas fonctionné');
+                alert('oups, quelque chose n\'a pas fonctionné\n'+response.responseText);
                 $('.upload-progress').hide();
             }
          }); 
         return false;
         {% else %}
         console.log("Prof ou admin connecté");
+        /*  var json={
+                evenement:{type:type},             
+                }
+            for (var k in data) json[k]=data[k];
+        console.log(JSON.stringify(json)); */
         {% endif %}
                         
         }

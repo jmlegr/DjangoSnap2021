@@ -2062,7 +2062,7 @@ SyntaxElementMorph.prototype.endLayout = function () {
  **/
 SyntaxElementMorph.prototype.printStruct = function (decal=0) {
     d=Array(decal+1).join('..');
-    console.log(d+'Structure de '+this.constructor.name+","+this.JMLid+"-"+this.selector);
+    console.log(d+'Structure de '+this.constructor.name+", ("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
     //affichage des inputs
     if (this.inputs()) console.log(d+">INPUTS");
     this.inputs().forEach(function(i){

@@ -15,8 +15,10 @@ from wsgiref.util import FileWrapper
 from rest_framework import viewsets, status
 from snap.serializers import ProgrammeBaseSerializer, UserSerializer, GroupSerializer,\
             EvenementSerializer, ProgrammeBaseSuperuserSerializer,\
-            EvenementEPRSerializer, EvenementENVSerializer, EvenementSPRSerializer
-from snap.models import ProgrammeBase, Evenement, EvenementEPR, EvenementENV
+            EvenementEPRSerializer, EvenementENVSerializer, EvenementSPRSerializer,\
+            BlockSerializer
+from snap.models import ProgrammeBase, Evenement, EvenementEPR, EvenementENV,\
+Block
 from django.contrib.auth.models import User, Group
 from django.http.response import HttpResponseRedirect
 from django.urls.base import reverse
@@ -76,6 +78,10 @@ class EvenementSPRViewset(viewsets.ModelViewSet):
     queryset=EvenementSPR.objects.all()
     serializer_class=EvenementSPRSerializer
 
+class BlockViewSet(viewsets.ModelViewSet):
+    queryset=Block.objects.all()
+    serializer_class=BlockSerializer
+    
 def current_datetime(request):
     now = datetime.datetime.now()
     html = "<html><body>It is now %s.</body></html>" % now
@@ -185,7 +191,7 @@ def return_fichier(request):
         response['Content-Disposition'] = "attachment; filename=%s" % 'gi'
         return response
 def return_fichier_eleve(request,file_id):
-    print('ok',file_id)
+    #print('ok',file_id)
     if request.method=='GET':
         doc=Document.objects.get(id=file_id);
         #wrapper = FileWrapper(open('media/documents/sierpinski-programme1.xml'))

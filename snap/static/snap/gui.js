@@ -2609,12 +2609,20 @@ IDE_Morph.prototype.snapMenu = function () {
             new Color(100, 0, 0)
         );
     }
+    /**
+     * Modification JML (duff,  6 janv. 2018)
+     **/
+
     menu.addLine();
     menu.addItem(
 	        'Changer de mot de passe',
 	        function () {
 	            window.open(url_passwordchange, 'Snap4Gironde');
-	        });
+	        });    
+    /**
+     * Fin Modification JML
+     **/
+
     menu.popup(world, this.logo.bottomLeft());
 };
 
@@ -3222,7 +3230,7 @@ IDE_Morph.prototype.projectMenu = function () {
                                             target = target.parent;
                                    }   
                                    target.droppedText(xmltxt,name);                            
-                                    
+                                   
                                 }
                             });
             	        	
@@ -4467,6 +4475,91 @@ IDE_Morph.prototype.openProjectString = function (str) {
     ]);
 };
 
+/**
+ * Modification JML (duff,  7 janv. 2018)
+ **/
+IDE_Morph.prototype.initIds = function() {
+    recurs=function(block) {
+	
+	block.JMLdroppedId=block.JMLid
+	//console.log('>',block.JMLid,block,block.inputs(),block.nextBlock?block.nextBlock():'--');
+	var script={
+	    JMLid:block.JMLid, 
+	    typeMorph:block.constructor.name,
+	    selector:block.selector,
+	    blockSpec:block.blockSpec,
+	    category:block.category,
+	    parent:block.parent?block.parent.JMLid:null
+	    };
+	if (block.input && block.inputs()) {
+	    var inputs= new Array();
+	    var inputsBlock=new Array();
+	    block.inputs().forEach(function(input) {    				
+    		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
+    		    contenu:input.contents?input.contents().text:null,
+    		    rang:block.inputs().indexOf(input),
+    		    isNumeric:input.isNumeric,
+    		    isPredicate:input.isPredicate}
+    		);
+    		if (input instanceof InputSlotMorph) {
+    		    //console.log ("input normal");
+    		} else {
+    		    //console.log("input "+input.constructor.name,input.inputs()[0]);
+    		    inputsBlock.push(recurs(input));
+    		    /*
+    		    input.inputs().forEach(function(i) {
+    			inputsBlock.push(recurs(i));
+    		    });
+    		    */
+    		}
+    		}
+	    	
+    	    );
+    	    if (inputs) script['inputs']=inputs;
+    	    if (inputsBlock) script['inputsBlock']=inputsBlock;
+    	    
+	}
+	
+	if (block.nextBlock && block.nextBlock()) {
+	    //le.log('next:',block.nextBlock());
+	    script['nextBlock']=recurs(block.nextBlock());
+	}
+	//console.log('scrit',script);
+	return script;
+    }
+    //lors d'un chargement, recontruit la structure des blocs (en fixant le JMLdroppedId)
+    // puis envoi
+    scriptsObj = this.currentSprite.scripts.children
+    scripts=[]
+    //console.log('chrgé',scriptsObj);
+    for (i=0;i<scriptsObj.length;i++) {
+	var s=scriptsObj[i];
+	//console.log('block',s.JMLid,' next: ',s.nextBlock()?s.nextBlock().JMLid:'--');	
+	//console.log(d+'Structure de '+this.constructor.name+", ("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
+	
+	scripts.push(recurs(s));	
+    }
+    //console.log('scripts:',scripts);
+    //console.info(JSON.stringify(scripts));
+    sendEvenement('SPR',{type:'OPEN',scripts:scripts});
+}
+    /*
+    console.log(d+'Structure de '+this.constructor.name+", ("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
+	//affichage des inputs
+	if (this.inputs()) console.log(d+">INPUTS");
+	this.inputs().forEach(function(i){
+	i.printStruct(decal+1);
+	//console.log(d+">>"+i);
+});
+if (this.nextBlock && this.nextBlock()) {
+	console.log(d+'/NEXTBLOCK');
+	this.nextBlock().printStruct(decal);
+}
+*/
+/**
+ * Fin Modification JML
+ **/
+
 IDE_Morph.prototype.rawOpenProjectString = function (str) {
     this.toggleAppMode(false);
     this.spriteBar.tabBar.tabTo('scripts');
@@ -4492,6 +4585,15 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
             this
         );
     }
+    /**
+     * Modification JML (duff,  7 janv. 2018)
+     **/
+
+    this.initIds();    
+    /**
+     * Fin Modification JML
+     **/
+
     this.stopFastTracking();
 };
 

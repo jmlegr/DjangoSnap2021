@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 from .models import Document, Evenement, EvenementEPR, EvenementENV, \
-        Eleve, Classe, EvenementSPR, ProgrammeBase
+        Eleve, Classe, EvenementSPR, ProgrammeBase,Block
 
 
 class DocumentAdmin(admin.ModelAdmin):
@@ -25,7 +25,8 @@ class EleveAdmin(admin.ModelAdmin):
     #search_fields=['nom','prenom']
     #inlines=[Prg,]
     
-
+class EvenementSPRAdmin(admin.ModelAdmin):
+    model=EvenementSPR
     
 admin.site.register(Classe,ClasseAdmin)
 admin.site.register(Eleve,EleveAdmin)
@@ -34,6 +35,7 @@ admin.site.register(ProgrammeBase)
 admin.site.register(Evenement)
 admin.site.register(EvenementENV)
 admin.site.register(EvenementEPR)
-admin.site.register(EvenementSPR)
+admin.site.register(EvenementSPR,EvenementSPRAdmin)
+admin.site.register(Block)
 
 
