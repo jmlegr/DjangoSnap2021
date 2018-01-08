@@ -218,7 +218,8 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
         #on ajoute les scripts
         for scr_data in scripts_data:
             scr=BlockSerializer(data=scr_data)
-            s=scr.save()
-            env.scripts.add(s)            
+            if scr.is_valid():
+                s=scr.save()
+                env.scripts.add(s)            
         return env
 
