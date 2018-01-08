@@ -235,6 +235,6 @@ def login_redirect(request):
         if request.user.is_superuser:
             return HttpResponseRedirect(reverse("admin:index"))
         elif "prof" in ugroups:
-            return HttpResponseRedirect(reverse("admin:snap_eleve_changelist"))
+            return HttpResponseRedirect(reverse("admin:index"))
         elif "eleves" in ugroups:
             return HttpResponseRedirect(reverse("snaptest"))
