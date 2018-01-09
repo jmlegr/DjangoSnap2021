@@ -18,6 +18,7 @@ class ClasseAdmin(admin.ModelAdmin):
 class EleveAdmin(admin.ModelAdmin):    
     list_display=('user','classe','prg')
     list_editable=('classe','prg')
+    liste_select_related=('classe','prg',)
     list_filter = (
         ('classe', admin.RelatedOnlyFieldListFilter),
     )
