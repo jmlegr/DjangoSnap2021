@@ -52,6 +52,8 @@ class Evenement(models.Model):
     numero=models.IntegerField() #numero d'ordre de l'évènement, indépendant du type
     creation=models.DateTimeField(auto_now_add=True)
     
+    def __str__(self):
+        return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
     class Meta:
         ordering=('-creation',)
 
@@ -98,7 +100,7 @@ class EvenementENV(models.Model):
     valueChar=models.CharField(max_length=30,null=True,blank=True)
     #block=models.ForeignKey(Block,on_delete=models.CASCADE)
     def __str__(self):
-        return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
+        return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
     class Meta:
         ordering=('-evenement__creation',)
@@ -139,7 +141,7 @@ class EvenementEPR(SnapProcess):
     detail=models.CharField(max_length=100,null=True,blank=True)
     processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
     def __str__(self):
-        return '%s: %s %s' % (self.type,self.detail,"(clic)" if (self.click) else "")
+        return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
     class Meta:
         ordering=('-evenement__creation',)
@@ -154,7 +156,8 @@ class BlockInput(models.Model):
     contenu=models.CharField(max_length=50,null=True,blank=True)#contenu de l'entrée
     isNumeric=models.BooleanField(default=True) 
     isPredicate=models.BooleanField(default=False)
-    
+    def __str__(self):
+        return '%s, %s (JML %s)' % (self.rang,self.contenu,self.JMLid)
 
     
 class EvenementSPR(models.Model):
@@ -203,7 +206,7 @@ class EvenementSPR(models.Model):
     inputs=models.ManyToManyField(BlockInput,null=True) #entrée(s) du block
     scripts=models.ManyToManyField('Block') #les blocks de départ des scripts
     def __str__(self):
-        return '%s: %s' % (self.type,self.detail if self.detail else '--')
+        return '(%s) %s (%s) %s' % (self.evenement,self.get_type_display(),self.blockId,self.detail if self.detail else '')
     
     class Meta:
         ordering=('-evenement__creation',)
@@ -224,6 +227,9 @@ class Block(models.Model):
     inputs=models.ManyToManyField(BlockInput,null=True) #entrée(s) du block (inputSlotMorph ou Cslotmorph
     inputsBlock=models.ManyToManyField('self',null=True,symmetrical=False) #entrée(s) du block qui sont des blocks
  
+    def __str__(self):
+        return '%s(JML %s, id %s)' %(self.selector,self.JMLid,self.id)
+    
 class InfoReceived(models.Model):
     block_id=models.IntegerField()
     time=models.IntegerField()
