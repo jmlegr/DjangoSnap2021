@@ -11,7 +11,7 @@ from snap.forms import DocumentForm
 
 from django.template.loader import render_to_string
 from django.core.files.storage import FileSystemStorage
-from wsgiref.util import FileWrapper
+#from wsgiref.util import FileWrapper
 from rest_framework import viewsets, status
 from snap.serializers import ProgrammeBaseSerializer, UserSerializer, GroupSerializer,\
             EvenementSerializer, ProgrammeBaseSuperuserSerializer,\
@@ -195,14 +195,15 @@ def return_fichier_eleve(request,file_id):
     if request.method=='GET':
         doc=Document.objects.get(id=file_id);
         #wrapper = FileWrapper(open('media/documents/sierpinski-programme1.xml'))
-        wrapper = FileWrapper(open('media/%s' %doc.document))
+        #wrapper = FileWrapper(open('media/%s' %doc.document))
+        wrapper=doc.document
         #content_type = mimetypes.guess_type(filename)[0]
         response = HttpResponse(wrapper, content_type='text/xml')
         #response['Content-Length'] = os.path.getsize(filename)
         response['Content-Disposition'] = "attachment; filename=%s" % 'doc.description'
         return response
 def return_files(request):
-    fics=Document.objects.order_by('-uploaded_at')
+    fics=Document.objects.filter(user=request.user).order_by('-uploaded_at')
     return render(request,'file_user.html',{'files':fics});
 
 def prof_base(request,classe=None):
