@@ -22,7 +22,7 @@ Block
 from django.contrib.auth.models import User, Group
 from django.http.response import HttpResponseRedirect
 from django.urls.base import reverse
-
+from django.db.models import Q
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -203,8 +203,13 @@ def return_fichier_eleve(request,file_id):
         response['Content-Disposition'] = "attachment; filename=%s" % 'doc.description'
         return response
 def return_files(request):
-    fics=Document.objects.filter(user=request.user).order_by('-uploaded_at')
-    return render(request,'file_user.html',{'files':fics});
+    if request.user.is_staff:
+        fics=Document.objects.filter(Q(user=request.user) | Q(user__groups__name__in=['eleves',])).order_by('-uploaded_at')
+        return render(request,'file_user_prof.html',{'files':fics});
+    else:
+        fics=Document.objects.filter(user=request.user).order_by('-uploaded_at')
+        return render(request,'file_user.html',{'files':fics});
+    
 
 def prof_base(request,classe=None):
     groupe=Group.objects.get(name='eleves');
