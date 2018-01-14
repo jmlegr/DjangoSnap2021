@@ -255,7 +255,7 @@ def liste(request,nom=None):
         user=ev.evenement.user
         ev1=EvenementENV.objects.filter(type='LANCE',evenement__user=user,evenement__creation__lt=ev.evenement.creation).latest('evenement__creation')
     eleve=user.eleve
-    evs=Evenement.objects.filter(user=user,creation__gte=ev1.evenement.creation).order_by('creation')
+    evs=Evenement.objects.filter(user=user,creation__gte=ev1.evenement.creation).order_by('time')
     
     return render(request,'liste_simple.html',{'evenements':evs,'eleve':eleve})
     
