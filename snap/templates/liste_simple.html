@@ -1,0 +1,24 @@
+{% load static %}
+
+<h3>Liste des derniers évènements de {{eleve.user.username}}</h3>
+<table align="left">
+{% for e in evenements %}
+<tr>
+<td>  </td>
+<td> <div>{{e.numero}}</div><div> <span style="font-size:70%">({{e.creation}})</span></div> </td>
+<td> {{e.time}} </td>
+<td> {{e.type}}</td>
+<td> {% for en in e.environnement.all%} {{en.type}} {{ en.detail }} {% endfor %}</td>
+<td> {% for en in e.evenementepr_set.all %} {{en.type}} {{en.detail}} {% endfor %}</td>
+<td> {% for en in e.evenementspr_set.all %} {{en.type}} {{en.detail}} {% endfor %}</td>
+</tr>
+{% endfor %}
+</table>
+<script>
+<!--
+$( "input[name=file]:radio" ).change(function(){
+    console.log('change',$(this).attr('id'));
+    console.log('_>',$( "input[name=file]:checked" ).val());
+    })
+-->
+</script>
