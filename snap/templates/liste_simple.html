@@ -12,7 +12,11 @@
     {{en.valuebool}} {{en.valueint|default:''}} {{en.valuechar|default:''}}{% endfor %}</td>
 <td> {% for en in e.evenementepr_set.all %} {{en.type}} {{en.detail|default:' .'}} {% endfor %}</td>
 <td> {% for en in e.evenementspr_set.all %} {{en.type}} {{en.detail|default:' .'}}
-{% if en.blockid is not None%} {{en.blickId}}({{en.selector}}]){% endif %}
+{% if en.blockId is not None%} {{en.blockId}}({{en.selector}}){% endif %}
+{% if en.parentId is not None%} (p:{{en.parentId}}){% endif %}
+{% if en.nextblockId is not None%} (n:{{en.nextblockId}}){% endif %}
+{% if en.targetId is not None%} (t:{{en.targetId}}){% endif %}
+{% if en.childId is not None%} (c:{{en.childId}}){% endif %}
  {% endfor %}</td>
 </tr>
 {% endfor %}
