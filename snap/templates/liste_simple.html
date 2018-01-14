@@ -8,9 +8,12 @@
 <td> <div>{{e.numero}}</div><div> <span style="font-size:70%">({{e.creation}})</span></div> </td>
 <td> {{e.time}} </td>
 <td> {{e.type}}</td>
-<td> {% for en in e.environnement.all%} {{en.type}} {{ en.detail }} {% endfor %}</td>
-<td> {% for en in e.evenementepr_set.all %} {{en.type}} {{en.detail}} {% endfor %}</td>
-<td> {% for en in e.evenementspr_set.all %} {{en.type}} {{en.detail}} {% endfor %}</td>
+<td> {% for en in e.environnement.all%} {{en.type}} {{ en.detail|default:' .' }} 
+    {{en.valuebool}} {{en.valueint|default:''}} {{en.valuechar|default:''}}{% endfor %}</td>
+<td> {% for en in e.evenementepr_set.all %} {{en.type}} {{en.detail|default:' .'}} {% endfor %}</td>
+<td> {% for en in e.evenementspr_set.all %} {{en.type}} {{en.detail|default:' .'}}
+{% if en.blockid is not None%} {{en.blickId}}({{en.selector}}]){% endif %}
+ {% endfor %}</td>
 </tr>
 {% endfor %}
 </table>
