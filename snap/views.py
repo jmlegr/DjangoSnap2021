@@ -244,3 +244,20 @@ def login_redirect(request):
             return HttpResponseRedirect(reverse("admin:index"))
         elif "eleves" in ugroups:
             return HttpResponseRedirect(reverse("snaptest"))
+
+def liste(request,nom=None):
+    if nom is not None:
+        user=User.objects.get(username=nom)
+        ev=EvenementENV.objects.filter(type='LANCE',evenement__user=user).latest('evenement__creation')
+        ev1=EvenementENV.objects.filter(type='LANCE',evenement__user=user,evenement__creation__lt=ev.evenement.creation).latest('evenement__creation')
+    else:
+        ev=EvenementENV.objects.filter(type='LANCE').latest('evenement__creation')
+        user=ev.evenement.user
+        ev1=EvenementENV.objects.filter(type='LANCE',evenement__user=user,evenement__creation__lt=ev.evenement.creation).latest('evenement__creation')
+    eleve=user.eleve
+    evs=Evenement.objects.filter(user=user,creation__gte=ev1.evenement.creation).order_by('creation')
+    
+    return render(request,'liste_simple.html',{'evenements':evs,'eleve':eleve})
+    
+    
+    

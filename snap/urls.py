@@ -37,6 +37,8 @@ urlpatterns = [
     path('cd',views.return_files),
     path('prof/',views.prof_base),
     path('prof/<str:classe>/',views.prof_base),
+    path('liste/',views.liste),
+    path('liste/<str:nom>/',views.liste),
     path('pt/',views.tt),
     ]
 

@@ -90,7 +90,7 @@ class EvenementENV(models.Model):
         ('POPUP','Ouverture popup'),
         ('AUTRE','(Non identifié)'),
         )
-    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
+    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='environnement')
     type=models.CharField(max_length=6,choices=ENV_CHOICES, default='AUTRE') #type d'évènement
     click=models.BooleanField(default=False)
     key=models.BooleanField(default=False)    
