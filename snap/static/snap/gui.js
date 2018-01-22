@@ -4491,7 +4491,7 @@ IDE_Morph.prototype.initIds = function() {
 	    category:block.category,
 	    parent:block.parent?block.parent.JMLid:null
 	    };
-	if (block.input && block.inputs()) {
+	if (block.inputs && block.inputs()) {
 	    var inputs= new Array();
 	    var inputsBlock=new Array();
 	    block.inputs().forEach(function(input) {    				

@@ -2,7 +2,7 @@ from django.contrib.auth.models import User, Group
 from rest_framework import serializers, reverse
 from snap.models import ProgrammeBase, Evenement,  EvenementEPR,\
     EvenementENV,Classe , EvenementSPR, BlockInput, \
-    Block
+    Block, Eleve, Classe
 from django.core.serializers import _serializers
 
 
@@ -11,15 +11,29 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         model = User
         fields = ('url', 'username', 'email', 'groups')
 
+class ClasseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Classe 
+        fields='__all__'
+                  
+class EleveSerializer(serializers.ModelSerializer):
+    classe=serializers.StringRelatedField()
+    class Meta:
+        model=Eleve
+        fields=('id','classe')
+        
+class EleveUserSerializer(serializers.ModelSerializer):
+    eleve=EleveSerializer()
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'eleve')
 
 class GroupSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Group
         fields = ('url', 'name')
 
-class ClasseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Classe        
+    
         
 class ProgrammeBaseSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -206,7 +220,7 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):       
         evt_data=validated_data.pop('evenement')
-        evt_data['type']='ENV'
+        evt_data['type']='SPR'
         evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
         inputs_data=validated_data.pop('inputs',[])
         scripts_data=validated_data.pop('scripts',[])
@@ -222,3 +236,5 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
                 env.scripts.add(s)            
         return env
 
+
+    
