@@ -20,12 +20,12 @@ router.register(r'evenement',views.EvenementViewset)
 router.register(r'epr',views.EvenementEPRViewset)
 router.register(r'env',views.EvenementENVViewset)
 router.register(r'spr',views.EvenementSPRViewset)
+router.register(r'spropen',views.EvenementSPROpenViewset)
 router.register(r'spr/block',views.BlockViewSet)
 
 urlpatterns = [
    
-    path('test',views.testsnap,name='snaptest'),
-    path('ajax',views.ajax),
+    path('test',views.testsnap,name='snaptest'),    
     path('pageref',views.pageref),
      path('pagedon',views.pagedon),
      path('ups',views.simple_upload),  
@@ -34,12 +34,15 @@ urlpatterns = [
     path('fichier',views.return_fichier),
     path('fichier/<int:file_id>', views.return_fichier_eleve),
     #path('cd',views.current_datetime),
-    path('cd',views.return_files),
-    path('prof/',views.prof_base),
-    path('prof/<str:classe>/',views.prof_base),
+    path('cd',views.return_files),    
     path('liste/',views.liste),
     path('liste/<str:nom>/',views.liste),
-    path('pt/',views.tt),
+    path('sessions',views.listeSessions),
+    path('session/<str:id>/',views.session),
+    path('opens',views.listeOpens),
+    #path('open/',views.listeOpen),
+    #path('open/<str:id>/',views.listeOpen),
+    
     ]
 
 urlpatterns += [

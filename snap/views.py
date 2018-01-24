@@ -12,17 +12,19 @@ from snap.forms import DocumentForm
 from django.template.loader import render_to_string
 from django.core.files.storage import FileSystemStorage
 #from wsgiref.util import FileWrapper
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from snap.serializers import ProgrammeBaseSerializer, UserSerializer, GroupSerializer,\
             EvenementSerializer, ProgrammeBaseSuperuserSerializer,\
             EvenementEPRSerializer, EvenementENVSerializer, EvenementSPRSerializer,\
-            BlockSerializer
+            BlockSerializer, EleveUserSerializer, EvenementSPROpenSerializer
 from snap.models import ProgrammeBase, Evenement, EvenementEPR, EvenementENV,\
 Block
 from django.contrib.auth.models import User, Group
 from django.http.response import HttpResponseRedirect
 from django.urls.base import reverse
 from django.db.models import Q
+from rest_framework.decorators import list_route, detail_route
+from rest_framework.response import Response
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -71,6 +73,218 @@ class EvenementENVViewset(viewsets.ModelViewSet):
     queryset=EvenementENV.objects.all()
     serializer_class=EvenementENVSerializer
     
+    @list_route()
+    def users(self,request):
+        """
+        renvoie la liste des utilisateurs ayant lancé une session snap
+        """        
+        lst=EvenementENV.objects.filter(type='LANCE').values_list('evenement__user',flat=True)
+        users=User.objects.filter(id__in=lst)
+        #users=User.objects.all()
+        print (users)
+        page = self.paginate_queryset(users)
+        if page is not None:
+            serializer = EleveUserSerializer(page, many=True,context={'request': request})
+            return self.get_paginated_response(serializer.data)
+
+        serializer = EleveUserSerializer(users, many=True,context={'request': request})
+        return Response(serializer.data)
+
+    @list_route()
+    def sessions(self,request):
+        evs=EvenementENV.objects.filter(type='LANCE').order_by('-evenement__creation')
+        page = self.paginate_queryset(evs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(evs, many=True)
+        return Response(serializer.data)
+    
+    @detail_route()
+    def sessionsUser(self,request,pk=None):
+        if (pk is None) or (pk=='0'):
+            return self.sessions(request)
+        try:
+            u=User.objects.get(id=pk)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        evs=EvenementENV.objects.filter(type='LANCE').filter(evenement__user=u).order_by('-evenement__creation')
+        page = self.paginate_queryset(evs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(evs, many=True)
+        return Response(serializer.data)
+    
+        
+
+class EvenementSPROpenViewset(viewsets.ModelViewSet):
+    """
+    API Endpoint renvois les SPR "OPEN")
+    """
+    queryset=EvenementSPR.objects.filter(type='OPEN')
+    serializer_class=EvenementSPROpenSerializer
+    
+    @list_route()
+    def users(self,request):
+        """
+        renvoie la liste des utilisateurs ayant lancé une session snap
+        """        
+        lst=EvenementSPR.objects.filter(type='OPEN').values_list('evenement__user',flat=True)
+        users=User.objects.filter(id__in=lst)
+        #users=User.objects.all()
+        print (users)
+        page = self.paginate_queryset(users)
+        if page is not None:
+            serializer = EleveUserSerializer(page, many=True,context={'request': request})
+            return self.get_paginated_response(serializer.data)
+
+        serializer = EleveUserSerializer(users, many=True,context={'request': request})
+        return Response(serializer.data)
+    
+    @list_route()
+    def opens(self,request):
+        evs=EvenementSPR.objects.filter(type='OPEN').order_by('-evenement__creation')
+        page = self.paginate_queryset(evs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(evs, many=True)
+        return Response(serializer.data)
+    
+    @detail_route()
+    def openUser(self,request,pk=None):
+        if (pk is None) or (pk=='0'):            
+            return self.opens(request)
+        try:
+            u=User.objects.get(id=pk)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        evs=EvenementSPR.objects.filter(type='OPEN').filter(evenement__user=u).order_by('-evenement__creation')
+        page = self.paginate_queryset(evs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(evs, many=True)
+        return Response(serializer.data)
+    
+    @detail_route()
+    def listeOpen(self,request,pk=None):
+        """
+        reconstitution du programme chargé
+        """
+        def traiteBlock(b):
+            resultat={
+                'id':b.id, 'JMLid':b.JMLid,
+                'selector':b.selector, 'blockSpec':b.blockSpec,
+                'typeMorph':b.typeMorph,
+                'inputs':parcoursInput(b)
+                }
+            if b.nextBlock: nextBlock={'source':b.JMLid,'target':b.nextBlock.JMLid}
+            else: nextBlock=None        
+            return resultat, nextBlock
+        def parcoursBlock(b):
+            liste=[]
+            nextLiens=[]
+            while True:
+                res,nextLien=traiteBlock(b)
+                liste.append(res)
+                if nextLien is not None: 
+                    nextLiens.append(nextLien)
+                if b.nextBlock:
+                    b=b.nextBlock
+                else:
+                    break;        
+            return liste,nextLiens
+    
+        def parcoursInput(b):
+            inputs=[]
+            nextBlocks=None
+            for inputB in b.inputs.all():          
+                inputs.append({'id':inputB.id,'JMLid':inputB.JMLid, 'typeMorph':inputB.typeMorph,
+                           'rang':inputB.rang,
+                         'contenu':inputB.contenu})                                    
+            for inputBlock in b.inputsBlock.all():
+            #recherche de l'input correspondant
+                inputB=b.inputs.filter(JMLid=inputBlock.JMLid)            
+                if inputB:
+                    result,nextBlock=parcoursBlock(inputBlock)
+                    inputs[inputB[0].rang]['contenu']=result
+                    #if nextBlock is not None: 
+                     #   nextLiens.append(nextBlock)
+                        
+                                 
+            return inputs 
+                        
+        if pk is not None:        
+            evo=EvenementSPR.objects.get(id=pk)
+        else:
+            evo=EvenementSPR.objects.filter(type='OPEN').latest('evenement__creation')
+        block=evo.scripts.all()[0]
+        liste,nextLiens=parcoursBlock(block)
+        for i in liste:
+            print(i)
+        return render(request,'liste_open.html',{'tdOpen':self.renderOpen(liste),'nodes':liste,'links':nextLiens})
+
+    def renderOpen(self,r,nbTd=1):
+        ret=[]
+        for i in r:
+            if 'blockSpec' in i: ret.append(
+                        {'nbTd':range(nbTd),
+                         'id':i['id'], 'JMLid':i['JMLid'],
+                         'selector':i['selector'], 'blockSpec':'%s' % i['blockSpec'],
+                         'typeMorph':i['typeMorph'],             
+                         })
+            else:
+                ret.append({'nbTd':range(nbTd+1),'contenu': '%s' % i})
+            if 'inputs' in i:
+                childs=[]
+                for inp in i['inputs']:
+                    if inp['typeMorph'] in ['InputSlotMorph',]: 
+                        ret+=self.renderOpen([inp['contenu']],nbTd+1)                    
+                    else:
+                        ret+=self.renderOpen(inp['contenu'],nbTd+1)
+        return ret
+    def suivant(self,ev):
+        try:
+            suivant=EvenementSPR.objects.filter(type='OPEN',
+                                            evenement__user=ev.evenement.user,
+                                            evenement__creation__gt=ev.evenement.creation).earliest('evenement__creation')
+        except:
+            suivant=None
+        return suivant
+    
+    def precedent(self,ev):
+        precedent=EvenementSPR.objects.filter(type='OPEN',
+                                            evenement__user=ev.evenement.user,
+                                            evenement__creation__lt=ev.evenement.creation).latest('evenement__creation')
+    
+    @detail_route()
+    def listeActions(self,request,pk):
+        """
+        renvoie la liste des actions du début du chargement (SPR d'id pk) 
+        à la fin de la session ou au début du chargement suivant
+        """
+        ev=EvenementSPR.objects.get(id=pk)
+        evs=self.suivant(ev)
+        eleve=Eleve.objects.get(user=ev.evenement.user)
+        if evs is not None:
+            actions=Evenement.objects.filter(user=ev.evenement.user,
+                                         creation__gte=ev.evenement.creation,
+                                         numero__gt=ev.evenement.numero,
+                                         creation__lt=evs.evenement.creation).order_by('numero')
+        else:
+            #c'est le dernier OPen
+            actions=Evenement.objects.filter(user=ev.evenement.user,
+                                         creation__gte=ev.evenement.creation,
+                                         numero__gt=ev.evenement.numero).order_by('numero')
+        return render(request,'liste_simple.html',{'evenements':actions,'eleve':eleve})
+        #return Response(EvenementSerializer(actions,many=True).data)
+                                   
+    
 class EvenementSPRViewset(viewsets.ModelViewSet):
     """
     API Endpoint pour EvenementENV (Evenement Changement de l'environnement)
@@ -91,55 +305,7 @@ def current_datetime(request):
 def testsnap(request):
     return render(request,'snap/snap.html')
 
-@login_required(login_url='/accounts/login/')
-def ajax(request):
-    #if request.is_ajax():
-    if request.method == 'POST':
-        print ('Raw Data: "%s"' % request.body)
-        data = request.body.decode('utf-8')
-        received_json_data = json.loads(data)
-        r=received_json_data
-        print('receives %s' % received_json_data)
-        print ('from user: %s',request.user)
-        info=InfoReceived (action=r['action'],blockSpec=r['lastDroppedBlock']['blockSpec'],
-                                  time=r['time'],block_id=r['lastDroppedBlock']['id'],user='%s' % request.user)
-        info.save()
-        ap=ActionProgrammation()
-        ap.user=request.user
-        ap.action=r['action']
-        ap.time=r['time']
-        ap.typeMorph=r['typeMorph']
-        if 'sens' in r: ap.sens=r['sens']
-        if 'situation' in r: ap.situation=r['situation']
 
-        db=DroppedBlock()
-        db.block_id=r['lastDroppedBlock']['id']
-        db.blockSpec=r['lastDroppedBlock']['blockSpec']
-        db.category=r['lastDroppedBlock']['category']
-        rb=r['lastDroppedBlock']['bounds']
-        origin=Point(x=rb['origin']['x'],y=rb['origin']['y'])
-        origin.save()
-        corner=Point(x=rb['corner']['x'],y=rb['corner']['y'])
-        corner.save()
-        b=Bounds(origin=origin,corner=corner)
-        b.save()
-        db.bounds=b
-        if 'parent' in r['lastDroppedBlock']:
-            db.parent_id=r['lastDroppedBlock']['parent']
-        db.save()
-        ap.lastDroppedBlock=db
-
-        if 'inputs' in r['lastDroppedBlock']:
-            for i in r['lastDroppedBlock']['inputs']:
-                ip=Inputs(valeur=i['valeur'],type=i['type'])
-                ip.save()
-                db.inputs.add(ip)
-
-        ap.save()
-
-
-    return HttpResponse("OK %s" % info.id)
-    #
 
 def pageref(request):
     return render_to_response('refresh.html', {'value':'test'})
@@ -211,28 +377,6 @@ def return_files(request):
         return render(request,'file_user.html',{'files':fics});
     
 
-def prof_base(request,classe=None):
-    groupe=Group.objects.get(name='eleves');
-    #eleves=User.objects.filter(groups__in=[groupe,])
-    if classe is not None:
-        theclasse=Classe.objects.get(nom=classe)
-        eleves=Eleve.objects.filter(classe=theclasse)
-        msg='élèves de la classe de '+classe
-    else:
-        eleves=Eleve.objects.all()
-        msg='tous les élèves'
-    prg=ProgrammeBaseEleve.objects.filter(eleve__in=eleves)
-    return render(request,'prof_base.html',{'message':msg,'programmes':prg})
-
-def tt(request):
-    if request.method=='POST':
-        form=PrgBaseForm(request.POST)
-        if form.is_valid():
-            return HttpResponse('ok')
-    else:
-        form=PrgBaseForm()
-    return render(request,'pt.html',{'form':form})
-
 @login_required()
 def login_redirect(request):
     if request.user.is_authenticated:
@@ -258,6 +402,18 @@ def liste(request,nom=None):
     evs=Evenement.objects.filter(user=user,creation__gte=ev1.evenement.creation).order_by('time')
     
     return render(request,'liste_simple.html',{'evenements':evs,'eleve':eleve})
-    
-    
-    
+
+def session(request,id=None):
+    if id is not None:
+        ev=EvenementENV.objects.get(id=id)
+        evs=Evenement.objects.filter(id=ev.evenement.id) | Evenement.objects.filter(user=ev.evenement.user,
+                                     creation__gt=ev.evenement.creation,
+                                     numero__gt=1).order_by('time')
+                                     
+        return render(request,'liste_simple.html',{'evenements':evs})
+    return HttpResponse()
+def listeSessions(request):
+    return render(request,'liste_sessions.html')  
+
+def listeOpens(request):
+    return render(request,'liste_opens.html')

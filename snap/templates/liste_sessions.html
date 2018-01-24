@@ -1,0 +1,110 @@
+{% load static %}
+<script src="{% static 'snap/js/jquery-3.2.1.min.js' %}"></script> 
+<script src="{% static 'snap/js/jquery-ui-1.12.1.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'snap/js/jquery-ui.css' %}">
+ <style type="text/css">
+ table tbody tr:hover {
+    background-color: orange;
+    cursor: pointer;
+}
+</style>
+<script type="text/javascript">
+  $( document ).ready(function() {      
+    //console.log( "ready!" );
+    $("#session").hide();
+    function log( message ) {
+	      $( "<div>" ).text( message ).prependTo( "#log" );
+	      $( "#log" ).scrollTop( 0 );
+	    }
+    $.getJSON('env/users', function(data) {
+	   //console.log(data);
+	   $('#truc').append("<option value='0'>Tous</option>");
+	   $.each(data,function (key,user){
+	       console.log('user:',user.id,'-',user.eleve?user.eleve.classe:'prof');
+	       $('#truc').append("<option value='"+user.id+"'>"+user.username+"("+(user.eleve?user.eleve.classe:'prof')+")"+"</option>");
+	       log("ok")
+	   }) ;
+	   
+	   
+	});
+    $("#envoiEleve").button().click(function(e) {
+	 $.getJSON('env/'+$("#truc").val()+"/sessionsUser", function(data) {
+	     //console.log(data);
+	     $("#session").show();
+	     $.each(data,function (key,session){
+	           //console.log('user:',user.id,'-',user.eleve?user.eleve.classe:'prof');
+	           $('#sessions').append("<option value='"+session.id+"'>"+(new Date(session.evenement.creation)).toUTCString()+"("+session.evenement.user+")"+"</option>");	           
+	       }) ;
+	     
+	 })
+	
+    });
+    $("#truc").change(function() {
+	log("change"+$("#truc").val())}
+    );
+    $("#envoiSession").button().click(function(e) {
+	   //console.log("clic"+$("#sessions").val());
+	   $.get('session/'+$("#sessions").val()+"/", function(data)
+		   {
+	         console.log("recept"+data);
+	         $( "#log" ).html(data);
+	         $('table tr').click(function(){
+	             alert($(this).text());
+	         });
+	        }
+	    );
+    });
+  
+ });
+  
+  
+
+</script>
+
+<h3>Liste des dernières sessions</h3>
+
+  <label for="eleves">Choisir un élève: </label>
+  <select  list="listeEleves" id="truc"></select>
+  <datalist id="listeEleves">  
+  </datalist>
+  <input type="submit" id="envoiEleve">
+  
+  <div id="session">
+  <label for="session">Choisir une sessions: </label>
+  <select  list="listeSessions" id="sessions"></select>
+  <datalist id="listeSessions">  
+  </datalist>
+  <input type="submit" id="envoiSession">
+  </div>
+<div class="ui-widget" style="margin-top:2em; font-family:Arial">
+  Result:
+  <div id="log" style="height: 400px; overflow: auto;" class="ui-widget-content"></div>
+</div>
+<table align="left">
+{% for e in evenements %}
+<tr>
+<td>  </td>
+<td> <div>{{e.numero}}</div><div> <span style="font-size:70%">({{e.creation}})</span></div> </td>
+<td> {{e.time}} </td>
+<td> {{e.type}}</td>
+<td> {% for en in e.environnement.all%} {{en.type}} {{ en.detail|default:' .' }} 
+    {{en.valuebool}} {{en.valueint|default:''}} {{en.valuechar|default:''}}{% endfor %}</td>
+<td> {% for en in e.evenementepr_set.all %} {{en.type}} {{en.detail|default:' .'}} {% endfor %}</td>
+<td> {% for en in e.evenementspr_set.all %} {{en.type}} {{en.detail|default:' .'}}
+{% if en.blockId is not None%} {{en.blockId}}({{en.selector}}){% endif %}
+{% if en.parentId is not None%} (p:{{en.parentId}}){% endif %}
+{% if en.nextblockId is not None%} (n:{{en.nextblockId}}){% endif %}
+{% if en.targetId is not None%} (t:{{en.targetId}}){% endif %}
+{% if en.childId is not None%} (c:{{en.childId}}){% endif %}
+ {% endfor %}</td>
+</tr>
+{% endfor %}
+</table>
+<script>
+<!--
+$( "input[name=file]:radio" ).change(function(){
+    console.log('change',$(this).attr('id'));
+    console.log('_>',$( "input[name=file]:checked" ).val());
+    })
+-->
+</script>

@@ -4,6 +4,7 @@
 <table align="left">
 {% for e in evenements %}
 <tr>
+<td> {{e.id}} </td>
 <td>  </td>
 <td> <div>{{e.numero}}</div><div> <span style="font-size:70%">({{e.creation}})</span></div> </td>
 <td> {{e.time}} </td>
@@ -11,12 +12,14 @@
 <td> {% for en in e.environnement.all%} {{en.type}} {{ en.detail|default:' .' }} 
     {{en.valuebool}} {{en.valueint|default:''}} {{en.valuechar|default:''}}{% endfor %}</td>
 <td> {% for en in e.evenementepr_set.all %} {{en.type}} {{en.detail|default:' .'}} {% endfor %}</td>
-<td> {% for en in e.evenementspr_set.all %} {{en.type}} {{en.detail|default:' .'}}
+<td> {% for en in e.evenementspr_set.all %} {{en.id}}-{{en.type}} {{en.detail|default:' .'}}
 {% if en.blockId is not None%} {{en.blockId}}({{en.selector}}){% endif %}
 {% if en.parentId is not None%} (p:{{en.parentId}}){% endif %}
 {% if en.nextblockId is not None%} (n:{{en.nextblockId}}){% endif %}
 {% if en.targetId is not None%} (t:{{en.targetId}}){% endif %}
 {% if en.childId is not None%} (c:{{en.childId}}){% endif %}
+ </td>
+ <td> {% if en.type == "VAL" %} {% for i in en.inputs.all %} - Changement rang {{i.rang}} par "{{i.contenu}}"{% endfor%}{% endif %}
  {% endfor %}</td>
 </tr>
 {% endfor %}

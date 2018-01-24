@@ -156,6 +156,10 @@ class BlockInput(models.Model):
     contenu=models.CharField(max_length=50,null=True,blank=True)#contenu de l'entrée
     isNumeric=models.BooleanField(default=True) 
     isPredicate=models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['rang']
+        
     def __str__(self):
         return '%s, %s (JML %s)' % (self.rang,self.contenu,self.JMLid)
 

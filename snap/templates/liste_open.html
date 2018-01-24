@@ -1,0 +1,28 @@
+{% load static %}
+<style>
+tr.HatBlockMorph {
+color:green;
+}
+tr.CommandBlockMorph {
+color: blue;
+}
+tr.CSlotMorph {
+color: grey;
+font-size: 70%;
+}
+tr.ReporterBlockMorph {
+color: purple;
+}
+</style>
+<table align="left">
+{% for e in tdOpen %}
+<tr  class="{{e.typeMorph}}">
+<td> <div>{{e.JMLid}}</div><div> <span style="font-size:70%">({{e.id}})</span></div> </td>
+<td style="font-size:20%;"> {{e.typeMorph}} </td>
+{% for i in e.nbTd %} <td></td>{% endfor %}
+<td> {{e.rang}}</td>
+<td> {{e.contenu}}</td>
+<td> {% if e.blockSpec is not None %} {{e.blockSpec}} {% endif %}</td>
+</tr>
+{% endfor %}
+</table>

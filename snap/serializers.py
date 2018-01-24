@@ -236,5 +236,11 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
                 env.scripts.add(s)            
         return env
 
-
-    
+class EvenementSPROpenSerializer(serializers.ModelSerializer):
+    evenement=EvenementSerializer(required=False)    
+    #inputs=BlockInputSerializer(required=False, many=True)
+    scripts=serializers.PrimaryKeyRelatedField(read_only=True,many=True)
+    class Meta:
+        model=EvenementSPR
+        fields=['id','evenement','type','scripts',]
+        #read_only_fields=('evenement',)
