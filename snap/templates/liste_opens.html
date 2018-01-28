@@ -53,9 +53,11 @@
 	         });
 	        });
 		   $.get('spropen/'+$("#sessions").val()+"/listeActions", function(data) {
-			$("#actions").html(data);	
-			
+			$("#actions").html(data);			
 		    });
+		   $.get('cyto/'+$("#sessions").val(), function(data) {
+		       $("#cyto").html(data);
+		   })
     });
   
  });
@@ -89,3 +91,4 @@
   <div id="actions" style="height: 400px; overflow: auto;" class="ui-widget-content"></div>
 </div>
 
+<div id="cyto"></div>

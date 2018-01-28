@@ -6925,17 +6925,17 @@ ScriptsMorph.prototype.donnee = function(record) {
 		   case null: data['type']='DROP'; break;
 		   case 'valeur': {
 		       data['type']='VAL'; 
-		       data['detailAction']=record.detailAction;
+		       data['detail']=record.detailAction;
 		       break;
 		   }
 		   default: 
 		       data['type']='AUTRE';
-		       data['detailAction']=record.detailAction;
+		       data['detail']=record.detailAction;
 		} 
 	    if (record.lastReplacedInput) {
 	    	    // il y a un changement dans les inputs
 		    data['type']=data['type']+'VAL';
-	    	    data['detailAction']=record.lastReplacedInput.JMLid;	    	    
+	    	    data['detail']=record.lastReplacedInput.JMLid;	    	    
 	    	}
 	    // Normalement on a un blockMorph
 	    data['typeMorph']=record.lastDroppedBlock.constructor.name

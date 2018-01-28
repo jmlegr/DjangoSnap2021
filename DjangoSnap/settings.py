@@ -29,6 +29,26 @@ ALLOWED_HOSTS = ['localhost','127.0.0.1','0.0.0.0','raspjml',
                  'raspjml.local', '172.16.78.8']
 
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG')
+        },
+        'django.template': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 # Application definition
 
 INSTALLED_APPS = [
@@ -88,7 +108,7 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
 
-AUTH_PASSWORD_VALIDATORS = [
+AUTH_PASSWORD_VALIDATORS = [ #modifiés sur rasp
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
@@ -151,3 +171,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 #]
 MEDIA_URL='/media/'
 MEDIA_ROOT=os.path.join(BASE_DIR, 'media')
+SESSION_EXPIRE_AT_BROWSER_CLOSE=True

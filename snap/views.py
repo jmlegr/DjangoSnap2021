@@ -25,6 +25,7 @@ from django.urls.base import reverse
 from django.db.models import Q
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
+from textwrap import indent
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -171,29 +172,33 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
         serializer = self.get_serializer(evs, many=True)
         return Response(serializer.data)
     
-    @detail_route()
-    def listeOpen(self,request,pk=None):
+    @classmethod
+    def constructionListeOpen(self,pk=None):
         """
         reconstitution du programme chargé
         """
         def traiteBlock(b):
+            inputs,nextBlocks=parcoursInput(b)
             resultat={
                 'id':b.id, 'JMLid':b.JMLid,
                 'selector':b.selector, 'blockSpec':b.blockSpec,
                 'typeMorph':b.typeMorph,
-                'inputs':parcoursInput(b)
+                'parent':b.parent,
+                'inputs':inputs,                
                 }
-            if b.nextBlock: nextBlock={'source':b.JMLid,'target':b.nextBlock.JMLid}
-            else: nextBlock=None        
-            return resultat, nextBlock
+            #if b.nextBlock: nextBlock={'source':b.JMLid,'target':b.nextBlock.JMLid}
+            if b.nextBlock: nextBlocks.append({'source':b.JMLid,'target':b.nextBlock.JMLid})
+            #else: nextBlock=None        
+            return resultat, nextBlocks
         def parcoursBlock(b):
             liste=[]
             nextLiens=[]
             while True:
-                res,nextLien=traiteBlock(b)
+                res,nextBlocks=traiteBlock(b)
                 liste.append(res)
-                if nextLien is not None: 
-                    nextLiens.append(nextLien)
+                #if nextLien is not None: 
+                #    nextLiens.append(nextLien)
+                nextLiens+=nextBlocks
                 if b.nextBlock:
                     b=b.nextBlock
                 else:
@@ -202,22 +207,19 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
     
         def parcoursInput(b):
             inputs=[]
-            nextBlocks=None
+            nextBlocks=[]
             for inputB in b.inputs.all():          
                 inputs.append({'id':inputB.id,'JMLid':inputB.JMLid, 'typeMorph':inputB.typeMorph,
                            'rang':inputB.rang,
-                         'contenu':inputB.contenu})                                    
+                         'contenu':inputB.contenu,
+                         'parent':b.JMLid})                                    
             for inputBlock in b.inputsBlock.all():
             #recherche de l'input correspondant
                 inputB=b.inputs.filter(JMLid=inputBlock.JMLid)            
                 if inputB:
-                    result,nextBlock=parcoursBlock(inputBlock)
-                    inputs[inputB[0].rang]['contenu']=result
-                    #if nextBlock is not None: 
-                     #   nextLiens.append(nextBlock)
-                        
-                                 
-            return inputs 
+                    result,nextBlocks=parcoursBlock(inputBlock)
+                    inputs[inputB[0].rang]['contenu']=result                    
+            return inputs,nextBlocks
                         
         if pk is not None:        
             evo=EvenementSPR.objects.get(id=pk)
@@ -225,29 +227,68 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
             evo=EvenementSPR.objects.filter(type='OPEN').latest('evenement__creation')
         block=evo.scripts.all()[0]
         liste,nextLiens=parcoursBlock(block)
-        for i in liste:
-            print(i)
-        return render(request,'liste_open.html',{'tdOpen':self.renderOpen(liste),'nodes':liste,'links':nextLiens})
-
+        ret,inp=self.renderOpen(liste)
+        return liste,nextLiens,ret,inp
+    
+    @detail_route()
+    def listeOpen(self,request,pk=None):
+        liste,nextLiens,ret,inp=self.constructionListeOpen(pk)
+        return render(request,'liste_open.html',{'tdOpen':ret,'nodes':liste,'links':nextLiens})
+    
+    
+    @classmethod
     def renderOpen(self,r,nbTd=1):
         ret=[]
+        inputs={}
         for i in r:
             if 'blockSpec' in i: ret.append(
                         {'nbTd':range(nbTd),
                          'id':i['id'], 'JMLid':i['JMLid'],
                          'selector':i['selector'], 'blockSpec':'%s' % i['blockSpec'],
-                         'typeMorph':i['typeMorph'],             
+                         'typeMorph':i['typeMorph'], 'parent':'%s' %i['parent']        
                          })
             else:
                 ret.append({'nbTd':range(nbTd+1),'contenu': '%s' % i})
             if 'inputs' in i:
-                childs=[]
+                #on range les inputs par JMLid, chaque élément contient un temps+liste des inputs(childs)
+                inputs[i['JMLid']]=[{'time':0,'parent':i['parent'],
+                                     'blockSpec':i['blockSpec'] if 'blockSpec' in i else None,
+                                     'childs':{}}]
+                ipt=inputs[i['JMLid']][0]['childs']
+                if 'selector' in i and i['selector']=='reportGetVar':
+                    ipt[0]={'valeur':i['blockSpec'],'JMLid':None,
+                            'id':i['JMLid'],
+                            'type':i['typeMorph'],
+                            'selector':i['selector'],
+                            'parent':i['parent']}
                 for inp in i['inputs']:
-                    if inp['typeMorph'] in ['InputSlotMorph',]: 
-                        ret+=self.renderOpen([inp['contenu']],nbTd+1)                    
-                    else:
-                        ret+=self.renderOpen(inp['contenu'],nbTd+1)
-        return ret
+                    if inp['typeMorph'] in ['InputSlotMorph',]:
+                        ipt[inp['rang']]={'valeur':inp['contenu'],'JMLid':None,
+                                          'id':inp['JMLid'],
+                                          'type':inp['typeMorph'],
+                                          #'selector':inp['selector'] if 'selector' in inp else None,
+                                          #'blockSpec':inp['blockSpec'] if 'blockSpec' in inp else None,
+                                          'parent':inp['parent']}
+                        rt,ip=self.renderOpen([inp['contenu']],nbTd+1)
+                        inputs={**inputs,**ip}
+                        ret+=rt
+                                            
+                    else:                       
+                        #inputs[i['JMLid']][inp['rang']]={'valeur':inp['contenu'][0]['blockSpec'],'JMLid':inp['contenu'][0]['JMLid']}
+                        ipt[inp['rang']]={'valeur':None,'JMLid':inp['contenu'][0]['JMLid'],
+                                          'id':inp['JMLid'],
+                                          'type':inp['typeMorph'],
+                                          #'selector':inp['selector'] if 'selector' in inp else None,
+                                          #'blockSpec':inp['blockSpec'] if 'blockSpec' in inp else None,
+                                          'parent':inp['parent']}
+                        rt,ip=self.renderOpen(inp['contenu'],nbTd+1)
+                        inputs={**inputs,**ip}
+                        ret+=rt
+        #print ('inputs',inputs)
+        return ret,inputs
+    
+   
+    @classmethod
     def suivant(self,ev):
         try:
             suivant=EvenementSPR.objects.filter(type='OPEN',
@@ -256,11 +297,165 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
         except:
             suivant=None
         return suivant
-    
+    @classmethod
     def precedent(self,ev):
         precedent=EvenementSPR.objects.filter(type='OPEN',
                                             evenement__user=ev.evenement.user,
                                             evenement__creation__lt=ev.evenement.creation).latest('evenement__creation')
+    @classmethod
+    def construireListeActions(self,pk):
+        def copieInput(r,withChilds=True,temps=None):
+            """
+            copie une input
+            """
+            if r is None: return None if temps is None else {'time':temps,'childs':{}}
+            result={'time':r['time'] if temps is None else temps,
+                    'parent':r['parent'] if 'parent' in r else None,
+                    'blockSpec':r['blockSpec'] if 'blockSpec' in r else None,
+                    'selector':r['selector'] if 'selector' in r else None,
+                    'childs':{}}
+            if withChilds and len(r['childs'])!=0:
+                for c in r['childs']:
+                    rc=r['childs'][c]                    
+                    result['childs'][c]={'valeur':rc['valeur'],
+                                         'JMLid':rc['JMLid'],
+                                         'id':rc['id'] if 'id' in rc else None,
+                                         'type':rc['type'] if 'type' in rc else None,
+                                         'parent':rc['parent'] if 'parent' in rc else None
+                                         }
+            return result
+        
+        liste,nextLiens,ret,inp=self.constructionListeOpen(pk)
+        #print('liste')
+        #for i in liste: print(i)
+        #print('liens')        
+        #for i in nextLiens: print(i)
+        #print('retour:')
+        #for i in ret: print(i)
+        #print('inputs:')
+        #for i in inp: print (i,':',inp[i])
+        ev=EvenementSPR.objects.get(id=pk)
+        evs=self.suivant(ev)
+        if evs is not None:
+            actions=Evenement.objects.filter(user=ev.evenement.user,
+                                         creation__gte=ev.evenement.creation,
+                                         numero__gt=ev.evenement.numero,
+                                         creation__lt=evs.evenement.creation).order_by('numero')
+        else:
+            #c'est le dernier OPen
+            actions=Evenement.objects.filter(user=ev.evenement.user,
+                                         creation__gte=ev.evenement.creation,
+                                         numero__gt=ev.evenement.numero).order_by('numero')
+        for a in actions:         
+            #print('type:',a.type)   
+            if a.type =='SPR':
+                spr= a.evenementspr_set.all()[0]
+                #print('SPR',spr.type)      
+                #print('temps:',a.time,':',spr.type,'block %s' % spr.blockId,
+                          #'detail %s' % spr.detail, 'location % s' %spr.location,
+                          #'childId %s' % spr.childId, 'ParentID %s' % spr.parentId,
+                          #'Targetid %s' % spr.targetId,'scripts %s' % spr.scripts.all().count())
+                #print ('entrée:',
+                          #["%s - %s - %s - %s//" % (s.JMLid,s.typeMorph,s.rang,s.contenu) for s in spr.inputs.all()],
+                          #)                         
+                #if spr.type in ['VAL','NEWVAL','DROPVAL']:
+                if spr.type=='NEW':
+                    newval={'time':a.time,'selector':spr.selector,'blockSpec':spr.blockSpec,'childs':{}}
+                    for c in spr.inputs.all():
+                        if c.typeMorph in ['InputSlotMorph',]:
+                            newval['childs'][c.rang]={'valeur':c.contenu,'JMLid':None,'id':c.JMLid}
+                        else:
+                            newval['childs'][c.rang]={'type':c.typeMorph,
+                                                      'valeur':None,
+                                                      'JMLid':c.JMLid
+                                                      }
+                    inp[spr.blockId]=[newval]
+                elif spr.type=='VAL':
+                    #c'est une modification d'un truc qui existe , donc test suivant inutile                        
+                    #if spr.blockId in inp:
+                    val=inp[spr.blockId][-1:][0]
+                    #c'est un changement de valeur, on recherche laquelle
+                    
+                    print('ici val',val)
+                    #newval={'temps':a.time,'childs':{}}
+                    newval=copieInput(val, True, a.time)                        
+                    for i in spr.inputs.all():   
+                        #print('ri',i)                         
+                        if i.typeMorph in ['InputSlotMorph',]:
+                            newval['childs'][i.rang]={'valeur':i.contenu,'JMLid':None,'id':i.JMLid}
+                            if i.contenu!=val['childs'][i.rang]['valeur']:
+                                newval['childs'][i.rang]['change']=True
+                        else: #nécessaire?
+                            newval['childs'][i.rang]={
+                                'valeur':val['childs'][i.rang]['valeur'],
+                                'JMLid':val['childs'][i.rang]['JMLid']}
+                    inp[spr.blockId].append(newval)
+                elif spr.type=='DROPVAL':
+                    #c'est un reporter existant déplacé
+                    #on  cherche le block qui a perdu son input
+                    # c'est celui quia un JMLid d'un enfant = spr.blockid et qui est le plus récent
+                    lasttime=-1
+                    lastId=None
+                    for i in inp:
+                        val=inp[i][-1:][0]
+                        for c in val['childs']:                            
+                            if val['childs'][c]['JMLid']==spr.blockId:
+                                if val['time']>lasttime: 
+                                    lasttime=val['time']
+                                    lastId=i
+                    if lastId is not None:
+                        ipt=inp[lastId][-1:][0]
+                        val=copieInput(ipt, True,a.time)
+                        #val['childs']={}
+                        #for c in ipt['childs']:
+                        #    val['childs'][c]={'valeur':ipt['childs'][c]['valeur'],
+                        #                      'JMLid':ipt['childs'][c]['JMLid']}
+                            #val['childs'][c]=ipt['childs'][c].copy()
+                        for c in val['childs']:
+                            if val['childs'][c]['JMLid']==spr.blockId:
+                                val['childs'][c]['JMLid']=None                                
+                        #print('lasrt',lastId,val,inp[lastId][-1:][0])
+                        inp[lastId].append(val)
+                    #on ajuste la nouvelle valeur
+                    #newval=copieInput(ipt, True, a.time)
+                    #newval={'temps':a.time,'childs':{}}
+                    #for i in ipt['childs']:
+                        #newval['childs'][i]={}
+                        #newval['childs'][i]['valeur']=ipt['childs'][i]['valeur']
+                        #newval['childs'][i]['JMLid']=ipt['childs'][i]['JMLid']
+                        #newval['childs'][i]['ici']=True
+                    #print('ipt:',ipt,'newal:',newval)
+                    #print('drop:',newval)
+                    if spr.targetId in inp: #normalement il l'est
+                        newval=copieInput(inp[spr.targetId][-1:][0], True, a.time)
+                        #on cherche l'entrée remplacée
+                        for c in newval['childs']:
+                            #print('-------------------')
+                            #print('c',type(c),'child',type(newval['childs'][c]['id']),'detail',type(spr.detail))
+                            if c==int(spr.detail) or newval['childs'][c]['id']==int(spr.detail):
+                                #print('TOURVE************')                                
+                                newval['childs'][c]={'JMLid':spr.blockId,
+                                                     'id':spr.blockId,
+                                                     'parent':spr.targetId,
+                                                     'type':spr.typeMorph,                                                     
+                                                     'valeur':None}
+                                break;
+                        inp[spr.targetId].append(newval)
+                        #on change le parent 
+                        newval=copieInput(inp[spr.blockId][-1:][0],True,a.time)
+                        newval['parent']=spr.targetId
+                        inp[spr.blockId].append(newval)                       
+                        
+                    else:
+                        #normalement ça ne devrait pas se passer                        
+                        newval={'time':a.time,'childs':{},'erreur':'DROPVAL avec valeur non existante'}
+                        inp[spr.targetId]=[newval]
+                #print('---')
+                #for i in inp: print(i,inp[i])   
+                   
+                                    
+        return inp,liste,nextLiens              
+    
     
     @detail_route()
     def listeActions(self,request,pk):
@@ -417,3 +612,104 @@ def listeSessions(request):
 
 def listeOpens(request):
     return render(request,'liste_opens.html')
+
+
+def essai(liste,liens):
+    def recurs(jmlid,b):
+        nodes={}
+        liensInputs=[]
+        print(b)
+        data={'id':'%s_init' % jmlid}
+        data['temps']=b['temps'] if 'temps' in 'b' else None
+        if 'type' in b and b['type']=='InputSlotMorph':
+            data['valeur']=b['valeur']            
+        else:
+            
+            data['valeur']=b['blockSpec'] if 'blockSpec' in b else b['valeur']
+        if 'parent' in b and b['parent'] is not None:
+                    data['parent']='%s' % b['parent']              
+        nodes[jmlid]=data
+        #nodes.append({'data':data})
+        if 'childs' in b:
+            for c in b['childs']:
+                ch=b['childs'][c]                
+                ch['rang']=c
+                
+                liensInputs.append({'id':'%s_init-%s_init' % (jmlid,ch['JMLid'] if ch['JMLid'] is not None else ch['id']),
+                                    'source':'%s_init' % jmlid,
+                                    'target':'%s_init' % (ch['JMLid'] if ch['JMLid'] is not None else ch['id']), 
+                                    'type':'child' if 'rang' in b else 'input'
+                                    })
+                ret,liens=recurs(ch['JMLid'] if ch['JMLid'] is not None else ch['id'],ch)
+                for i in ret:
+                    if i not in nodes:
+                        nodes[i]={}
+                    for k in ret[i]:                        
+                        nodes[i][k]=ret[i][k]
+                liensInputs+=liens
+        return nodes,liensInputs
+    
+    data={}
+    liensInputs=[{'id':'%s-%s' % (i['source'],i['target']),
+                  'source':'%s_init' % i['source'],
+                  'target':'%s_init' % i['target'],
+                  'type':'next'
+                  } for i in liens]
+    for b in liste:
+        nodes,liens=recurs(b,liste[b][0])
+        for i in nodes:
+            if i not in data:
+                data[i]={}
+            for k in nodes[i]:                        
+                data[i][k]=nodes[i][k]
+        liensInputs+=liens
+    
+    return data,liensInputs
+        
+    
+       
+def cyto(request,id=277):
+    inp,liste,nextliens=EvenementSPROpenViewset.construireListeActions(pk=id)
+    #on prépare la liste des liens 'next':
+    liens=[{'source':'%s_0' % l['source'],
+            'target':'%s_0' % l['target'],
+            'type':'nextblock'} for l in nextliens]
+    nodes=[]
+    liensChanged=[]
+    maxtime=0
+    firstime=0
+    y=10
+    for i in inp:
+        newListe=[]
+        x=10
+        y+=50        
+        for b in inp[i]:
+            x+=150
+            data={'x':x,'y':y}
+            data['time']=b['time'] if 'time' in b else -1
+            if firstime==0 and data['time']>0: firstime=data['time']
+            if data['time']>maxtime: maxtime=data['time']
+            data['id']='%s_%s' % (i,data['time'])
+            if 'type' in b and b['type']=='InputSlotMorph':
+                data['valeur']=b['valeur']            
+            else:            
+                data['valeur']=b['blockSpec'] if 'blockSpec' in b else b['valeur']
+            newListe.append(data)
+            ind=inp[i].index(b)
+            if ind>0:
+                #c'est un changement
+                liensChanged.append({'source':newListe[ind-1]['id'],
+                                     'target':data['id'],
+                                     'type':'changed'
+                                     })   
+        nodes+=newListe
+    liens+=liensChanged
+    #preparation pour cuto
+    datanodes=[{'data':n} for n in nodes]
+    dataedges=[{'data':n} for n in liens]
+    
+    context={'nodes':json.dumps(datanodes),'edges':json.dumps(dataedges),
+             'maxtime':maxtime, 'firstime':firstime,
+             }
+    #return context
+    return render(request, 'testcyto.html',context=context) 

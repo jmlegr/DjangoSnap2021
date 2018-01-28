@@ -42,7 +42,8 @@ urlpatterns = [
     path('opens',views.listeOpens),
     #path('open/',views.listeOpen),
     #path('open/<str:id>/',views.listeOpen),
-    
+    path('cyto',views.cyto),
+    path('cyto/<str:id>/',views.cyto,)
     ]
 
 urlpatterns += [
