@@ -16,6 +16,9 @@ body {
   left: 0;
   top: 0;
 }
+nextblock {
+fill-color: red
+}
 </style>
 <meta charset=utf-8 />
 <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
@@ -42,6 +45,8 @@ var cy = window.cy = cytoscape({
       {
         selector: 'node',
         css: {
+            'shape':'roundrectangle',
+            'width':'label',
           'content': 'data(valeur)',
           'text-valign': 'center',
           'text-halign': 'center'
@@ -62,7 +67,10 @@ var cy = window.cy = cytoscape({
       {
         selector: 'edge',
         css: {
-          'target-arrow-shape': 'triangle'
+          'target-arrow-shape': 'data(arrow)',
+          'line-color':'data(color)',
+          'arrow-scale':10,
+          
         }
       },
       {

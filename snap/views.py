@@ -673,7 +673,9 @@ def cyto(request,id=277):
     #on prépare la liste des liens 'next':
     liens=[{'source':'%s_0' % l['source'],
             'target':'%s_0' % l['target'],
-            'type':'nextblock'} for l in nextliens]
+            'type':'nextblock',
+            'color':'blue',
+            'arrow':'none'} for l in nextliens]
     nodes=[]
     liensChanged=[]
     maxtime=0
@@ -700,7 +702,9 @@ def cyto(request,id=277):
                 #c'est un changement
                 liensChanged.append({'source':newListe[ind-1]['id'],
                                      'target':data['id'],
-                                     'type':'changed'
+                                     'type':'changed',
+                                     'color':'#C99966',
+                                     'arrow':'tee'
                                      })   
         nodes+=newListe
     liens+=liensChanged
