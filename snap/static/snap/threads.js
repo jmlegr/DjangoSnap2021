@@ -266,7 +266,9 @@ ThreadManager.prototype.startProcess = function (
     	    topBlockId:top.JMLid, topBlockSelector:top.selector,
     	    click:click,
     	    processes:liste
-    	    });
+    	    });    
+    var ide = top.parentThatIsA(IDE_Morph);    
+    ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
     /**
      * Fin Modification JML
      **/
@@ -380,6 +382,7 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
     var remaining = [],
         count,
         myself = this;
+    
     this.processes.forEach(function (proc) {
         var result,
             glow;
@@ -393,6 +396,9 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
         	    topBlockSelector:proc.topBlock.selector,
         	    topBlockId:proc.topBlock.JMLid,
         	});
+        	var ide = proc.topBlock.parentThatIsA(IDE_Morph);
+    	    	ide.uploadCanvas(ide.stage.fullImageClassic(),'FIN'+proc.topBlock.JMLid);
+        	
             }
             
 	    /**
@@ -718,6 +724,8 @@ Process.prototype.stop = function (click=false,onError=false) {
 	    topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
 	    click:click
 		});
+	var ide = this.topBlock.parentThatIsA(IDE_Morph);
+	    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOP');
     }
     
     /**

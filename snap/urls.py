@@ -9,6 +9,7 @@ from . import views
 from rest_framework.routers import DefaultRouter
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.views.generic.base import TemplateView
 
 admin.site.site_header = 'Snap4Gironde'
 admin.site.site_title='Snap4Gironde'
@@ -43,7 +44,11 @@ urlpatterns = [
     #path('open/',views.listeOpen),
     #path('open/<str:id>/',views.listeOpen),
     path('cyto',views.cyto),
-    path('cyto/<str:id>/',views.cyto,)
+    path('cyto/<str:id>/',views.cyto,),
+    path('cyto2',views.cyto3),
+    path('d3',TemplateView.as_view(template_name='d3test.html')),
+     path('c2',TemplateView.as_view(template_name='testcyto2.html')),
+     path('ajax',views.testAjax),
     ]
 
 urlpatterns += [

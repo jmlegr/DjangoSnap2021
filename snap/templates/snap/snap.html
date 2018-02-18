@@ -16,6 +16,29 @@
 		  var date_debut=newdate;
 		  console.info("csrf"+csrf_token);
 		//Test envoi
+		function sendAjaxData(data) {
+                var XHR = new XMLHttpRequest();
+                                // Define what happens on successful data submission
+                XHR.addEventListener('load', function(event) {
+                  //alert('Yeah! Data sent and response loaded.');
+                });
+                
+                // Define what happens in case of error
+                XHR.addEventListener('error', function(event) {
+                  alert('Oups! Something goes wrong.');
+                });
+                
+                // Set up our request
+                XHR.open('POST', '/snap/ajax',true);
+                XHR.setRequestHeader('X-CSRFToken',csrf_token);
+                // Add the required HTTP header for form data POST requests
+                XHR.setRequestHeader('Content-type','application/json; charset=utf-8');
+                XHR.setRequestHeader('HTTP_X_REQUESTED_WITH','XMLHttpRequest');
+                //XHR.setRequestHeader("Content-length", string.length);
+                // Finally, send our data.
+                
+                XHR.send("{image:"+data+"}");
+              }
 		  function sendJsonData(data) {
 		        var XHR = new XMLHttpRequest();
 		        //var response = {data:[{"a":1, "b":2},{"a":2, "b":2}]}
@@ -90,7 +113,7 @@
         
         var sendEvenement = function(type,data,url=null) {
         {% if user.groups.all.0.name == "eleves" %}
-        console.log('Eleve connecté');
+        //console.log('Eleve connecté');
         var newdate=new Date();
         var time=newdate.getTime()-date_debut;
         
@@ -100,12 +123,15 @@
             }
         for (var k in data) json[k]=data[k];
         //console.info("envoi",json);
-        switch (type) {
-           case ('ENV'): url='env/'; break;
-           case ('SPR'): url='spr/'; break;
-           case ('EPR'): url='epr/'; break;
-           default: url='evenement/'; break;            
+        if (!url) {
+           switch (type) {
+            case ('ENV'): url='env/'; break;
+            case ('SPR'): url='spr/'; break;
+            case ('EPR'): url='epr/'; break;
+            default: url='evenement/'; break;            
+            }
         }
+        
         $.ajax({
             url: url,
             type: 'POST',
@@ -117,7 +143,8 @@
             dataType: 'json',
             //processData: true,
             beforeSend: function() {
-                console.log('Uploading...',json);
+                //console.log('Uploading...',json);
+                console.log('Uploading...');
                 //$('.upload-progress').show();
                 },
             success: function (response) {

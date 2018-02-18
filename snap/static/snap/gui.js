@@ -615,7 +615,7 @@ IDE_Morph.prototype.createControlBar = function () {
 	 **/
 	//'toggleStageSize',
         function() {
-            sendEvenement('ENV',{type:myself.isSmallStage?'NSCRN':'SSCRN',detail:'button'});
+            sendEvenement('ENV',{type:myself.isSmallStage?'NSCRN':'SSCRN',detail:'button'});            
             this.toggleStageSize();
         },
 	/**
@@ -2199,8 +2199,12 @@ IDE_Morph.prototype.isPaused = function () {
 IDE_Morph.prototype.stopAllScripts = function () {
     /**
      * Modification JML (duff,  30 déc. 2017)
+     * envoi de l'évènement + un snapshot
      **/
     sendEvenement(type='ENV',data={type:'STOP',detail:'button',valueChar:'all'});
+    var ide = this.parentThatIsA(IDE_Morph);
+    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
+    
     /**
      * Fin Modification JML
      **/
@@ -4867,6 +4871,15 @@ IDE_Morph.prototype.saveFileAs = function (
     }
 };
 
+/**
+ * Modification JML (duff,  17 févr. 2018)
+ **/
+IDE_Morph.prototype.uploadCanvas = function (canvas,detail='') {
+    sendEvenement('EPR',{type:'SNP',image64:canvas.toDataURL(),detail:detail});
+}
+/**
+ * Fin Modification JML
+ **/
 IDE_Morph.prototype.saveCanvasAs = function (canvas, fileName) {
     // Export a Canvas object as a PNG image
     // Note: This commented out due to poor browser support.
@@ -4880,8 +4893,10 @@ IDE_Morph.prototype.saveCanvasAs = function (canvas, fileName) {
     //     });
     //     return;
     // }
-
     this.saveFileAs(canvas.toDataURL(), 'image/png', fileName);
+    
+
+
 };
 
 IDE_Morph.prototype.saveXMLAs = function(xml, fileName) {

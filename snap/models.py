@@ -117,6 +117,15 @@ class SnapProcess(models.Model):
     class Meta:
         abstract = True
         ordering = ['receiver','+topBlockId']
+
+def userSnapShot(instance, filename):
+        # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
+        return 'user_{0}/SnapShots/{1}'.format(instance.evenement.user.id, filename)
+class SnapSnapShot(models.Model):
+    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='image')
+    image=models.ImageField(upload_to=userSnapShot,blank=True)
+    
+    
     
 class EvenementEPR(SnapProcess):
     """
@@ -134,6 +143,7 @@ class EvenementEPR(SnapProcess):
         ('ERR','Erreur'),
         ('ASK','Demande d\'une entrée utilisateur'),
         ('ANSW','Entrée de l\'utilisateur'), #strockée dans detail
+        ('SNP','Snapshot'), #id de l'image dans detail
         ('AUTRE','(Non identifié)'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
