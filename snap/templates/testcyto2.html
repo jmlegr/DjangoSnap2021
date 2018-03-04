@@ -29,7 +29,8 @@ body {
 
   -->
   <script src="{% static 'snap/js/cola.min.js' %}"></script>
-<script src="{% static 'snap/js/cytoscape-cola.js' %}"></script>
+<!-- <script src="{% static 'snap/js/cytoscape-cola.js' %}"></script> -->
+<script src="{% static 'snap/js/cytocola.js' %}"></script>
 
 </head>
 <body>
@@ -37,8 +38,8 @@ body {
 <!-- Load appplication code at the end to ensure DOM is loaded -->
 </body>
 <script>
-var nodes={{nodes|safe}};
-var edges={{edges|safe}};
+//var nodes={{nodes|safe}};
+//var edges={{edges|safe}};
 //var maxtime={{maxtime}};
 //var firstime={{firstime}};
 //console.log(tags)
@@ -54,17 +55,8 @@ var cy = window.cy = cytoscape({
         css: {
             'shape':'roundrectangle',
             'width':'label',
-          //'content': 'data(valeur)',
-          'content': function(ele) {
-              if (ele.data('valeur')) v=ele.data('valeur');
-              else if (ele.data('contenu')) v='c('+ele.data('contenu')+')c';
-              else if (ele.data('blockSpec')) v=ele.data('blockSpec');
-              else v='---;'
-              return ele.data('id')+'\n'+v
-                 +(ele.data('rang')!=null?'('+ele.data('rang')+')':'')
-                  
-              },
-          
+          'content': 'data(valeur)',
+          //'content': function(ele) {return 'ele'+ele.data('valeur')},
           'text-valign': 'center',
           'text-halign': 'center',
           'background-color': function(ele) {
@@ -118,20 +110,12 @@ var cy = window.cy = cytoscape({
           //'target-arrow-shape': 'data(arrow)',
           'target-arrow-shape':'triangle',
           //'line-color':'data(color)',
-          //'visibility': function(ele) {return (ele.data('type')=='child')?'hidden':'visible'},
-          'line-color': function(ele) {              
-              //if (ele.data('type')=='child') return 'red';
-              if (ele.data('color')) return ele.data('color');
-              if (ele.data('couleur')) return ele.data('couleur');
-              switch (ele.data('type')) {
-               case 'nextblock': return 'black';
-               case 'input': return 'red';
-               case 'change': return 'green';              
-              }
-              return 'blue';
+          'visibility': function(ele) {return (ele.data('type')=='child')?'hidden':'visible'},
+          /*'line-color': function(ele) {if (ele.data('type')=='child') return 'red';
+                                        return 'blue'
           },
           'opacity': function(ele) {if (ele.data('type')=='child') return 0.2;
-          return 0.8},
+          return 0.8},*/
           'arrow-scale':1.5,
           
         }
@@ -150,26 +134,47 @@ var cy = window.cy = cytoscape({
     ],
 
     elements: {
-      nodes: nodes,
-      edges: edges
+	"nodes":[{"data":{id:"1","valeur":"a","width":60,"height":40}},
+	    {'data':{id:"2","valeur":"b","width":60,"height":40}},
+	    {'data':{id:"3","valeur":"c","width":60,"height":40}},
+	    {'data':{id:"4","valeur":"d","width":60,"height":40}},
+	    {'data':{id:"5","valeur":"e","width":60,"height":40}}],
+	      
+      edges: [
+	   {'data':{source:"1",target:"4"}},
+	   {'data':{source:"1",target:"3"}}
+	  
+	  
+      ]
     },
 
     layout: {
       //name: 'circle',
       name: 'cola',
-      //alignment: function(ele) {return {x:0, y:1}},
+      alignment: function(node) {
+	           console.log('nodeid',node.id());
+	           switch (node.id()) {
+	             case '1' : return {x:0,y:0}; break;
+	             case '4' : return {x:0}; break;
+	             case '3' : return {y:0}; break;
+	             case '2' :return {y:-10}; break;
+	           }
+	           
+	           return null
+               }
+      //alignment: [{axis:"y", offsets:[{node:"1",offset:0},{node:'4',offset:0}]}],
       //padding: 1,
       //parent: function(node) {
 	   //if (node.data['parentId']=='244_init') return '244_init';
 	   //return node.data['conteneur'];
       //},
-      positions: function(node) {
+      //positions: function(node) {
 	   //console.log(node.data('time'),{x:node.data('time')/maxtime,y:node.data('y')});
-	   return {x:node.data('x'),y:node.data('y')}
+	   //return {x:node.data('x'),y:node.data('y')}
 	   //if (node.data('time')==0) return {x:50,y:node.data('y')}
 	   //return {x:200+800*(node.data('time')-firstime)/(maxtime-firstime),y:node.data('y')}
 	   //return {x:800*node.data('time')/maxtime,y:node.data('y')}
-      }
+      //}
     }
   });
 </script>

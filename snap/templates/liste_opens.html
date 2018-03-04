@@ -55,7 +55,7 @@
 		   $.get('spropen/'+$("#sessions").val()+"/listeActions", function(data) {
 			$("#actions").html(data);			
 		    });
-		   $.get('cyto/'+$("#sessions").val(), function(data) {
+		   $.get('tb/'+$("#sessions").val(), function(data) {
 		       $("#cyto").html(data);
 		   })
     });
@@ -88,7 +88,7 @@
 
 <div class="ui-widget" style="margin-top:2em; font-family:Arial">
   Actions:
-  <div id="actions" style="height: 400px; overflow: auto;" class="ui-widget-content"></div>
+  <div id="actions" style="height: 200px; overflow: auto;" class="ui-widget-content"></div>
 </div>
 
 <div id="cyto"></div>

@@ -3,6 +3,12 @@ from django.contrib.auth.models import User
 from django.core.validators import validate_comma_separated_integer_list
 from django.db.models import signals
 
+import os
+from django.core.files.storage import default_storage
+from django.db.models import FileField
+
+
+    
 
 class Classe(models.Model):
     nom= models.CharField(max_length=10)
@@ -125,6 +131,16 @@ class SnapSnapShot(models.Model):
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='image')
     image=models.ImageField(upload_to=userSnapShot,blank=True)
     
+    def delete(self,*args,**kwargs):
+        #ne marche pas sur un delete ou sur un queryset.delete
+        # You have to prepare what you need before delete the model
+        storage, path = self.image.storage, self.image.path
+        # Delete the model before the file
+        super(SnapSnapShot, self).delete(*args, **kwargs)
+        # Delete the file after the model
+        storage.delete(path)
+        
+
     
     
 class EvenementEPR(SnapProcess):

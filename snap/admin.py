@@ -2,8 +2,10 @@ from django.contrib import admin, messages
 
 # Register your models here.
 from .models import Document, Evenement, EvenementEPR, EvenementENV, \
-        Eleve, Classe, EvenementSPR, ProgrammeBase,Block
+        Eleve, Classe, EvenementSPR, ProgrammeBase,Block, SnapSnapShot
 
+class SnapSnapShotAdmin(admin.ModelAdmin):
+    model=SnapSnapShot
 
 class DocumentAdmin(admin.ModelAdmin):
     list_display=['description','user','document','uploaded_at']
@@ -59,4 +61,4 @@ admin.site.register(EvenementENV)
 admin.site.register(EvenementEPR)
 admin.site.register(EvenementSPR,EvenementSPRAdmin)
 admin.site.register(Block)
-
+admin.site.register(SnapSnapShot)

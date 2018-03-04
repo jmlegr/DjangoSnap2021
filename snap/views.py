@@ -30,6 +30,9 @@ from textwrap import indent
 from rest_framework.renderers import JSONRenderer
 from django.core.files.base import ContentFile
 
+import copy 
+from snap.objets import BlockSnap, CytoElements, ListeBlockSnap
+
 def aff(r,message='JSON'):
     print(message)
     print(json.dumps(r,sort_keys=True,indent=3,))
@@ -233,6 +236,32 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                 resultat['nextBlock']=None        
             return resultat, nextBlocks
         def parcoursBlock(b):
+            """
+        contruction de :
+            liste: liste hiérarchisée des blocks avec
+                "JMLid": JMLid du bloc,
+                "blockSpec":
+                "category": toujours à null, à vérifier ou supprimer?
+                "id": id SQL
+                "nextBlock": JMLid du block suivant s'il existe
+                "parent": JMLid du block précédent ou?
+                "selector":
+                "typeMorph":
+                "inputs": tableau des input cf listeInputs [
+                     {
+                        "JMLid": JMLid de l'input,
+                        "conteneur": JMLid du block contenant l'input,
+                        "contenu": contenu de l'input, 
+                                    soit une valeur 
+                                    soit une liste hiérarchisée des blocks,
+                                    
+                        "id": id SQL,
+                        "parent": block précédent ou contenant,
+                        "rang": rang de l'input dans la liste,
+                        "typeMorph", 
+                        "selector", "blockSpec" si c'est un block d'instruction
+            nextBlocks: liste des liens {source,target,type=nextBlock}
+        """ 
             liste=[]
             nextLiens=[]
             while True:
@@ -248,35 +277,53 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
             return liste,nextLiens
     
         def parcoursInput(b):
+            """
+            renvoie une liste des inputs contenant
+                soit un input de type valeur (le contenu n'est pas une liste)
+                soit un input de type block (le contenu est alors ce block et ses suivants)
+                -> le block est donc répété en début de contenu!
+                -> on peut faire la différence car le block "juste input" ne contient pas de blockSpec ou selector
+            """
             inputs=[]
             nextBlocks=[]
-            for inputB in b.inputs.all():          
-                inputs.append({'id':inputB.id,'JMLid':inputB.JMLid, 'typeMorph':inputB.typeMorph,                               
-                           'rang':inputB.rang,
-                         'contenu':inputB.contenu,
-                         'conteneur':b.JMLid,
-                         'parent':b.JMLid,})                                    
+            #on parcourt tous les inputs
+            for inputB in b.inputs.all():
+                inputs.append({
+                        'id':inputB.id,'JMLid':inputB.JMLid,
+                        'typeMorph':inputB.typeMorph,                                                       
+                        'rang':inputB.rang,
+                        'contenu':inputB.contenu,
+                        'conteneur':b.JMLid,
+                        'parent':b.JMLid,})
+            #on parcours les inputs "blocks" (et on les rajoute)
             for inputBlock in b.inputsBlock.all():
             #recherche de l'input correspondant
                 inputB=b.inputs.filter(JMLid=inputBlock.JMLid)            
                 if inputB:
+                    #on traite le block
                     result,nextBlocks=parcoursBlock(inputBlock)
                     for r in result:
                         r['conteneur']=b.JMLid
                         r['typeInput']='block'
                     inputs[inputB[0].rang]['contenu']=result                    
-                    #inputs[inputB[0].rang]['blockConteneur']=b.JMLid
+                    #inputs[inputB[0].rang]['blockConteneur']=b.JMLid            
             return inputs,nextBlocks
                         
+        #récupération de l'évènement correspondant à l'ouverture d'un fichier
+        # (id donnée ou dernier)
         if pk is not None:        
             evo=EvenementSPR.objects.get(id=pk)
         else:
             evo=EvenementSPR.objects.filter(type='OPEN').latest('evenement__creation')
+        #on récupère le block de tête
         block=evo.scripts.all()[0]
-        liste,nextLiens=parcoursBlock(block)
-        ret,inp,nodes,liens=self.renderOpen(liste)
-        #aff(liste)
-        return liste,nextLiens,ret,inp,nodes,liens
+        #construction de la liste hiérarchisée des blocs et des liens "nextblock"
+        liste,nextLiens=parcoursBlock(block)    
+        #ret,inp,nodes,liens=self.renderOpen(liste)
+        #préparation de la liste et création de tous les liens
+        nodes,liens=self.renderOpen(liste)        
+        #return liste,nextLiens,ret,inp,nodes,liens
+        return nodes,liens
     
     @detail_route()
     def listeOpen(self,request,pk=None):
@@ -285,10 +332,31 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
     
     
     @classmethod
-    def renderOpen(self,r,nbTd=1):
+    def renderOpen(self,listePrgInitial,nbTd=1):
+        """
+        construit la liste des noeuds et des liens pour le rendu cytoscape du programme chargé
+        listePrgInitial est la liste hiéarchisée représentant le programme chargé
+        les noeuds sont dans un dictionnaire de clef JMLid 
+        (pour traiter l'évolution du block au cours du temps, ultérieurement)
+        chaque noeud est sous la même forme que listePrgInitial, avec en plus
+         "valeur" : sera le label du noeud, 
+             prend soit la valeur du contenu si c'est un inputSlotMorph,
+             soit le nom du block
+         "childs" contient le rang et l'id des tous les inputs ("vrai" ou wraps)
+         "wraps" contient l'id des blocks wrappés dans le block en cours
+         "trucs" devrait être toujours vide
+        et en moins:
+         "parent" est enlevé pour éviter les soucis de compound
+         "id" SQL
+         "inputs" et "contenu" qui sont intégrés comme noeuds et gérés avec les liens
+        
+         
+        lies liens sont de type "child" pour un input, "typeNextblock" pour un nextblock et 
+            "wrapin" pour un lien block contenu, block contenant 
+        """
         
         def traiteBlock(b):
-            print('BLOC TRAITE',b)
+            #print('BLOC TRAITE',b)
             nodes={}
             liens=[]
             if b['typeMorph']!='InputSlotMorph': #(ou 'blockSpec' in b)
@@ -302,8 +370,11 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                     #'parent':'%s' %b['parent'] pb pour compound
                     'nextBlock': b['nextBlock'],
                     'valeur':b['blockSpec'],
-                    'conteneur':b['conteneur'] if 'conteneur' in b else None                                          
+                    'conteneur':b['conteneur'] if 'conteneur' in b else None  ,                                        
+                    'rang':b['rang'] if 'rang' in b else None
                     }
+                if b['nextBlock']:
+                    liens.append({'source':b['JMLid'],'target':b['nextBlock'],'type':'typeNextblock'})
             else:
                 #c'est inputSlotMorph
                 nodes[b['JMLid']]={
@@ -316,44 +387,57 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                     'rang':b['rang']                              
                     }
             if 'inputs' in b:
-                for i in b['inputs']:
+                nodes[b['JMLid']]['wraps']=[]
+                nodes[b['JMLid']]['childs']={}
+                nodes[b['JMLid']]['trucs']={}
+                for i in b['inputs']:                    
                     if i['typeMorph'] in ['CommandBlockMorph','CSlotMorph','ReporterBlockMorph']: # pas la peine de tester les chapeaux?
-                        pass
+                        #il y a des sous-blocks, on ne répète pas celui en cours
+                        #mais on traite son contenu
+                        nodes[b['JMLid']]['childs'][i['rang']]=i['JMLid']
                         for r in i['contenu']:
+                            nodes[b['JMLid']]['wraps'].append(r['JMLid'])
                             n,l=traiteBlock(r)
                             #for nn in n:
                             #    nn['parent']=n['conteneur']
+                            #on ajoute dans la liste
                             for nn in n:
                                 nodes[nn]=n[nn]
                             liens+=l
-                                #liens.append({'source':b['JMLid'],'target':i['contenu'][0]['JMLid'], 'type':'wrap'})
+                            liens.append({'target':b['JMLid'],'source':i['contenu'][0]['JMLid'], 'type':'wrapin'})
                     else:
+                        #nodes[b['JMLid']]['childs'].append(i['JMLid'])
+                        nodes[b['JMLid']]['childs'][i['rang']]=i['JMLid']
                         n,l=traiteBlock(i)
                         for nn in n:
                             nodes[nn]=n[nn]
                         liens+=l
                         liens.append({'source':b['JMLid'],'target':i['JMLid'], 'type':'child'})
                         if 'contenu' in b and type(b['contenu'])==list:
+                            #ce n'est pas une valeur mais une liste de block
                             for i in b['contenu']:
+                                nodes[b['JMLid']]['trucs'][i['rang']]=i['JMLid']
                                 n,l=traiteBlock(i)
                                 for nn in n:
                                     nodes[nn]=n[nn]
                                 liens+=l
             return nodes,liens            
                         
-        ret=[]
-        inputs={}
+        #ret=[]
+        #inputs={}
         nodes={}
         liens=[]
-        for i in r:
-            n,l=traiteBlock(i)
+        #aff(listePrgInitial,'INITI')
+        for block in listePrgInitial:            
+            n,l=traiteBlock(block)
             for nn in n:
                 nodes[nn]=n[nn]
             liens+=l
-        aff(nodes,'NODES')
-        aff(liens,'LIENS')
+        #aff(nodes,'NODES')
+        #aff(liens,'LIENS')
+        return nodes,liens
         """
-        for i in r:
+        for i in listePrgInitial:
             if 'blockSpec' in i: ret.append(
                         {'nbTd':range(nbTd),
                          'id':i['id'], 'JMLid':i['JMLid'],
@@ -402,8 +486,9 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                         inputs={**inputs,**ip}
                         ret+=rt
         #print ('inputs',inputs)
-        """
         return ret,inputs,nodes,liens
+        """
+       
     
    
     @classmethod
@@ -429,11 +514,21 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
             if r is None: return None if temps is None else {'time':temps,'childs':{}}
             result={'time':r['time'] if temps is None else temps,
                     'parent':r['parent'] if 'parent' in r else None,
+                    'typeMorph':r['typeMorph'] if 'typeMorph' in r else None,
                     'blockSpec':r['blockSpec'] if 'blockSpec' in r else None,
                     'selector':r['selector'] if 'selector' in r else None,
-                    'childs':{}}
+                    'childs':{},
+                    
+                    'wraps':[],
+                    }
+            if withChilds:
+                result['childs']=copy.copy(r['childs'])
+                result['wraps']=copy.copy(r['wraps'])
+                result['trucs']=copy.copy(r['trucs'])
+            """ copie des childs lorsqu'une copie de l'objet est dans childs[]
             if withChilds and len(r['childs'])!=0:
                 for c in r['childs']:
+                    
                     rc=r['childs'][c]                    
                     result['childs'][c]={'valeur':rc['valeur'],
                                          'JMLid':rc['JMLid'],
@@ -442,14 +537,11 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                                          'parent':rc['parent'] if 'parent' in rc else None,
                                          'rang':rc['rang'] if 'rang' in rc else 'pasderang'
                                          }
+            """
             return result
         
-        liste,nextLiens,ret,inp,nodes,liens=self.constructionListeOpen(pk)
-        
-        #print('retour:')
-        #for i in ret: print(i)
-        #print('inputs:')
-        #for i in inp: print (i,':',inp[i])
+        #on récupère les actions
+        #TODO: gérer le cas ou pas de prg n'est chargé, et si chargé + tard?
         ev=EvenementSPR.objects.get(id=pk)
         evs=self.suivant(ev)
         if evs is not None:
@@ -463,27 +555,38 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                                          creation__gte=ev.evenement.creation,
                                          numero__gt=ev.evenement.numero).order_by('numero')
         
-        #on prepare la liste id->[node time x, node time y ...]        
+        #on prepare la liste id->[node time x, node time y ...]
+        #liste,nextLiens,ret,inp,nodes,liens=self.constructionListeOpen(pk) 
+        #on construit les noeuds et les liens du programme initial  
+        nodes,liens=self.constructionListeOpen(pk)  
+        #première étape: ce sont les noeuds du temps 0   
         newNodes={}
         for n in nodes:
+            print('trait',nodes[n])
             newNodes[n]=[]
             nodes[n]['time']=0
             nodes[n]['JMLid']='%s_0' % nodes[n]['JMLid']
             if nodes[n]['conteneur']:
                 nodes[n]['conteneur']='%s_0' %  nodes[n]['conteneur']
             if 'nextBlock' in nodes[n] and nodes[n]['nextBlock']:
-                nodes[n]['nextBlock']='%s_0' % nodes[n]['nextBlock']
+                nodes[n]['nextBlock']='%s_0' % nodes[n]['nextBlock']            
+            if 'childs' in nodes[n]: 
+                for i in nodes[n]['childs']:
+                    nodes[n]['childs'][i]='%s_0' % nodes[n]['childs'][i]
+            if 'wraps' in nodes[n]:
+                for i in nodes[n]['wraps']:
+                    i='%s_0' % i
             newNodes[n]=[nodes[n]]
         #et on met à jour les liens : source-> source_0
         for l in liens:
             l['source']='%s_0' % l['source']
             l['target']='%s_0' % l['target']
-        for l in nextLiens:
-            l['source']='%s_0' % l['source']
-            l['target']='%s_0' % l['target']
+        #for l in nextLiens:
+        #    l['source']='%s_0' % l['source']
+        #    l['target']='%s_0' % l['target']
             #liens.append(l)
-        
-        #on ajoute pour chanque id de noeud l'action associée si elle existe
+        #aff(newNodes)
+        #on ajoute pour chaque id de noeud l'action associée si elle existe
         for a in actions:         
             #print('type:',a.type)   
             if a.type =='SPR':
@@ -503,7 +606,78 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                              'typeMorph':spr.typeMorph,
                              'category':spr.category,                             
                              'JMLid':'%s_%s' % (spr.blockId, a.time),
-                             'typeAction':spr.type}
+                             'typeAction':spr.type,
+                             'childs':{},
+                             'wraps':[],
+                             'trucs':{}}
+                if spr.type=='VAL':
+                    #c'est une modification d'un truc qui existe , donc test suivant inutile                        
+                    #if spr.blockId in inp:
+                    val=newNodes[spr.blockId][-1:][0]
+                    #c'est un changement de valeur, on recherche laquelle
+                    
+                    print('ici val',val)
+                    #newval={'temps':a.time,'childs':{}}
+                    #newval=copy.deepcopy(val)
+                    #newval=copieInput(val, True, a.time)
+                    #TODO: garder le JMLid et mettre id à JMLid_time
+                    for i in spr.inputs.all():   
+                        print('ri',i)
+                        if i.typeMorph in ['CommandBlockMorph','CSlotMorph','ReporterBlockMorph']: # pas la peine de tester les chapeaux?
+                            #normalement on ne devrait pas passer par la...
+                            print('PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',i)
+                            newNode['childs'][i.rang]='%s_%s' % (i.JMLid,a.time)                       
+                            newNode['wraps'].append('%s_%s' % (i.JMLid,a.time))
+                        else:
+                            newNode['childs'][i.rang]='%s_%s' % (i.JMLid,a.time)
+                        #on compare avec le dernier child
+                        source_id=int(val['childs'][i.rang].split('_')[0])
+                        last_child=newNodes[source_id][-1:][0]
+                        print('lasr',last_child)
+                        if i.contenu != last_child['valeur']:
+                            print('changement')
+                            cp=copy.deepcopy(last_child)
+                            cp['JMLid']='%s_%s' % (i.JMLid,a.time)
+                            cp['time']=a.time
+                            cp['parent']=newNode['JMLid']
+                            newNodes[i.JMLid].append(cp)
+                            liens.append({'source':last_child['JMLid'],
+                                          'target':'%s_%s' % (i.JMLid,a.time),
+                                          'type':'change',
+                                          'color':'red'})                      
+                    newNodes[spr.blockId].append(newNode)
+                elif spr.type=='NEW':
+                    #c'est un nouveau bloc, ses inputs éventuels aussi  
+                    newNodes[spr.blockId]=[newNode]
+                    for c in spr.inputs.all():
+                        print('new',type(c),c)
+                        newChild={'time':a.time,
+                             #'selector':spr.selector,
+                             #'blockSpec':spr.blockSpec,
+                             'typeMorph':spr.typeMorph,
+                             #'category':spr.category,                             
+                             'JMLid':'%s_%s' % (c.JMLid, a.time),
+                             'rang':c.rang,
+                             'valeur':c.contenu
+                             }
+                        newNode['childs'][c.rang]=newChild['JMLid']
+                        newChild['parent']=newNode['JMLid']
+                        liens.append({"source":newNode['JMLid'],
+                                      "target":newChild['JMLid'],
+                                      'type':'child'})
+                        newNodes[c.JMLid]=[newChild,]
+                        """
+                        if c.typeMorph in ['InputSlotMorph',]:
+                            newval['childs'][c.rang]={'valeur':c.contenu,'JMLid':None,'id':c.JMLid,
+                                                      'rang':c.rang}
+                            newNode
+                        else:
+                            newval['childs'][c.rang]={'type':c.typeMorph,
+                                                      'valeur':None,
+                                                      'JMLid':c.JMLid,
+                                                      'rang':c.rang
+                                                      }
+                        """
                 '''
                 if spr.type=='NEW':
                     #c'est un nouveau bloc, ses inputs éventuels aussi                  
@@ -604,9 +778,14 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                         #normalement ça ne devrait pas se passer                        
                         newval={'time':a.time,'childs':{},'erreur':'DROPVAL avec valeur non existante'}
                         inp[spr.targetId]=[newval]
+                
                 #print('---')
                 #for i in inp: print(i,inp[i])   
-        '''
+                '''
+                if spr.blockId in newNodes:
+                    newNodes[spr.blockId].append(newNode)
+                else:
+                    newNodes[spr.blockId]=[newNode,]
         """
         for a in actions:         
             #print('type:',a.type)   
@@ -721,8 +900,11 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                 #print('---')
                 #for i in inp: print(i,inp[i])   
            """        
-                                    
-        return inp,liste,nextLiens,nodes,liens              
+        aff(newNodes)              
+        #return inp,liste,nextLiens,nodes,liens
+        #inp=newNodes              
+        #return inp,liste,nextLiens,nodes,liens
+        return newNodes,liens
     
     
     @detail_route()
@@ -1104,7 +1286,7 @@ def cyto(request,id=277):
 @renderer_classes((JSONRenderer,))
 def cyto3(request,id=277):
     def parcours(b,x,y,i,index,newListe,firstime,maxtime):
-        print('BBBBBBBBBBBBBBBBBBB',b)
+        print('CCCC',b)
         liensChanged=[]
         data={'x':x,'y':y}
         data['time']=b['time'] if 'time' in b else -1
@@ -1146,7 +1328,8 @@ def cyto3(request,id=277):
                 newListe.append(d)
         return newListe,liensChanged,firstime,maxtime
     
-    inp,liste,nextliens,nodes,liens=EvenementSPROpenViewset.construireListeActions(pk=id)
+    #inp,liste,nextliens,nodes,liens=EvenementSPROpenViewset.construireListeActions(pk=id)
+    nodes,liens=EvenementSPROpenViewset.construireListeActions(pk=id)
     """
         liste: 
             liste du fil principal des blocks du scripts (ie les nextblocks)
@@ -1177,6 +1360,7 @@ def cyto3(request,id=277):
             'type':'nextblock',
             'color':'blue',
             'arrow':'none'} for l in nextliens]
+    
     nodes=[]
     liensChanged=[]
     maxtime=0
@@ -1198,25 +1382,37 @@ def cyto3(request,id=277):
     liens=[{'source':'%s' % l['source'],
             'target':'%s' % l['target'],
             'type':l['type'],
-            'color':'red',
+            #'color':'red',
             'arrow':'triangle'} for l in liens]
-    liensN=[{'source':'%s' % l['source'],
-            'target':'%s' % l['target'],
-            'type':'nextblock',
-            'color':'blue',
-            'arrow':'none'} for l in nextliens]
-    liens+=liensN
+    #liensN=[{'source':'%s' % l['source'],
+    #        'target':'%s' % l['target'],
+    #        'type':'nextblock',
+    #        'color':'blue',
+    #        'arrow':'none'} for l in nextliens]
+    #liens+=liensN
         
     #datanodes=[{'data':n} for n in nodes]
+    #contruction des noeuds cytoscape
     nnodes=[]
+    
     for inode in nodes:
-        n=nodes[inode]
-        nn={}        
-        nn['id']='%s' % n['id'] if 'id' in n else '%s' % n['JMLid']
-        nn['valeur']=n['valeur']
-        nn['typeMorph']=n['typeMorph']
-        nn['parent']='%s' % n['conteneur'] if 'conteneur' in n else None
-        nnodes.append(nn)
+        #on récupère les actions liées à un block d'id inode        
+        nodes_actions=nodes[inode]
+        prec_node_id=None #l'id du noeud précédent
+        #et on cré les noeuds et liens
+        for i,n in enumerate(nodes_actions):
+            print(i,':',n)
+            nn={}        
+            nn['id']='%s' % n['id'] if 'id' in n else '%s' % n['JMLid']
+            nn['valeur']=n['valeur'] if 'valeur' in n else n['blockSpec']
+            nn['typeMorph']=n['typeMorph']
+            nn['time']=n['time']
+            nn['rang']=n['rang'] if 'rang' in n else None
+            nn['parent']='%s' % n['conteneur'] if 'conteneur' in n else None
+            if prec_node_id is not None:
+                liens.append({'source':prec_node_id,'target':nn['id'],'type':'action','color':'green'})
+            prec_node_id=nn['id']
+            nnodes.append(nn)
     datanodes=[{'data':n} for n in nnodes]
     dataedges=[{'data':n} for n in liens]
     #dataedges=[]
@@ -1226,8 +1422,170 @@ def cyto3(request,id=277):
     context={'nodes':json.dumps(datanodes),'edges':json.dumps(dataedges),
              #'maxtime':maxtime, 'firstime':firstime,
              }
-    #return context
-    return Response({"data":{"name":"mon reseau"},"elements":{'nodes':datanodes,'edges':dataedges}}) 
+    return render(request, 'testcyto.html',context=context) 
+    #return Response({"data":{"name":"mon resea"},"elements":{'nodes':datanodes,'edges':dataedges}}) 
+
+
+
+from snap import objets
+import time
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def testblock(request,id=277):
+    ev=EvenementSPR.objects.get(id=id)
+    try:
+        suivant=EvenementSPR.objects.filter(type='OPEN',
+                                            evenement__user=ev.evenement.user,
+                                            evenement__creation__gt=ev.evenement.creation).earliest('evenement__creation')
+    except:
+        suivant=None
+    if suivant is not None:
+        actions=Evenement.objects.filter(user=ev.evenement.user,
+                                         creation__gte=ev.evenement.creation,
+                                         numero__gt=ev.evenement.numero,
+                                         creation__lt=suivant.evenement.creation).order_by('numero')
+    else:
+        #c'est le dernier OPen
+        actions=Evenement.objects.filter(user=ev.evenement.user,
+                                         creation__gte=ev.evenement.creation,
+                                         numero__gt=ev.evenement.numero).order_by('numero')
+       
+    #on prepare la liste id->[node time x, node time y ...]
+    #liste,nextLiens,ret,inp,nodes,liens=self.constructionListeOpen(pk) 
+    #on construit les noeuds et les liens du programme initial  
+    #on récupère le block de tête
+    #blockRoot=BlockSnap.newBlock(ev.scripts.all()[0],0)
+    listeBlocks=objets.ListeBlockSnap()    
+    firstBlock,created=listeBlocks.addFromBlock(ev.scripts.all()[0],0, 'OPEN')
+    #création des liens nextblocks
+    for b in created:
+        if b.prevBlock is not None:
+            listeBlocks.addLink(b.prevBlock.getId(),b.getId(),'nextblock')
+    listeBlocks.addFirstBlock(firstBlock)
+    #cyto=CytoElements.constructFrom(blockRoot)
+    
+    for a in actions:         
+            #print('type:',a.type)   
+            #pour l'instant on ne s'occupe que de SPR
+            if a.type =='SPR':    
+                listeBlocks.addTick(a.time)            
+                spr= a.evenementspr_set.all()[0]
+                action='SPR_%s' % spr.type
+                print('mod',spr.type,spr.blockId,spr.blockSpec,spr.detail)
+                newNode=BlockSnap(spr.blockId, 
+                                  a.time,
+                                  spr.typeMorph,
+                                  spr.blockSpec,
+                                  spr.selector,
+                                  spr.category,
+                                  action=action
+                                  )               
+               
+                if spr.type=='VAL':
+                    #c'est une modification d'un truc qui existe                    
+                    for i in spr.inputs.all():   
+                        inputNode,created=listeBlocks.addFromBlock(i, a.time,action=action)
+                        newNode.addInput(inputNode)
+                        if inputNode.JMLid==int(spr.detail):
+                            #c'est l'input changé
+                            listeBlocks.addLink(
+                                listeBlocks.lastBlock(spr.detail, a.time).getId(),
+                                inputNode.getId(),
+                                'changed')
+                elif spr.type=='NEW':
+                    #c'est un nouveau bloc, ses inputs éventuels aussi 
+                    listeBlocks.addFirstBlock(newNode) 
+                    for c in spr.inputs.all():
+                        print('ajout',c)
+                        inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
+                        newNode.addInput(inputNode)
+                elif spr.type=='DROPVAL':
+                    #c'est un reporter existant déplacé
+                    #on  cherche le block qui a perdu son input
+                    # c'est celui quia un JMLid d'un enfant = spr.blockid et qui est le plus récent
+                    lastInput=listeBlocks.lastBlock(spr.blockId, a.time) #le block qui est déplacé
+                    lastBlock=lastInput.parentBlock.copy(a.time,action=action) #on copie son parent
+                    listeBlocks.addBlock(lastBlock)
+                    #l'input déplacé devient InputSlotMorph
+                    #(on n'a pas encore le JMLid, mais ça viendra si un ajout/modif est fait)
+                    inputChanged=next((i for i in lastBlock.inputs if i.rang==lastInput.rang))
+                    copie=inputChanged.copy(a.time,action=action)
+                    #copie.JMLid="unknown%s"%(round(time.time() * 1000))
+                    copie.JMLid=(round(time.time() * 1000))
+                    copie.typeMorph='InputSlotMorph'
+                    copie.contenu=''
+                    copie.blockSpec=''
+                    #on remplace l'input correspondant dans la copie du parent
+                    lastBlock.replaceInput(lastInput.rang,copie)
+                    listeBlocks.addBlock(copie)
+                    listeBlocks.addLink(inputChanged.getId(),copie.getId(),'changed')
+                    #on modifie la cible
+                    lastCible=listeBlocks.lastBlock(spr.detail, a.time) #la cible modifiée
+                    listeBlocks.addBlock(lastCible)
+                    #on copie les blocks (inputs seulements, il n'y a pas de next )
+                    replacement,created=listeBlocks.addFromBlock(lastInput,a.time,action)                                        
+                    lastCible.parentBlock.replaceInput(lastInput.rang,replacement)     
+                    listeBlocks.addLink(lastInput.getId(),replacement.getId(), 'moved')
+                    listeBlocks.addLink(lastCible.getId(),replacement.getId(),'changed')               
+                    
+    """
+    datanodes=[{'data':n.toJson()} for n in cyto.nodes]
+    dataedges=[{'data':n.toJson()} for n in cyto.edges]
+    context={'nodes':json.dumps(datanodes),'edges':json.dumps(dataedges),
+             #'maxtime':maxtime, 'firstime':firstime,
+             }
+    #context=s.toJson()
+    return render(request, 'testcyto.html',context=context) 
+    #return Response(cyto.toJson())
+    """
+    """
+    for i in listeBlocks.ticks:
+        print('temps',i)
+        listeBlocks.snapAt(i)
+        print('-----')
+    """
+    print('liste temps:',listeBlocks.ticks)
+    print('liste first:',listeBlocks.firstBlocks)
+    for t in listeBlocks.ticks:
+        listeBlocks.snapAt(t)
+        print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx')
+    '''
+    #temps=13197928
+    for temps in listeBlocks.ticks:
+        listemodif=[]
+        for JMLid in listeBlocks.liste:
+            bs=[n for n in listeBlocks.liste[JMLid] if n.time==temps]            
+            if bs:
+                #print("elt ",JMLid," trouvé au temps ",temps,":",bs[0])        
+                listemodif.append(bs[0])
+        print("temps ",temps,":",listemodif)
+        for b in listemodif:
+            #recherche du parent
+            print("parent",b.parentBlock)
+            
+            if  b.parentBlock is not None:
+                #si le parent est modifié il est nécessairement dans la liste
+                bs=ListeBlockSnap.lastBlockFromListe(listemodif, b.parentBlock, temps,veryLast=True)
+                """
+                bs=[n for n in listemodif if n.getId()==b.parentBlock.getId()]
+                if bs:
+                    print("parent trouvé",bs[0])"""
+                if bs:
+                    print("parent trouvé",b)
+                else:
+                    bs=listeBlocks.lastBlock(BlockSnap.getJMLid(b.parentBlock.getId()),
+                                            temps)
+                    print('plus vbieux parent:',bs)
+            print('xxx')
+            print('dernière modif',listeBlocks.lastBlock(b,temps))        
+            print('OOOOOOOOOOOOOOOOOOOO')
+            
+                                                                             
+        print('------------------------------------------')
+    '''
+    return Response({"data":listeBlocks.toJson(),"ticks":listeBlocks.ticks,'links':listeBlocks.links})
+    
+             
 
 import base64
 def testAjax(request):
