@@ -57,6 +57,13 @@ class Evenement(models.Model):
     time=models.IntegerField() #Temps (local à Snap) de l'évènement
     numero=models.IntegerField() #numero d'ordre de l'évènement, indépendant du type
     creation=models.DateTimeField(auto_now_add=True)
+    def toD3(self):
+        res={}
+        res['type']=self.type
+        res['type_display']=self.get_type_display()
+        res['numero']=self.numero
+        res['time']=self.time
+        return res
     
     def __str__(self):
         return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
@@ -105,6 +112,16 @@ class EvenementENV(models.Model):
     valueInt=models.IntegerField(null=True)
     valueChar=models.CharField(max_length=30,null=True,blank=True)
     #block=models.ForeignKey(Block,on_delete=models.CASCADE)
+    
+    def toD3(self):
+        """rendu json pour d3.js"""
+        res={}
+        res["evenement"]=self.evenement.toD3()
+        res['type']=self.type
+        res['type_display']=self.get_type_display()
+        res['detail']=self.detail
+        return res
+    
     def __str__(self):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
@@ -166,6 +183,16 @@ class EvenementEPR(SnapProcess):
     type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement    
     detail=models.CharField(max_length=100,null=True,blank=True)
     processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
+    
+    def toD3(self):
+        """rendu json pour d3.js"""
+        res={}
+        res["evenement"]=self.evenement.toD3()
+        res['type']=self.type
+        res['type_display']=self.get_type_display()
+        res['detail']=self.detail
+        return res
+    
     def __str__(self):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
@@ -237,6 +264,15 @@ class EvenementSPR(models.Model):
     scripts=models.ManyToManyField('Block') #les blocks de départ des scripts
     def __str__(self):
         return '(%s) %s (%s) %s' % (self.evenement,self.get_type_display(),self.blockId,self.detail if self.detail else '')
+    
+    def toD3(self):
+        """rendu json pour d3.js"""
+        res={}
+        res["evenement"]=self.evenement.toD3()
+        res['type']=self.type
+        res['type_display']=self.get_type_display()
+        res['detail']=self.detail
+        return res
     
     class Meta:
         ordering=('-evenement__creation',)

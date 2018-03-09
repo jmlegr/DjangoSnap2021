@@ -219,7 +219,7 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
         reconstitution du programme chargé
         """
         def traiteBlock(b):
-            inputs,nextBlocks=parcoursInput(b)
+            inputs,nextBlocks=copyLastInputs(b)
             resultat={
                 'id':b.id, 'JMLid':b.JMLid,
                 'selector':b.selector, 'blockSpec':b.blockSpec,
@@ -276,7 +276,7 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                     break;        
             return liste,nextLiens
     
-        def parcoursInput(b):
+        def copyLastInputs(b):
             """
             renvoie une liste des inputs contenant
                 soit un input de type valeur (le contenu n'est pas une liste)
@@ -1482,51 +1482,40 @@ def testblock(request,id=277):
                                   )               
                
                 if spr.type=='VAL':
-                    #c'est une modification d'un truc qui existe                    
+                    #c'est une modification d'un truc qui existe
                     for i in spr.inputs.all():   
                         inputNode,created=listeBlocks.addFromBlock(i, a.time,action=action)
                         newNode.addInput(inputNode)
                         if inputNode.JMLid==int(spr.detail):
+                            inputNode.lastModifBlock=listeBlocks.lastBlock(spr.detail, a.time)
                             #c'est l'input changé
                             listeBlocks.addLink(
-                                listeBlocks.lastBlock(spr.detail, a.time).getId(),
+                                inputNode.lastModifBlock.getId(),
                                 inputNode.getId(),
                                 'changed')
                 elif spr.type=='NEW':
                     #c'est un nouveau bloc, ses inputs éventuels aussi 
                     listeBlocks.addFirstBlock(newNode) 
                     for c in spr.inputs.all():
-                        print('ajout',c)
                         inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
                         newNode.addInput(inputNode)
                 elif spr.type=='DROPVAL':
-                    #c'est un reporter existant déplacé
-                    #on  cherche le block qui a perdu son input
-                    # c'est celui quia un JMLid d'un enfant = spr.blockid et qui est le plus récent
-                    lastInput=listeBlocks.lastBlock(spr.blockId, a.time) #le block qui est déplacé
-                    lastBlock=lastInput.parentBlock.copy(a.time,action=action) #on copie son parent
-                    listeBlocks.addBlock(lastBlock)
-                    #l'input déplacé devient InputSlotMorph
-                    #(on n'a pas encore le JMLid, mais ça viendra si un ajout/modif est fait)
-                    inputChanged=next((i for i in lastBlock.inputs if i.rang==lastInput.rang))
-                    copie=inputChanged.copy(a.time,action=action)
-                    #copie.JMLid="unknown%s"%(round(time.time() * 1000))
-                    copie.JMLid=(round(time.time() * 1000))
-                    copie.typeMorph='InputSlotMorph'
-                    copie.contenu=''
-                    copie.blockSpec=''
-                    #on remplace l'input correspondant dans la copie du parent
-                    lastBlock.replaceInput(lastInput.rang,copie)
-                    listeBlocks.addBlock(copie)
-                    listeBlocks.addLink(inputChanged.getId(),copie.getId(),'changed')
-                    #on modifie la cible
-                    lastCible=listeBlocks.lastBlock(spr.detail, a.time) #la cible modifiée
-                    listeBlocks.addBlock(lastCible)
-                    #on copie les blocks (inputs seulements, il n'y a pas de next )
-                    replacement,created=listeBlocks.addFromBlock(lastInput,a.time,action)                                        
-                    lastCible.parentBlock.replaceInput(lastInput.rang,replacement)     
-                    listeBlocks.addLink(lastInput.getId(),replacement.getId(), 'moved')
-                    listeBlocks.addLink(lastCible.getId(),replacement.getId(),'changed')               
+                    """
+                    #c'est un reporter existant déplacé                    
+                    """
+                    inputA=listeBlocks.lastBlock(spr.detail,a.time) #cible remplacée
+                    inputB=listeBlocks.lastBlock(spr.blockId,a.time) # block(s) déplacé, seulement inputs
+                    
+                    #On recherche si parentA existe, et dans ce cas il faudra
+                    # 1) copier les inputs 
+                    # 2) remplacer l'inputA par une copie de inputB
+                    # 3) une copie de l'inputA devient un block indépendant
+                    listeBlocks.copyLastParentBlockandReplace(inputA, a.time, action, inputB)
+                    #On recherche si parentB existe, et dans ce cas il faudra
+                    # 1) copier les inputs 
+                    # 2) remplacer l'inputB par un InputSlotMorph inconnu
+                    listeBlocks.copyLastParentBlockandReplace(inputB, a.time, action)
+                    
                     
     """
     datanodes=[{'data':n.toJson()} for n in cyto.nodes]
@@ -1546,44 +1535,27 @@ def testblock(request,id=277):
     """
     print('liste temps:',listeBlocks.ticks)
     print('liste first:',listeBlocks.firstBlocks)
+    etapes=[]
     for t in listeBlocks.ticks:
-        listeBlocks.snapAt(t)
+        
+        action=[a for a in actions if a.time==t]
+        if len(action)>0:
+            action=action[0].numero
+        else:
+            action=None
+        
+        etapes.append({'time':t, 'commandes':listeBlocks.snapAt(t),'action':action})
         print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx')
-    '''
-    #temps=13197928
-    for temps in listeBlocks.ticks:
-        listemodif=[]
-        for JMLid in listeBlocks.liste:
-            bs=[n for n in listeBlocks.liste[JMLid] if n.time==temps]            
-            if bs:
-                #print("elt ",JMLid," trouvé au temps ",temps,":",bs[0])        
-                listemodif.append(bs[0])
-        print("temps ",temps,":",listemodif)
-        for b in listemodif:
-            #recherche du parent
-            print("parent",b.parentBlock)
-            
-            if  b.parentBlock is not None:
-                #si le parent est modifié il est nécessairement dans la liste
-                bs=ListeBlockSnap.lastBlockFromListe(listemodif, b.parentBlock, temps,veryLast=True)
-                """
-                bs=[n for n in listemodif if n.getId()==b.parentBlock.getId()]
-                if bs:
-                    print("parent trouvé",bs[0])"""
-                if bs:
-                    print("parent trouvé",b)
-                else:
-                    bs=listeBlocks.lastBlock(BlockSnap.getJMLid(b.parentBlock.getId()),
-                                            temps)
-                    print('plus vbieux parent:',bs)
-            print('xxx')
-            print('dernière modif',listeBlocks.lastBlock(b,temps))        
-            print('OOOOOOOOOOOOOOOOOOOO')
-            
-                                                                             
-        print('------------------------------------------')
-    '''
-    return Response({"data":listeBlocks.toJson(),"ticks":listeBlocks.ticks,'links':listeBlocks.links})
+    
+    return Response({"data":listeBlocks.toJson(),
+                     "ticks":listeBlocks.ticks,
+                     'links':listeBlocks.links,
+                     'etapes':etapes,
+                     'actions':[a.evenementspr_set.all()[0].toD3() if a.type=='SPR'
+                                            else a.evenementenv_set.all()[0].toD3() if a.type=='ENV'
+                                            else a.evenementepr_set.all()[0].toD3() if a.type=='EPR' else None
+                                 for a in actions]
+                     })
     
              
 

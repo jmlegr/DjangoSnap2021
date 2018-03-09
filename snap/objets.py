@@ -8,6 +8,8 @@ from snap import models
 import json
 import copy
 import re
+import time as thetime
+from builtins import StopIteration
 
 def aff(r,message='JSON'):
     print(message)
@@ -43,8 +45,22 @@ class ListeBlockSnap:
         if block.JMLid not in self.liste:
             self.liste[block.JMLid]=[]
         if block not in self.liste[block.JMLid]:
+            b=[b for b in self.liste[block.JMLid] if b.getId()==block.getId()]
+            if len(b)>0:
+                #soucis, ça existe
+                raise ValueError('Un block ajouté existe déjà',block.toJson())
+                print('EXISTING')
+                print(b[0].toJson())
+                print(block.toJson())
+                print('FEXIST')
             self.liste[block.JMLid].append(block)
     def addLink(self,sourceId,targetId,typeLien='changed'):
+        """ ajout d'un lien entre les ids (et pas JMLid)
+         typeLien: changed sit le block a été modifié
+                   replaced si le block a été remplacé par un autre
+                   moved si le bloc a été déplacé
+                   removed si le bloc a été enlevé (?)
+        """     
         self.links.append({'source':sourceId,
                            'target':targetId,
                            'type':typeLien})
@@ -106,11 +122,156 @@ class ListeBlockSnap:
         except:
             return None
         return e
+    
+    def copyLastParentBlockandReplace(self,block,time,action,replacement=None):
+        """ fait une copie du parent de block, ainsi que de ses inputs (recursif),
+            en s'assurant qu'on copie bien la dernière version de chaque block
+            l'input correspondant à block est remplacé par un InputSlotMoroh si replacement = None
+            ou par une copie de replacement sinon
+            Tout cela en prenant les dernières versions temporelles des blocks
+        """
+        def copie(orig):
+            """
+            crée une copie avec maj des champs action et time,
+            les champs inputs sont à la dernière version des blocks 
+            (pour prendre en compte les changements des inputs)
+            """
+            b=copy.deepcopy(orig)
+            b.lastModifBlock=None
+            b.time=time
+            b.action=action
+            #on remplace les inputs par leur dernière version
+            for index,inputBlock in enumerate(b.inputs):
+                b.inputs[index]=self.findBlock(inputBlock, lastblocks)
+            return b
         
+        lastblocks=self.lastListe(time) #liste des derniers blocks
+        created=[] #liste des éléments créés et ajoutés
+        
+        def copyLastInputs(b):
+            """
+            parcours d'un input,
+            et de ses inputs éventuels
+            """
+            if b is None:
+                return None
+            #on récupère la dernière version du block (avant modification)
+            lastblock=self.findBlock(b, lastblocks)
+            if lastblock is not None:
+                for i in lastblock.inputs:                    
+                    if self.lastBlock(i, time, exact=True) is not None:
+                        #la copie existe déjà
+                        copieInput=self.lastBlock(i, time, exact=True)
+                        b.replaceInput(copieInput)
+                    else:
+                        #on copie avec modif et on ajoute
+                        i=self.findBlock(i, lastblocks)
+                        #copieInput=i.copy(time,action)
+                        copieInput=copie(i)
+                        b.replaceInput(copieInput)
+                        self.addBlock(copieInput)
+                        copyLastInputs(copieInput)
+            return lastblock
+            
+            
+        rang=block.rang #rang du block (attention, s'assurer que c'est bien le bon block...)
+        parent=block.parentBlock
+        if parent is None:
+            #pas de parent, rien à faire
+            return None
+        #on a un parent, on prend le dernier
+        parent=self.findBlock(parent, lastblocks)
+        #on le copie avec modification (sans les inputs)
+        #copieParent=parent.copy(time,action)
+        copieParent=copie(parent)        
+        #et on l'ajoute à la liste
+        #voir si ajoute le lien?
+        self.addBlock(copieParent)
+        #on traite les input, sauf celui correspondant à block
+        for i in parent.inputs:   
+            i=self.findBlock(i, lastblocks) #i=self.lastBlock(i, time)         
+            if i.rang==rang: #c'est l'input correspondant à block
+                if replacement is None:
+                    copieReplacement=BlockSnap(round(thetime.time() * 1000),time,'InputSlotMorph') #aucune chance de trouver un JMLid aussi grand!
+                    copieReplacement.action=action
+                    copieReplacement.rang=rang
+                    self.addBlock(copieReplacement)
+                    self.addLink(i.getId(), copieReplacement.getId(), 'replaced')
+                else:
+                    copieExiste=self.lastBlock(replacement, time, exact=True)
+                    if copieExiste is None:
+                        #replacement=replacement.copy(time,action)
+                        copieReplacement=copie(replacement)
+                        copieReplacement.rang=rang                        
+                        self.addBlock(copieReplacement)
+                        self.addLink(i.getId(), copieReplacement.getId(), 'replaced')
+                        self.addLink(replacement.getId(), copieReplacement.getId(), 'moved')
+                    else:
+                        copieReplacement=copieExiste
+                
+                copieParent.replaceInput(copieReplacement)
+                copyLastInputs(copieReplacement)
+                #on copie et met en fistblock le block remplacé
+                copieExiste=self.lastBlock(i,time,exact=True)
+                if copieExiste is not None:
+                    copieInput=copieExiste
+                    copyLastInputs(copieInput)
+                else:
+                    #copieInput=i.copy(time,action)
+                    #cette copie est "sortie", mais disparait si c'est un InputSlotMorph
+                    if i.typeMorph!='InputSlotMorph':
+                        copieInput=copie(i)
+                        copieInput.parentBlock=None
+                        copieInput.rang=None
+                        self.addFirstBlock(copieInput)
+                        self.addLink(i.getId(),copieInput.getId(),'moved')
+                        copyLastInputs(copieInput)                
+            else:                
+                #on copie avec modif et on ajoute
+                #copieInput=i.copy(time,action)
+                copieInput=copie(i)
+                copieParent.replaceInput(copieInput)
+                self.addBlock(copieInput)
+                copyLastInputs(copieInput)
+        copieParent.lastModifBlock=parent
+    
+    def copyLastBlock(self,block,time,action,deep=False,addToList=True):
+        """ fait une copie du block, éventuellement progonde,
+            en s'assurant qu'on copie bien la dernière version de chaque block
+            
+        """
+        def parcours(block, lastblocks):
+            """
+            on s'assure que le block est bien le dernier en date
+            ainsi que ses inputs/netxblocks si deep=True
+            """
+            if block is not None:
+                f=self.findBlock(block, lastblocks)                
+                if deep:
+                    parcours(block.nextBlock,lastblocks)
+                    for i in block.inputs:
+                        parcours(i,lastblocks)
+                if f!=block:
+                    block=copy.copy(f)                
+                #on ajuste le temps et l'action
+                #blockC.time=time
+                #blockC.action=action                
+            
+        lastblocks=self.lastListe(time)
+        #on fait une copie des blocks
+        copieblocks=copy.deepcopy(block) if deep else copy.copy(block)
+        #on les remplace (éventuellement) par la dernière version de chaque bloc
+                
+        parcours(copieblocks,lastblocks)
+        
+        return copieblocks
+        
+        
+    
                 
     def snapAt(self,time):
         liste=None
-        def afficheCommand(block):            
+        def afficheCommand(block,decal=0):            
             """
         %br     - user-forced line break
     %s      - white rectangular type-in slot ("string-type")
@@ -167,63 +328,88 @@ class ListeBlockSnap:
     %parms       - for an expandable list of formal parameters
     %ringparms   - the same for use inside Rings
     """
-            nom=block.blockSpec            
+            resultat=[]
+            nom=block.blockSpec    
+            #on cherche à remplacer les "%trucs" par les inputs        
             txt=re.findall(r'(%\w+)',block.blockSpec)
             repl={}
-            i=0
-            for e in txt:                
-                t=e[1]
-                #print(t,[inp.rang for inp in block.inputs])
+            i=0 #rang du %truc traité
+            for e in txt:
                 try:
                     en=next(inp for inp in block.inputs if inp.rang==i)
                     en=self.findBlock(en, liste)
-                    if t=='c':
-                        #print('Command',en.blockSpec)
-                        repl[e]='['
-                        print(en.inputs[0].typeMorph)
-                        parcours(liste,self.findBlock(en.inputs[0], liste),'.')
+                    if e[1]=='c' and e[1:]!='code':    
+                        s=self.findBlock(en.inputs[0],liste)
+                        resultat+=parcours(liste,self.findBlock(en.inputs[0], liste),decal+1)
+                        repl='niveau %s' % (decal+1)                        
                     else:
-                        repl[e]=en.contenu
-                        #print('rang %s (%s): %s' % (i,e,en.contenu))
-                except:
-                    repl[e]=e
+                        #repl[e]=en.contenu
+                        if len(en.inputs)>0:
+                            res,repl=afficheCommand(en, decal+1)
+                            repl='['+repl+']'
+                            resultat+=res
+                        else:
+                            repl=en.getValeur()
+                            #repl=en.contenu
+                    
+                except StopIteration:
+                    #print('EXCEPTION',ex)
+                    repl=e
                     #print(e,'??')
-                nom=nom.replace(e,'['+repl[e]+']',1)
+                nom=nom.replace(e,'%s' %repl,1)
+                #nom=nom.replace(e,'['+repl[e]+']',1)
                 i+=1
-            
-            return nom
+            #print('nom',nom,' résultat de niom',resultat)
+            return resultat,nom
                 
-        def parcours(l,block,decal):
+        def parcours(l,block,decal=0):
+            #parcours la liste du niveau decal           
+            #on cherche dans la liste le block d'id JMLid
             e=next(n for n in l if n is not None and n.JMLid==block.JMLid)
-            decal=''
+            resultat=[]
             while e is not None:
-                #print(decal,e.JMLid,e.blockSpec,e.time,afficheCommand(e))
-                print(decal,e.JMLid,afficheCommand(e))
-                parcoursInput(l,e,decal+' ')
+                elt={'JMLid':block.JMLid,
+                     'id':e.getId(),
+                     'nom':e.getNom(),
+                      'niveau':decal
+                     }
+                resultat.append(elt)       
+                res,elt['commande']=afficheCommand(e,decal)
+                resultat+=res
+                #elt['children']=res                
                 nextblock=e.nextBlock
                 if nextblock is not None:
                     e=next(n for n in l if n is not None and n.JMLid==nextblock.JMLid)
                 else:
                     e=None
-                    
-        def parcoursInput(l,block,decal):
-            for i in block.inputs:
-                try:
-                    e=next(n for n in l if n is not None and n.JMLid==i.JMLid)
-                    # print(decal,e.JMLid,e.typeMorph,e.time)
-                    parcours(l,e,decal+'.')
-                except:
-                    #print(i.JMLid,' non trouvé')
-                    pass
-                
+            #print('resultat renvoyé par parcours',resultat)
+            return resultat
+        
+        """ 
+        le parcours renvoie une liste des blocks avec: 
+            leur niveau d'imbrication
+            leur conteneur ?
+            le nom complet de la commande avec remplacement des %truc
+        """
+            
+            
+        resultat={}
+        #on récupère la liste des blocks au temps time
         liste=self.lastListe(time, veryLast=True)
+        #on commence par le début...
         for d in self.firstBlocks:
-            #print('Debut',d,liste)
+            resultat[d]=[]
+            print('Debut',d)
             try:
                 e=next(n for n in liste if n is not None and n.JMLid==d)
-                parcours(liste,e,'')
+                resultat[d]+=parcours(liste,e,0)
             except:
                 pass
+            print('resultat')
+            for r in resultat[d]:
+                print (r['niveau']*'...',r['commande'])
+            
+        return resultat
 
     def addFromBlock(self,block,time=None,action=''):
         
@@ -291,6 +477,12 @@ class ListeBlockSnap:
             #c'est un BlockSnap inclus dans le SPR ou autre  
             #newblock=copy.deepcopy(block)
             newblock=block.copy(time,action,deep=True)
+            if newblock.JMLid==329:
+                print('AAAAAAAAAAAAAAAAAAAAAAa')
+                print('newblock',newblock.toJson())
+                for i in block.inputs:
+                    print('i',i.toJson())
+                print('AAAAAAAAAAAAAAAAAAAAAAa')
             parcours(newblock)
             #newblock.time=time       
             #newblock.action=action
@@ -300,8 +492,9 @@ class ListeBlockSnap:
         else:
             print('on ne sait pas ce quest ',block)
         
-        #print('nex',newblock,'create:',['%s_%s (%s)' % (b.JMLid,b.time,b.action) for b in create])                               
+        print('nex',newblock,'create:',['%s_%s (%s)' % (b.JMLid,b.time,b.action) for b in create])                               
         return newblock, create    
+    
     def toJson(self):
         """ renvoie sous la forme [{BlockSnap},{}]"""
         j=[]
@@ -331,6 +524,7 @@ class BlockSnap:
         self.nextBlock=None      # block suivant (BlockSnap) s'il existe
         self.prevBlock=None      # block précédent s'il existe
         self.parentBlock=None    # block parent s'il existe (ie ce block est un input du parent
+        self.lastModifBlock=None      # block temporellement précédent si une modification a eu lieu
         self.rang=None           # rang du block dans les inputs de son parent
         self.conteneurBlock=None # block conteneur s'il existe (ie ce block est "wrapped"    
         self.inputs=[]           # liste des blocks inputs
@@ -349,14 +543,20 @@ class BlockSnap:
         return int(block.split('_',1)[0])
     
     
+    
     def copy(self,time,action='',deep=False):
         """ renvoie une copie du BlockSnap,        
         """
         def modif(b):
             b.time=time
-            b.action=action
+            b.action=action            
+            if b.JMLid==272:
+                print('AAAAAAAAAAAAAAAAAAAAAAa')
+                print('272:',b.toJson())
+                print('AAAAAAAAAAAAAAAAAAAAAAa')
             for i in b.inputs:
                 modif(i)
+                
         
         if deep:
             #copie profonde, mais pas de rajout dans la liste!
@@ -400,11 +600,19 @@ class BlockSnap:
         définit block comme étant le parent de self (ie self est input de block)
         """
         block.addInput(self)
-    def replaceInput(self,rang,block):
+    def replaceInput(self,block,rang=None):
         """
         remplace l'input de rang rang par le block
         """
-        inputChanged=next((i for i in self.inputs if i.rang==rang))
+        if rang is None:
+            rang=block.rang
+        print('replace',self.inputs,' par ',block, 'rang ',rang)
+        
+        try:
+            inputChanged=next((i for i in self.inputs if i.rang==rang))            
+        except StopIteration as s:
+            print( s,block.toJson(),rang)
+            raise 
         self.inputs.remove(inputChanged)
         block.rang=rang
         self.addInput(block)
@@ -429,6 +637,7 @@ class BlockSnap:
         j['nextBlock']=self.nextBlock.getId()   if self.nextBlock is not None else None
         j['prevBlock']=self.prevBlock.getId() if self.prevBlock is not None else None
         j['parentBlock']=self.parentBlock.getId() if self.parentBlock is not None else None
+        j['lastModifBlock']=self.lastModifBlock.getId() if self.lastModifBlock is not None else None
         j['conteneurBlock']=self.conteneurBlock.getId() if self.conteneurBlock is not None else None
         j['action']=self.action      
         j['inputs']=[]           # liste des blocks inputs
@@ -452,7 +661,16 @@ class BlockSnap:
         else:
             nom= "(t)%s" % self.typeMorph
         return '%s%s' %(nom,rang)  
-       
+    
+    def getValeur(self):
+        if self.contenu is not None:
+            nom= "%s" % self.contenu
+        elif self.blockSpec:
+            nom= "%s" %self.blockSpec
+        else:
+            nom= "(t)%s" % self.typeMorph
+        return '%s' %(nom)
+    
     def aff(self,indent=0):
         for i in self.__dict__:
             print(' '*indent,'%s: %s' % (i,self.__dict__[i]))            
