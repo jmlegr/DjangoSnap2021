@@ -176,6 +176,22 @@ var ArgLabelMorph;
 var TextSlotMorph;
 var ScriptFocusMorph;
 
+
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
+///ajout unique id
+var objIdMap=new WeakMap, objectCount = 0;
+function objectId(object){
+  if (!objIdMap.has(object)) objIdMap.set(object,++objectCount);
+  return objIdMap.get(object);
+}
+/**
+ * Fin Modification JML
+ **/
+
+
+
 // SyntaxElementMorph //////////////////////////////////////////////////
 
 // I am the ancestor of all blocks and input slots
@@ -301,6 +317,15 @@ SyntaxElementMorph.prototype.init = function (silently) {
 
     this.defaults = [];
     this.cachedInputs = null;
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    // ajout d'un id unique
+    this.JMLid=objectId(this);    
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 // SyntaxElementMorph accessing:
@@ -411,7 +436,18 @@ SyntaxElementMorph.prototype.replaceInput = function (oldArg, newArg) {
         replacement = newArg,
         idx = this.children.indexOf(oldArg),
         i = 0;
-    console.log('replacemetn'+oldArg.id+'par'+newArg.id);
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+
+    //console.info('replacemetn'+oldArg+'par'+newArg);
+    //console.info('replacemetn',oldArg,newArg);
+    //if (oldArg instanceof InputSlotMorph) console.log('childre:'+oldArg.children[0]);
+    //if (oldArg instanceof ReporterBlockMorph) console.log('childrep',oldArg.parent.id);
+    
+    /**
+     * Fin Modification JML
+     **/
     // try to find the ArgLabel embedding the newArg,
     // used for the undrop() feature
     if (idx === -1 && newArg instanceof MultiArgMorph) {
@@ -2021,6 +2057,29 @@ SyntaxElementMorph.prototype.endLayout = function () {
     this.topBlock().fullChanged();
 };
 
+/**
+ * Modification JML (duff,  4 janv. 2018)
+ **/
+SyntaxElementMorph.prototype.printStruct = function (decal=0) {
+    d=Array(decal+1).join('..');
+    console.log(d+'Structure de '+this.constructor.name+", ("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
+    //affichage des inputs
+    if (this.inputs()) console.log(d+">INPUTS");
+    this.inputs().forEach(function(i){
+	i.printStruct(decal+1);
+	//console.log(d+">>"+i);
+    });
+    if (this.nextBlock && this.nextBlock()) {
+	console.log(d+'/NEXTBLOCK');
+	this.nextBlock().printStruct(decal);
+    }
+    
+    //console.log(d+"//"+this.nextBlock());
+}
+/**
+ * Fin Modification JML
+ **/
+
 // BlockMorph //////////////////////////////////////////////////////////
 
 /*
@@ -2362,9 +2421,22 @@ BlockMorph.prototype.userMenu = function () {
         );
     }
 
+
     function renameVar() {
         var blck = myself.fullCopy();
         blck.addShadow();
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	sendEvenement('ENV',{type:'POPUP',detail:'menu block',valueChar:'renameVar'});
+	/**
+	 * Fin Modification JML
+	 **/
+
+	/**
+	 * Modification JML (duff,  4 janv. 2018)
+	 **/
+	/*
         new DialogBoxMorph(
             myself,
             myself.userSetSpec,
@@ -2376,6 +2448,13 @@ BlockMorph.prototype.userMenu = function () {
             blck.fullImage(), // pic
             InputSlotMorph.prototype.getVarNamesDict.call(myself)
         );
+	*/
+	this.parentThatIsA(IDE_Morph).showMessage('Cette option a été supprimée.\n'+
+		'Pour renommer une variable, cliquer sur le modèle dans la palette'
+		);
+	/**
+	 * Fin Modification JML
+	 **/
     }
 
     menu.addItem(
@@ -2403,6 +2482,14 @@ BlockMorph.prototype.userMenu = function () {
                 menu.addItem(
                     'rename...',
                     function () {
+                	/**
+			 * Modification JML (duff,  30 déc. 2017)
+			 **/
+
+                	console.log('blokcs 2416)');			
+			/**
+			 * Fin Modification JML
+			 **/
                         myself.refactorThisVar(true); // just the template
                     },
                     'rename only\nthis reporter'
@@ -2448,14 +2535,14 @@ BlockMorph.prototype.userMenu = function () {
                     );
                     menu.addLine();
                     menu.addItem(
-                        'rename...',
-                        function () {
+                        localize('renaSSme...'),
+                        function () {                           
                             myself.refactorThisVar(true); // just the template
                         },
                         'rename only\nthis reporter'
                     );
                     menu.addItem(
-                        'rename all...',
+                        'renaSSme all...',
                         'refactorThisVar',
                         'rename all blocks that\naccess this variable'
                     );
@@ -2507,6 +2594,11 @@ BlockMorph.prototype.userMenu = function () {
         return menu;
     }
     menu.addLine();
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    //suppression pour cause de difficulté a prendre en compte
+    /*
     if (this.selector === 'reportGetVar') {
         menu.addItem(
             'rename...',
@@ -2531,13 +2623,40 @@ BlockMorph.prototype.userMenu = function () {
             );
         }
     }
+	*/
 
+    /**
+     * Fin Modification JML
+     **/
     menu.addItem(
         "duplicate",
         function () {
             var dup = myself.fullCopy(),
                 ide = myself.parentThatIsA(IDE_Morph),
                 blockEditor = myself.parentThatIsA(BlockEditorMorph);
+            /**
+	     * Modification JML (duff,  4 janv. 2018)
+	     **/
+            //dup.printStruct();
+            //dup.JMLid=objectId(dup);
+            //replace=myself.JMLid+"-"+dup.JMLid+";"; //chaine de remplacement
+            replace="";
+            dup.allChildren().filter(function (block) {        	
+                if (block instanceof SyntaxElementMorph) {
+                    //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
+                    replace+=block.JMLid+"-";
+                    block.JMLdroppedId=null;
+                    block.JMLid=objectId(block);
+                    replace+=block.JMLid+";";
+                }
+            });
+	    sendEvenement('ENV',{type:'DUPLIC',click:true,
+		detail:replace, valueInt:myself.JMLid});
+	    
+	    /**
+	     * Fin Modification JML
+	     **/
+
             dup.pickUp(world);
             // register the drop-origin, so the block can
             // slide back to its former situation if dropped
@@ -3245,6 +3364,15 @@ BlockMorph.prototype.refactorThisVar = function (justTheTemplate) {
     var receiver = this.scriptTarget(),
         oldName = this.instantiationSpec || this.blockSpec,
         cpy = this.fullCopy();
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement('ENV',{type:'POPUP',detail:'menu palette',
+	valueChar:'renameVariable',valueBool:justTheTemplate?false:true});
+    
+    /**
+     * Fin Modification JML
+     **/
 
     cpy.addShadow();
 
@@ -3264,15 +3392,47 @@ BlockMorph.prototype.refactorThisVar = function (justTheTemplate) {
                     newName,
                     justTheTemplate
                 );
+                /**
+		 * Modification JML (duff,  4 janv. 2018)
+		 **/
+
+                //console.info('kk',this.parent);
+                //sendJsonData({action:'rename',type:'entree block',block:true,valeur:oldName,newValeur:newName});
+                sendEvenement('SPR',{type:justTheTemplate?'RENVATB':'RENVARB',blockId:this.JMLid,detail:newName,location:oldName});
+		/**
+		 * Fin Modification JML
+		 **/
+
             } else if (this.parentThatIsA(RingMorph)) {
+        	console.log('iciring');
                 this.doRefactorRingParameter(oldName, newName, justTheTemplate);
             } else {
+        	console.log('iciloscript');
                 this.doRefactorScriptVar(oldName, newName, justTheTemplate);
             }
         } else if (receiver.hasSpriteVariable(oldName)) {
             this.doRefactorSpriteVar(oldName, newName, justTheTemplate);
+            /**
+	     * Modification JML (duff,  4 janv. 2018)
+	     **/
+            sendEvenement('SPR',{type:justTheTemplate?'RENVATL':'RENVARL',detail:newName,location:oldName})
+            //sendJsonData({action:'rename',type:'variable',globale:false,valeur:oldName,newValeur:newName});
+	    /**
+	     * Fin Modification JML
+	     **/
+
+            
         } else {
             this.doRefactorGlobalVar(oldName, newName, justTheTemplate);
+            /**
+	     * Modification JML (duff,  4 janv. 2018)
+	     **/
+            sendEvenement('SPR',{type:justTheTemplate?'RENVAT':'RENVAR',blockId:this.JMLid,detail:newName,location:oldName})
+            //sendJsonData({action:'rename',type:'variable',globale:true,valeur:oldName,newValeur:newName});	    
+	    /**
+	     * Fin Modification JML
+	     **/
+
         }
     }
 };
@@ -3351,6 +3511,7 @@ BlockMorph.prototype.doRefactorScriptVar = function (
 ) {
     var definer = this.parentThatIsA(CommandBlockMorph),
         receiver, ide;
+    console.log('refScript',this,newName);
 
     if (definer.definesScriptVariable(newName)) {
         receiver = this.scriptTarget();
@@ -3358,7 +3519,7 @@ BlockMorph.prototype.doRefactorScriptVar = function (
         this.varExistsError(ide);
         return;
     }
-
+    
     this.userSetSpec(newName);
 
     if (justTheTemplate) {
@@ -3377,7 +3538,7 @@ BlockMorph.prototype.doRefactorSpriteVar = function (
         ide = receiver.parentThatIsA(IDE_Morph),
         oldWatcher = receiver.findVariableWatcher(oldName),
         oldValue, newWatcher;
-
+    console.log('refSprite',this,newName);
     if (receiver.hasSpriteVariable(newName)) {
         this.varExistsError(ide);
         return;
@@ -3427,7 +3588,7 @@ BlockMorph.prototype.doRefactorGlobalVar = function (
         stage = ide ? ide.stage : null,
         oldWatcher = receiver.findVariableWatcher(oldName),
         oldValue, newWatcher;
-
+   
     if (!isNil(ide.globalVariables.vars[newName])) {
         this.varExistsError(ide);
         return;
@@ -3862,7 +4023,16 @@ BlockMorph.prototype.mouseClickLeft = function () {
     if (receiver) {
         stage = receiver.parentThatIsA(StageMorph);
         if (stage) {
-            stage.threads.toggleProcess(top, receiver);
+            /**
+	     * Modification JML (duff,  31 déc. 2017)
+	     **/
+            //stage.threads.toggleProcess(top, receiver);
+            stage.threads.toggleProcess(top, receiver,true);
+	    /**
+	     * Fin Modification JML
+	     **/
+
+            
         }
     }
 };
@@ -4276,6 +4446,7 @@ CommandBlockMorph.prototype.dentCenter = function () {
 CommandBlockMorph.prototype.attachTargets = function () {
     var answer = [],
         tp;
+    
     if (!(this instanceof HatBlockMorph)) {
         tp = this.topAttachPoint();
         if (!(this.parent instanceof SyntaxElementMorph)) {
@@ -4515,7 +4686,7 @@ CommandBlockMorph.prototype.userDestroy = function () {
         scripts.recordDrop(this.situation());
         scripts.dropRecord.action = 'delete';
         var donnee=new scripts.donnee(scripts.dropRecord);
-        console.info('userdestroy '+JSON.stringify(donnee));
+        //console.info('userdestroy '+JSON.stringify(donnee));
         
     }
 
@@ -4543,17 +4714,17 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
         above,
         parent = this.parentThatIsA(SyntaxElementMorph),
         cslot = this.parentThatIsA(CSlotMorph);
-
+    
     // for undrop / redrop
     if (scripts) {
-    	console.info('userdestroyjustthis script'+JSON.stringify(this,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
+    	//console.info('userdestroyjustthis script'+JSON.stringify(this,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
         scripts.clearDropInfo();
         scripts.lastDroppedBlock = this;
         scripts.recordDrop(this.situation());
         scripts.dropRecord.lastNextBlock = nb;
         scripts.dropRecord.action = 'delete';
         var donnee=new scripts.donnee(scripts.dropRecord);
-        console.info('userdestroyjustthis script'+JSON.stringify(donnee));
+        //console.info('userdestroyjustthis script'+JSON.stringify(donnee));
         
     }
 
@@ -4577,13 +4748,10 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
     if (nb) {
     	
         if (above instanceof CommandSlotMorph) {
-        	console.info('aboce nb slot');
             above.nestedBlock(nb);
         } else if (above instanceof CommandBlockMorph) {
-        	console.info('aboce nb bloc');
             above.nextBlock(nb);
         } else {
-        	console.info('script addnb');
             scripts.add(nb);
         }
     } else if (cslot) {
@@ -6304,7 +6472,14 @@ ScriptsMorph.prototype.userMenu = function () {
                     ),
                     localize('undrop')
                 ],
-                'undrop',
+                /**
+		 * Modification JML (duff,  30 déc. 2017)
+		 **/
+                //'undrop',
+                function() {this.undrop(origine='menu')},
+		/**
+		 * Fin Modification JML
+		 **/
                 '^Z',
                 'undo the last\nblock drop\nin this pane'
             );
@@ -6319,7 +6494,14 @@ ScriptsMorph.prototype.userMenu = function () {
                     ),
                     localize('redrop')
                 ],
-                'redrop',
+                /**
+		 * Modification JML (duff,  30 déc. 2017)
+		 **/
+		//'redrop',
+                function() {this.redrop(origine='menu')},
+		/**
+		 * Fin Modification JML
+		 **/
                 '^Y',
                 'redo the last undone\nblock drop\nin this pane'
             );
@@ -6365,6 +6547,13 @@ ScriptsMorph.prototype.userMenu = function () {
         menu.addItem(
             'make a block...',
             function () {
+        	/**
+        	 * Modification JML (duff,  30 déc. 2017)
+        	 **/
+		sendEvenement('ENV',{type:'POPUP',valueChar:'MakeABlock',detail:'menu'});
+		/**
+		 * Fin Modification JML
+		**/
                 new BlockDialogMorph(
                     null,
                     function (definition) {
@@ -6375,13 +6564,20 @@ ScriptsMorph.prototype.userMenu = function () {
                                 obj.customBlocks.push(definition);
                             }
                             ide.flushPaletteCache();
-                            ide.refreshPalette();
+                            ide.refreshPalette();                            
                             new BlockEditorMorph(definition, obj).popUp();
                         }
                     },
                     myself
                 ).prompt(
-                    'Make a block',
+                    /**
+		     * Modification JML (duff,  30 déc. 2017)
+		     **/
+                    //'Make a block',
+                    localize('Make a block'),
+		    /**
+		     * Fin Modification JML
+		     **/
                     null,
                     myself.world()
                 );
@@ -6475,8 +6671,15 @@ ScriptsMorph.prototype.addComment = function () {
 };
 
 // ScriptsMorph undrop / redrop
-
-ScriptsMorph.prototype.undrop = function () {
+/**
+ * Modification JML (duff,  30 déc. 2017)
+ **/
+//ScriptsMorph.prototype.undrop = function () {
+ScriptsMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
+    console.log('unrop:',origine,key,clic);
+/**
+ * Fin Modification JML
+ **/
     var myself = this;
     if (this.isAnimating) {return; }
     if (!this.dropRecord || !this.dropRecord.lastRecord) {return; }
@@ -6494,16 +6697,38 @@ ScriptsMorph.prototype.undrop = function () {
             myself.isAnimating = false;
         }
     );
-    console.info('undrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
+    this
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    
+    sendEvenement(type='ENV',
+	    data={type:'UNDROP',detail:origine,
+	    	key:key,clic:clic,
+	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
+	    	valueInt:this.dropRecord.lastDroppedBlock.JMLid
+	    	});    
+    /**
+     * Fin Modification JML
+     **/
     this.dropRecord = this.dropRecord.lastRecord;
     
-    sendJsonData(this.dropRecord);
+
 };
 
-ScriptsMorph.prototype.redrop = function () {
+/**
+ * Modification JML (duff,  30 déc. 2017)
+ **/
+//ScriptsMorph.prototype.redrop = function () {
+ScriptsMorph.prototype.redrop = function (origine=null,key=false,clic=false) {
+/**
+ * Fin Modification JML
+ **/
+
+
     var myself = this;
     if (this.isAnimating) {return; }
-    if (!this.dropRecord || !this.dropRecord.nextRecord) {return; }
+    if (!this.dropRecord || !this.dropRecord.nextRecord) {return; } //envoyer l'essai quand même?
     this.dropRecord = this.dropRecord.nextRecord;
     if (this.dropRecord.action === 'delete') {
         this.recoverLastDrop(true);
@@ -6521,8 +6746,18 @@ ScriptsMorph.prototype.redrop = function () {
             }
         );
     }
-    //console.info('redrop'+JSON.stringify(this.dropRecord,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
-    console.info('redrop' + stringify(this.dropRecord,null,'  '));
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement(type='ENV',
+	    data={type:'REDROP',detail:origine,
+	    	key:key,clic:clic,
+	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
+	    	valueInt:this.dropRecord.lastDroppedBlock.JMLid
+	    	});    
+    /**
+     * Fin Modification JML
+     **/
 };
 
 ScriptsMorph.prototype.recoverLastDrop = function (forRedrop) {
@@ -6651,7 +6886,7 @@ ScriptsMorph.prototype.recoverLastDrop = function (forRedrop) {
             dropped.moveBy(new Point(-100, -20));
         }
     }
-    console.info('recoverlastdrop');
+    //console.info('recoverlastdrop');
     return onBeforeDrop;
 };
 
@@ -6665,69 +6900,102 @@ ScriptsMorph.prototype.clearDropInfo = function () {
 };
 
 
+/**
+ * Modification JML (duff,  4 janv. 2018)
+ **/
+
 //données à envoyer
 ScriptsMorph.prototype.donnee = function(record) {
+	//console.info('record',record);	
+	//console.info('action'+record.action);
+	//data={action:record.action?record.action:'deplacement'};
+	data={}
+	
+	//if (record.lastDroppedBlock) console.info('top',record.lastDroppedBlock.topBlock());
 	if (record.lastDroppedBlock) {
-		newdate=new Date();
-		this.time=newdate.getTime()-date_debut;
-    	this.lastDroppedBlock={
-    		id: record.lastDroppedBlock.id,    
-    		blockSpec: record.lastDroppedBlock.blockSpec,
-    		category: record.lastDroppedBlock.category,
-    		bounds: record.lastDroppedBlock.bounds,
-    		parent: record.lastDroppedBlock.parent?record.lastDroppedBlock.parent.id:null,
-    		
-    	}
-    	if (record.lastDropTarget) {
+	    
+	    if (record.lastDroppedBlock.JMLfrom=='DropBlock') {
+		//c'est un drop dans la palette, donc une suppression
+		record.action='delete'
+	    }
+	    switch (record.action) {
+		   case 'creation': data['type']='NEW'; break;
+		   case 'delete': data['type']='DEL'; break;
+		   case 'deplacement':
+		   case null: data['type']='DROP'; break;
+		   case 'valeur': {
+		       data['type']='VAL'; 
+		       data['detail']=record.detailAction;
+		       break;
+		   }
+		   default: 
+		       data['type']='AUTRE';
+		       data['detail']=record.detailAction;
+		} 
+	    if (record.lastReplacedInput) {
+	    	    // il y a un changement dans les inputs
+		    data['type']=data['type']+'VAL';
+	    	    data['detail']=record.lastReplacedInput.JMLid;	    	    
+	    	}
+	    // Normalement on a un blockMorph
+	    data['typeMorph']=record.lastDroppedBlock.constructor.name
+	    data['blockId']=record.lastDroppedBlock.JMLid;
+	    data['selector']=record.lastDroppedBlock.selector;
+	    data['blockSpec']=record.lastDroppedBlock.blockSpec;
+	    data['category']=record.lastDroppedBlock.category  ;
+	    if (record.lastDroppedBlock.parent) { 
+		p=record.lastDroppedBlock.parent.parentThatIsA(BlockMorph);
+		data['parentId']=p?p.JMLid:null;
+	    }
+	    if (record.lastDropTarget) {
     		//console.log((record.lastDroppedBlock instanceof ReporterBlockMorph)+'-'+typeof record.lastDropTarget);
-    		this.lastDropTarget={
-    				id: record.lastDropTarget.element?record.lastDropTarget.element.id:record.lastDropTarget.id,
-    				loc: record.lastDropTarget.loc,
-    				point: record.lastDropTarget.point,
-    				type: record.lastDropTarget.type
+		if (record.lastDropTarget.element) {
+		    data['targetId']=record.lastDropTarget.element.JMLid
+		    if (record.lastDropTarget.element instanceof CSlotMorph ) data['location']='slot';
+		    else {
+			data['location']=record.lastDropTarget.loc;		
+			//inutile de préciser autre chose, c'est forcément dans le slot 1
+		    }
+		} else {
+    	    	    data['targetId']=record.lastDropTarget.JMLid
+    	    	    data['location']=record.lastDropTarget.loc;
+		}
+		
+		
+    		//console.log('target ',record.lastDropTarget.type);		
+    	    }    
+    	    if (record.lastDroppedBlock.nextBlock) {
+    		//console.log('childs'+record.lastDroppedBlock.nextBlock(),record.lastDroppedBlock.nextBlock());
+    		if (record.lastDroppedBlock.nextBlock()) data['nextBlock']=record.lastDroppedBlock.nextBlock().JMLid;
+    	    }
+    	    //console.log('parent'+record.lastDroppedBlock.parent,record.lastDroppedBlock.parent,(record.lastDroppedBlock.parent instanceof BlockMorph));    	
+    	    // récupération des entrées
+    	    t=record.lastDroppedBlock.inputs();
+    	    //console.log('inputs'+t,t);
+    	    inputs= new Array();
+    	    t.forEach(function(input,i) {    	
+    	    	//console.log('inupt'+input,i,t.indexOf(input));
+    	    	//console.log('->',input,input.contents?input.contents().text:'**',input.evaluate());  			
+    		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
+    		    contenu:input.contents?input.contents().text:null,
+    		    rang:t.indexOf(input),
+    		    isNumeric:input.isNumeric,
+    		    isPredicate:input.isPredicate});
     		}
-    	}    
-    	this.action= record.action;
-    	this .detailAction=record.detailAction;
-    	this.situation= record.situation;
-    	
-    	if (record.lastDroppedBlock instanceof CommandBlockMorph) {
-    	    this.typeMorph='CommandBlockMorph';
-    	} else if (record.lastDroppedBlock instanceof CommandSlotMorph) {
-    		this.typeMorph='CommandSlotMorph';
-    	} else if (record.lastDroppedBlock instanceof ReporterBlockMorph) {
-    	    this.typeMorph='ReporterBlockMorph';
-    	} else if (record.lastDroppedBlock instanceof CommentMorph) {
-    	    this.typeMorph='CommentMorph';
-    	} else this.typeMorph='??';	
-    	t=record.lastDroppedBlock.inputs();
-    	inputs= new Array();
-    	t.forEach(function(input,i) {    			
-    			if (input instanceof InputSlotMorph) {    				
-    				typeInput='constante';
-    				//typeInput=input.category;
-    				valeurInput=input.children[0].text;
-    			} else if (input instanceof ReporterBlockMorph) {
-    				typeInput=input.category;
-    				valeurInput=input.children[0].text;
-    			} else if (input instanceof MultiArgMorph) {
-    				typeInput='Multi Arguments';
-    				//typeInput=input.category;
-    				valeurInput='non evalue';
-    			} else {
-    				typeInput='Inconnu';
-    				valeurInput='non evalue';
-    			}    			
-    			inputs.push({id:input.id,type:typeInput,valeur:valeurInput});
-    			//console.log('donnee'+input+'-'+typeInput+':'+valeurInput);
-    		}
-    	);
-    	this.lastDroppedBlock.inputs=inputs;    
-    	//console.log('input 1:'+( t[0] instanceof ReporterBlockMorph)+'-'+(t[0] instanceof InputSlotMorph));
-    	sendJsonData(this);
-    }
+    	    );
+    	    if (inputs) data['inputs']=inputs;
+    	    //this.lastDroppedBlock.inputs=inputs;  
+    	    //console.log('data',data)
+    	    sendEvenement('SPR',data);
+    	    //sendJsonData(this);
+	}
     
 }
+
+/**
+ * Fin Modification JML
+ **/
+
 ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
     // support for "undrop" / "redrop"
      var record = {
@@ -6741,25 +7009,40 @@ ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
         action: null,
         situation: null,
         lastRecord: this.dropRecord,
-        nextRecord: null
+        nextRecord: null        
     };
-     //si le block n'a pas encore d'id, il est nouvellement créé
-     if (record.lastDroppedBlock && !record.lastDroppedBlock.id) {
-     	record.lastDroppedBlock.id=record.lastDroppedBlock.lastTime;
+     /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+     //si le block n'a pas encore d'id de drop, c'est qu' il est nouvellement créé
+     if (record.lastDroppedBlock && !record.lastDroppedBlock.JMLdroppedId) {    
+    	record.lastDroppedBlock.JMLid=objectId(record.lastDroppedBlock);
+    	record.lastDroppedBlock.JMLdroppedId=objectId(record.lastDroppedBlock);
      	record.action="creation";
      }
+    
+    /**
+     * Fin Modification JML
+     **/
     if (this.dropRecord) {
         this.dropRecord.nextRecord = record;
     }
     this.dropRecord = record;
-    
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+
     //console.info('record'+JSON.stringify(record,['lastDroppedBlock','blockSpec','action','allInputs','children','text']));
     //alert('record \n'+stringifySafe(record,['lastDroppedBlock','blockSpec','action','allInputs','children','text'],'  '));
     
     //préparation des données à envoyer
-    donnee=new this.donnee(record);
+    this.donnee(record);
     //console.info('donnee:'+JSON.stringify(donnee,null,' '));
     
+    
+    /**
+     * Fin Modification JML
+     **/
     
     this.updateToolbar();
 };
@@ -6772,7 +7055,15 @@ ScriptsMorph.prototype.addToolbar = function () {
     toolBar.respectHiddens = true;
     toolBar.undoButton = new PushButtonMorph(
         this,
-        "undrop",
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //"undrop"
+        function() {this.undrop(origine='Button',key=false,clic=true)},	
+	/**
+	 * Fin Modification JML
+	 **/
+
         new SymbolMorph("turnBack", 12)
     );
     toolBar.undoButton.alpha = 0.2;
@@ -6785,7 +7076,16 @@ ScriptsMorph.prototype.addToolbar = function () {
 
     toolBar.redoButton = new PushButtonMorph(
         this,
-        "redrop",
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//"redrop",
+        function() {this.redrop(origine='Button',key=false,clic=true)},
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
         new SymbolMorph("turnForward", 12)
     );
     toolBar.redoButton.alpha = 0.2;
@@ -8290,6 +8590,24 @@ InputSlotMorph.prototype.setContents = function (aStringOrFloat) {
 
     // remember the constant, if any
     this.constant = isConstant ? aStringOrFloat : null;
+    /**
+     * Modification JML (duff,  2 janv. 2018)
+     **/
+    if (this.parent && this.parent.JMLdroppedId) {
+	//c'est une modification 
+	//console.log('8451INPUT setcontent',this,cnts,dta);
+	var scripts = this.parentThatIsA(ScriptsMorph);
+	record={};
+	record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+	record.action='valeur';
+	record.detailAction=this.JMLid;
+	var donnee=new scripts.donnee(record);
+	    
+    }
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 InputSlotMorph.prototype.userSetContents = function (aStringOrFloat) {
@@ -8846,24 +9164,39 @@ InputSlotMorph.prototype.reactToKeystroke = function () {
 
 InputSlotMorph.prototype.reactToEdit = function () {
     this.contents().clearSelection();
+    /**
+     * Modification JML (duff,  2 janv. 2018)
+     **/
+    //console.log('react',this);
     //si la valeur a été changée on envoit
     // TODO: corriger bloquage undrop
+    var scripts = this.parentThatIsA(ScriptsMorph);
     this.children.forEach (function (v){
     	if (v instanceof StringMorph) val=v.text;
     	if (v instanceof CursorMorph) {
     		orig=v.originalContents;
-    	}   	
+    	}
     });
-    if (val != orig) {
-    	var scripts = this.parentThatIsA(ScriptsMorph);  
-    	scripts.clearDropInfo();     
-        scripts.dropRecord=this.parent;
-        scripts.dropRecord.lastDroppedBlock = this.parent;
-        scripts.dropRecord.action = 'valeur';
-        scripts.dropRecord.detailAction={originale:orig,nouvelle:val};        
-        var donnee=new scripts.donnee(scripts.dropRecord);
-        //console.log('donne'+JSON.stringify(donnee));
-    }
+    if (val != orig) {    	    	  
+    	    	//scripts.clearDropInfo();     
+    	        //scripts.dropRecord=this.parent;
+    	        //scripts.dropRecord.lastDroppedBlock = this.parent;
+    	        //scripts.dropRecord.action = 'valeur';
+    	        //scripts.dropRecord.detailAction={originale:orig,nouvelle:val};
+    	     	record={};
+    	     	record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+    	     	record.action='valeur';
+    	     	record.detailAction=this.JMLid;
+    	        //var donnee=new scripts.donnee(scripts.dropRecord);
+    	    var donnee=new scripts.donnee(record);
+    	        //console.log('donne'+JSON.stringify(donnee));
+    	    }
+    
+   
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 InputSlotMorph.prototype.freshTextEdit = function (aStringOrTextMorph) {
@@ -9475,6 +9808,14 @@ BooleanSlotMorph.prototype.toggleValue = function () {
             this.value = true;
         }
     }
+    /**
+     * Modification JML (duff,  2 janv. 2018)
+     **/
+    console.log("(9646)switch boolean ",this,this.value);
+    /**
+     * Fin Modification JML
+     **/
+
     if (ide && !ide.isAnimating) {
         this.drawNew();
         this.changed();
@@ -10582,6 +10923,15 @@ MultiArgMorph.prototype.addInput = function (contents) {
     newPart.parent = this;
     this.children.splice(idx, 0, newPart);
     newPart.drawNew();
+    /**
+     * Modification JML (duff,  2 janv. 2018)
+     **/
+
+    //if (newPart.parent.parent && newPart.parent.parent.JMLdroppedId) console.log('DRAX NEW',newPart.constructor.name,newPart);
+    //else console.log('DRWX PAR',newPart.parent);
+    /**
+     * Fin Modification JML
+     **/
     this.fixLayout();
 };
 
@@ -10597,6 +10947,15 @@ MultiArgMorph.prototype.removeInput = function () {
             }
         }
     }
+    /**
+     * Modification JML (duff,  2 janv. 2018)
+     **/
+    console.log('REMOVE'+oldPart,oldPart);
+    console.log('de'+this,this);
+    /**
+     * Fin Modification JML
+     **/
+
     this.fixLayout();
 };
 
@@ -12712,14 +13071,30 @@ ScriptFocusMorph.prototype.sortedScripts = function () {
 };
 
 // ScriptFocusMorph undo / redo
-
-ScriptFocusMorph.prototype.undrop = function () {
-    this.editor.undrop();
+/**
+ * Modification JML (duff,  30 déc. 2017)
+ **/
+//ScriptFocusMorph.prototype.undrop = function () {
+//    this.editor.undrop();
+//};
+ScriptFocusMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
+    this.editor.undrop(origine,key,clic);
 };
 
-ScriptFocusMorph.prototype.redrop = function () {
-    this.editor.redrop();
+
+//ScriptFocusMorph.prototype.redrop = function () {
+//    this.editor.redrop();
+//};
+
+ScriptFocusMorph.prototype.redrop = function (origine=null,key=false,clic=false) {
+    this.editor.redrop(origine,key,clic);
 };
+
+
+/**
+ * Fin Modification JML
+ **/
+
 
 // ScriptFocusMorph block types
 
@@ -12865,10 +13240,26 @@ ScriptFocusMorph.prototype.reactToKeyEvent = function (key) {
     case 'backspace':
         return this.deleteLastElement();
     case 'ctrl z':
-        return this.undrop();
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//return this.undrop();
+	return this.undrop(origine='ctrl z',key=true);
+	/**
+	 * Fin Modification JML
+	 **/        
     case 'ctrl y':
     case 'ctrl shift z':
-        return this.redrop();
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//return this.redrop();
+	return this.redrop(origine=evt,key=true);
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
     case 'ctrl [': // ignore the first press of the Mac cmd key
         return;
     default:

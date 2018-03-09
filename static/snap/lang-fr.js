@@ -309,9 +309,11 @@ SnapTranslator.dict.fr = {
     'turn %counterclockwise %n degrees':
         'tourner de %n degr\u00E9s %counterclockwise',
     'point in direction %dir':
-        'se diriger en faisant un angle de %dir',
+     //   'se diriger en faisant un angle de %dir',
+    	's\'orienter en faisant un angle de %dir',
     'point towards %dst':
-        'se diriger vers %dst',
+        //'se diriger vers %dst',
+    	's\'orienter vers %dst',
     'go to x: %n y: %n':
         'aller \u00E0 x: %n y: %n',
     'go to %dst':
@@ -606,7 +608,7 @@ SnapTranslator.dict.fr = {
         'cacher la variable %var',
     'script variables %scriptVars':
         'variables du script %scriptVars',
-
+    
     // lists:
     'list %exp':
         'liste %exp',
@@ -675,6 +677,12 @@ SnapTranslator.dict.fr = {
         'Exporter le projet comme texte...',
     'Export project...':
         'Exporter le projet...',
+    'Export Project As...':
+            'Exporter le projet avec le nom...',
+    'exporting':
+    		'Exportation en cours...',
+    'Exported!':
+    		'Exporté!',
     'save project data as XML\nto your downloads folder':
         'sauvegarder le projet au\nformat XML dans votre\ndossier T\u00E9l\u00E9chargements',
     'show project data as XML\nin a new browser window':
@@ -915,7 +923,7 @@ SnapTranslator.dict.fr = {
     'Are you sure you want to delete':
         'Souhaitez-vous vraiment supprimer ?',
     'rename...':
-        'Renommer...',
+        'RenoMMer...',
 
      // costume editor
     'Costume Editor':
@@ -958,7 +966,11 @@ SnapTranslator.dict.fr = {
         'pour tous les lutins',
     'for this sprite only':
         'pour ce lutin uniquement',
-
+    'rename only\nthis reporter':
+	'renommer seulement le modèle',   
+    'renaSSme...': 'IJKJ',
+    'rename all...':
+    	'renommer toutes les occurences',
     // block dialog
     'Change block':
         'Changer le bloc',

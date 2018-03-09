@@ -1851,6 +1851,18 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         var ide;
         if (pair) {
             if (myself.isVariableNameInUse(pair[0], pair[1])) {
+        	/**
+		 * Modification JML (duff,  4 janv. 2018)
+		 **/
+        	sendEvenement('SPR',{type:'ERR',detail:'creation variable existante ('+
+        	    pair[0]+pair[1]?"-globale":'locale'+')'});
+        	
+        	//sendJsonData({action:'erreur',type:,globale:pair[1],valeur:pair[0]});
+		/**
+		 * Fin Modification JML
+		 **/
+
+            	
                 myself.inform('that name is already in use');
             } else {
                 ide = myself.parentThatIsA(IDE_Morph);
@@ -2169,6 +2181,13 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         button = new PushButtonMorph(
             null,
             function () {
+        	/**
+		 * Modification JML (duff,  30 déc. 2017)
+		 **/
+		sendEvenement('ENV',{type:'POPUP',detail:'button',valueChar:'addVariable'});
+		/**
+		 * Fin Modification JML
+		 **/
                 new VariableDialogMorph(
                     null,
                     addVar,
@@ -2190,6 +2209,13 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             button = new PushButtonMorph(
                 null,
                 function () {
+                    /**
+                     * Modification JML (duff,  30 déc. 2017)
+    		    **/
+    		    sendEvenement('ENV',{type:'POPUP',detail:'button',valueChar:'deleteVariable'});
+    		    /**
+    		     * Fin Modification JML
+    		    **/
                     var menu = new MenuMorph(
                         myself.deleteVariable,
                         null,
@@ -2338,9 +2364,24 @@ SpriteMorph.prototype.makeBlock = function () {
             each.setColor(clr);
         each.refresh();
         });
-    }
+    }    
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement('ENV',{type:'POPUP',detail:'button',valueChar:'MakeABlock'});
+    /**
+     * Fin Modification JML
+     **/
+
     dlg.prompt(
-        'Make a block',
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	**/
+	//'Make a block',
+	localize('Make a block'),
+	/**
+	 * Fin Modification JML
+	**/
         null,
         myself.world()
     );
@@ -3038,6 +3079,15 @@ SpriteMorph.prototype.addVariable = function (name, isGlobal) {
         this.variables.addVar(name);
         this.blocksCache.variables = null;
     }
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    sendEvenement('SPR',{type:isGlobal?'NEWVAR':'NEWVARL',detail:name});
+    //sendJsonData({action:'creation',type:'variable',globale:isGlobal,valeur:name});    
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 SpriteMorph.prototype.deleteVariable = function (varName) {
@@ -3051,6 +3101,15 @@ SpriteMorph.prototype.deleteVariable = function (varName) {
         ide.flushBlocksCache('variables'); // b/c the var could be global
         ide.refreshPalette();
     }
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    sendEvenement('SPR',{type:'DELVAR',detail:varName});
+    //sendJsonData({action:'delete',type:'variable',valeur:varName});    
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 // SpriteMorph costume management
@@ -6714,8 +6773,24 @@ StageMorph.prototype.processKeyUp = function (event) {
     );
 };
 
+StageMorph.keyanc=null;
 StageMorph.prototype.processKeyEvent = function (event, action) {
     var keyName;
+
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    // pour n'envoyer un evenement keydown sur le serveur que si c'est le permier appui
+    if (event.type=='keydown' && !this.keyanc) {
+    	this.keyanc=event.keyCode;
+    	//console.log('keydown:',this.keyanc);
+    } else if (event.type=='keyup') {this.keyanc=null; };
+    //console.log('process key',event.type,event.keyCode,action);
+    //fin jml
+    
+    /**
+     * Fin Modification JML
+     **/
 
     // this.inspectKeyEvent(event);
     switch (event.keyCode) {
@@ -6759,7 +6834,15 @@ StageMorph.prototype.fireKeyEvent = function (key) {
         procs = [],
         ide = this.parentThatIsA(IDE_Morph),
         myself = this;
-
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    //console.log('key',key);
+    //sendEvt({key:evt});
+    sendEvenement('ENV',{type:'KEY',key:true,detail:evt});
+    /**
+     * Fin Modification JML
+     **/
     this.keysPressed[evt] = true;
     if (evt === 'ctrl enter') {
         return this.fireGreenFlagEvent();
@@ -6772,11 +6855,25 @@ StageMorph.prototype.fireKeyEvent = function (key) {
         return;
     }
     if (evt === 'ctrl z') {
-        if (!ide.isAppMode) {ide.currentSprite.scripts.undrop(); }
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	 //if (!ide.isAppMode) {ide.currentSprite.scripts.undrop(); }
+	 if (!ide.isAppMode) {ide.currentSprite.scripts.undrop(origine=evt,key=true); }
+	/**
+	 * Fin Modification JML
+	 **/       
          return;
     }
     if (evt === 'ctrl shift z' || (evt === 'ctrl y')) {
-        if (!ide.isAppMode) {ide.currentSprite.scripts.redrop(); }
+	/**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//if (!ide.isAppMode) {ide.currentSprite.scripts.redrop(); }
+	if (!ide.isAppMode) {ide.currentSprite.scripts.redrop(origine=evt,key=true); }
+	/**
+	 * Fin Modification JML
+	 **/        
          return;
     }
     if (evt === 'ctrl n') {

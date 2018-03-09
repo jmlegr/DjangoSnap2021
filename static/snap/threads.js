@@ -179,11 +179,38 @@ function ThreadManager() {
 }
 
 ThreadManager.prototype.pauseCustomHatBlocks = false;
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
 
-ThreadManager.prototype.toggleProcess = function (block, receiver) {
+//ThreadManager.prototype.toggleProcess = function (block, receiver) {
+
+ThreadManager.prototype.toggleProcess = function (block, receiver,click=false) {
+/**
+ * Fin Modification JML
+ **/
+
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     **/
+    //console.log('toggle',block,receiver,click);
+    /**
+     * Fin Modification JML
+     **/
+
     var active = this.findProcess(block, receiver);
     if (active) {
-        active.stop();
+	/**
+	 * Modification JML (duff,  29 déc. 2017)
+	 **/
+	//console.log('stop:',active);
+	//active.stop();
+	active.stop(click);
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
     } else {
         return this.startProcess(block, receiver, null, null, null, true);
     }
@@ -197,7 +224,7 @@ ThreadManager.prototype.startProcess = function (
     callback,
     isClicked,
     rightAway
-) {
+) {  
     var top = block.topBlock(),
         active = this.findProcess(top, receiver),
         glow,
@@ -212,7 +239,7 @@ ThreadManager.prototype.startProcess = function (
     newProc = new Process(top, receiver, callback, isClicked);
     newProc.exportResult = exportResult;
     newProc.isClicked = isClicked || false;
-
+   
     // show a highlight around the running stack
     // if there are more than one active processes
     // for a block, display the thread count
@@ -229,11 +256,28 @@ ThreadManager.prototype.startProcess = function (
     if (rightAway) {
         newProc.runStep();
     }
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    var click=isClicked?isClicked:false
+    liste="";
+    this.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
+    sendEvenement('EPR',{type:'START',receiver:receiver.name,
+    	    topBlockId:top.JMLid, topBlockSelector:top.selector,
+    	    click:click,
+    	    processes:liste
+    	    });    
+    var ide = top.parentThatIsA(IDE_Morph);    
+    ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
+    /**
+     * Fin Modification JML
+     **/
+	
     return newProc;
 };
 
 ThreadManager.prototype.stopAll = function (excpt) {
-    // excpt is optional
+    // excpt is optional    
     this.processes.forEach(function (proc) {
         if (proc !== excpt) {
             proc.stop();
@@ -243,6 +287,7 @@ ThreadManager.prototype.stopAll = function (excpt) {
 
 ThreadManager.prototype.stopAllForReceiver = function (rcvr, excpt) {
     // excpt is optional
+	//console.log('stopall for receiver',excpt);
     this.processes.forEach(function (proc) {
         if (proc.homeContext.receiver === rcvr && proc !== excpt) {
             proc.stop();
@@ -254,6 +299,14 @@ ThreadManager.prototype.stopAllForReceiver = function (rcvr, excpt) {
 };
 
 ThreadManager.prototype.stopAllForBlock = function (aTopBlock) {
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     **/
+    //console.log('stopAll',aTopBlock,aTopBlock.JMLfrom);
+    /**
+     * Fin Modification JML
+     **/
+
     this.processesForBlock(aTopBlock, true).forEach(function (proc) {
         proc.stop();
     });
@@ -261,12 +314,14 @@ ThreadManager.prototype.stopAllForBlock = function (aTopBlock) {
 
 ThreadManager.prototype.stopProcess = function (block, receiver) {
     var active = this.findProcess(block, receiver);
+    //console.log('stopProcess',active,bloc,receiver);
     if (active) {
         active.stop();
     }
 };
 
 ThreadManager.prototype.pauseAll = function (stage) {
+	//console.log('pause all');
     this.processes.forEach(function (proc) {
         proc.pause();
     });
@@ -281,6 +336,7 @@ ThreadManager.prototype.isPaused = function () {
 };
 
 ThreadManager.prototype.resumeAll = function (stage) {
+	//console.log('resume all');
     this.processes.forEach(function (proc) {
         proc.resume();
     });
@@ -326,10 +382,29 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
     var remaining = [],
         count,
         myself = this;
+    
     this.processes.forEach(function (proc) {
         var result,
             glow;
         if ((!proc.isRunning() && !proc.errorFlag) || proc.isDead) {
+            /**
+	     * Modification JML (duff,  31 déc. 2017)
+	     **/
+            //c'est un arrêt normal (non déclenché) si readyToTerminate est faux
+            if (!proc.readyToTerminate) {
+        	sendEvenement('EPR',{type:'FIN', receiver:proc.receiver.name,
+        	    topBlockSelector:proc.topBlock.selector,
+        	    topBlockId:proc.topBlock.JMLid,
+        	});
+        	var ide = proc.topBlock.parentThatIsA(IDE_Morph);
+    	    	ide.uploadCanvas(ide.stage.fullImageClassic(),'FIN'+proc.topBlock.JMLid);
+        	
+            }
+            
+	    /**
+	     * Fin Modification JML
+	     **/
+
             if (proc.topBlock instanceof BlockMorph) {
                 proc.unflash();
                 // adjust the thread count indicator, if any
@@ -628,8 +703,35 @@ Process.prototype.runStep = function (deadline) {
         }
     }
 };
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
 
-Process.prototype.stop = function () {
+//Process.prototype.stop = function () {
+Process.prototype.stop = function (click=false,onError=false) {
+/**
+ * Fin Modification JML
+ **/
+
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    if (onError) {
+	//c'est le handelError qui se charge de l'envoi
+
+    } else {
+	sendEvenement('EPR',{type:'STOP',receiver:this.receiver.name,
+	    topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	    click:click
+		});
+	var ide = this.topBlock.parentThatIsA(IDE_Morph);
+	    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOP');
+    }
+    
+    /**
+     * Fin Modification JML
+     **/
+
     this.readyToYield = true;
     this.readyToTerminate = true;
     this.errorFlag = false;
@@ -642,6 +744,16 @@ Process.prototype.pause = function () {
     if (this.readyToTerminate) {
         return;
     }
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    if (!this.isPaused) sendEvenement('EPR',{type:'PAUSE',receiver:this.receiver.name,
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	});
+    /**
+     * Fin Modification JML
+     **/
+
     this.isPaused = true;
     this.flashPausedContext();
     if (this.context && this.context.startTime) {
@@ -653,6 +765,15 @@ Process.prototype.resume = function () {
     if (!this.enableSingleStepping) {
         this.unflash();
     }
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    sendEvenement('EPR',{type:'REPR',receiver:this.receiver.name,
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	});
+    /**
+     * Fin Modification JML
+     **/
     this.isPaused = false;
     this.pauseOffset = null;
 };
@@ -960,10 +1081,30 @@ Process.prototype.expectReport = function () {
 
 Process.prototype.handleError = function (error, element) {
     var m = element;
-    this.stop();
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    //this.stop();
+    this.stop(false,true);    
+    /**
+     * Fin Modification JML
+     **/
+
     this.errorFlag = true;
     this.topBlock.addErrorHighlight();
     if (isNil(m) || isNil(m.world())) {m = this.topBlock; }
+    /**
+     * Modification JML (duff,  4 janv. 2018)
+     **/
+    sendEvenement('EPR',{type:'ERR',receiver:this.receiver.name,
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid, 
+	detail:(m === element ? '' : 'Inside: ')    
+        + error.name+ ' : '+ error.message
+		});
+    /**
+     * Fin Modification JML
+     **/
+
     m.showBubble(
         (m === element ? '' : 'Inside: ')
             + error.name
@@ -1672,7 +1813,7 @@ Process.prototype.doTellTo = function (sprite, context, args) {
 };
 
 Process.prototype.reportAskFor = function (sprite, context, args) {
-    this.evaluate(
+	this.evaluate(
         this.reportAttributeOf(context, sprite),
         args
     );
@@ -2223,7 +2364,7 @@ Process.prototype.doAsk = function (data) {
         isStage = rcvr instanceof StageMorph,
         isHiddenSprite = rcvr instanceof SpriteMorph && !rcvr.isVisible,
         activePrompter;
-
+    
     stage.keysPressed = {};
     if (!this.prompter) {
         activePrompter = detect(
@@ -2231,6 +2372,16 @@ Process.prototype.doAsk = function (data) {
             function (morph) {return morph instanceof StagePrompterMorph; }
         );
         if (!activePrompter) {
+            /**
+             * Modification JML (duff,  5 janv. 2018)
+             **/
+            liste="";
+            stage.threads.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
+            sendEvenement('EPR',{type:'ASK',processes:liste})
+    	    //console.log('debut entrée');		
+            /**
+             * Fin Modification JML
+             **/
             if (!isStage && !isHiddenSprite) {
                 rcvr.bubble(data, false, true);
             }
@@ -2252,6 +2403,16 @@ Process.prototype.doAsk = function (data) {
     } else {
         if (this.prompter.isDone) {
             stage.lastAnswer = this.prompter.inputField.getValue();
+            /**
+	     * Modification JML (duff,  5 janv. 2018)
+	     **/
+            liste="";
+            stage.threads.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
+            sendEvenement('EPR',{type:'ANSW',detail:stage.lastAnswer,processes:liste})
+            //console.log('fini:',stage.lastAnswer);
+	    /**
+	     * Fin Modification JML
+	     **/
             this.prompter.destroy();
             this.prompter = null;
             if (!isStage) {rcvr.stopTalking(); }

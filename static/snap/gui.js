@@ -1,5 +1,5 @@
 /*
-
+	**
     gui.js
 
     a programming environment
@@ -213,7 +213,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     MorphicPreferences.globalFontFamily = 'Helvetica, Arial';
 
     // restore saved user preferences
-    this.userLanguage = null; // user language preference for startup
+    this.userLanguage = 'fr'; // user language preference for startup
     this.projectsInURLs = false;
     this.applySavedSettings();
 
@@ -610,7 +610,17 @@ IDE_Morph.prototype.createControlBar = function () {
     button = new ToggleButtonMorph(
         null, //colors,
         myself, // the IDE is the target
-        'toggleStageSize',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//'toggleStageSize',
+        function() {
+            sendEvenement('ENV',{type:myself.isSmallStage?'NSCRN':'SSCRN',detail:'button'});            
+            this.toggleStageSize();
+        },
+	/**
+	 * Fin Modification JML
+	 **/
         [
             new SymbolMorph('smallStage', 14),
             new SymbolMorph('normalStage', 14)
@@ -642,7 +652,18 @@ IDE_Morph.prototype.createControlBar = function () {
     button = new ToggleButtonMorph(
         null, //colors,
         myself, // the IDE is the target
-        'toggleAppMode',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //'toggleAppMode',
+        function(){
+          sendEvenement('ENV',{type:myself.isAppMode?'APP':'FULL',detail:'button'});
+          this.toggleAppMode();
+        },
+	/**
+	 * Fin Modification JML
+	 **/
+
         [
             new SymbolMorph('fullScreen', 14),
             new SymbolMorph('normalScreen', 14)
@@ -674,7 +695,7 @@ IDE_Morph.prototype.createControlBar = function () {
     button = new ToggleButtonMorph(
         null, //colors,
         myself, // the IDE is the target
-        'toggleSingleStepping',
+        'toggleSingleStepping', //action
         [
             new SymbolMorph('footprints', 16),
             new SymbolMorph('footprints', 16)
@@ -748,7 +769,7 @@ IDE_Morph.prototype.createControlBar = function () {
             new SymbolMorph('pointRight', 14)
         ],
         function () {  // query
-            return myself.isPaused();
+        	return myself.isPaused();
         }
     );
 
@@ -801,7 +822,22 @@ IDE_Morph.prototype.createControlBar = function () {
         6,
         'horizontal'
     );
-    slider.action = function (num) {
+    slider.action = function (num) {	        
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //on envoie l'évènement qu'une fois le slider fixé
+        var id=setTimeout(function(){
+            	sendEvenement('ENV',{type:'SBS',detail:'slider',valueInt:num});
+            	slider.ancId=null;
+        	},500); //delay is in milliseconds 
+        if (slider.ancId) {
+            clearTimeout(slider.ancId);
+        }
+        slider.ancId=id;    	
+	/**
+	 * Fin Modification JML
+	 **/
         Process.prototype.flashTime = (num - 1) / 100;
         myself.controlBar.refreshResumeSymbol();
     };
@@ -815,7 +851,17 @@ IDE_Morph.prototype.createControlBar = function () {
     // projectButton
     button = new PushButtonMorph(
         this,
-        'projectMenu',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+        //'projectMenu',
+        function() {
+            sendEvenement('ENV',{type:'MENU',detail:'button',valueChar:'projectMenu'});
+            this.projectMenu();
+        },        
+	/**
+	 * Fin Modification JML
+	 **/        
         new SymbolMorph('file', 14)
         //'\u270E'
     );
@@ -839,7 +885,19 @@ IDE_Morph.prototype.createControlBar = function () {
     // settingsButton
     button = new PushButtonMorph(
         this,
-        'settingsMenu',
+        /**
+	 * Modification JML (duff,  30 déc. 2017)
+	 **/
+	//'settingsMenu',
+        function() {
+            sendEvenement('ENV',{type:'MENU',detail:'button',valueChar:'settingsMenu'});
+            this.settingsMenu();
+        },
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
         new SymbolMorph('gears', 14)
         //'\u2699'
     );
@@ -880,8 +938,8 @@ IDE_Morph.prototype.createControlBar = function () {
     // button.hint = 'cloud operations';
     button.fixLayout();
     cloudButton = button;
-    this.controlBar.add(cloudButton);
-    this.controlBar.cloudButton = cloudButton; // for menu positioning
+    //this.controlBar.add(cloudButton);
+    //this.controlBar.cloudButton = cloudButton; // for menu positioning
 
     this.controlBar.fixLayout = function () {
         x = this.right() - padding;
@@ -1010,6 +1068,13 @@ IDE_Morph.prototype.createCategories = function () {
             colors,
             myself, // the IDE is the target
             function () {
+            	/**
+		 * Modification JML (duff,  29 déc. 2017)
+		 **/
+        	sendEvenement("ENV",{type:"AFFBL",click:true,detail:category});
+		/**
+		 * Fin Modification JML
+		 **/
                 myself.currentCategory = category;
                 myself.categories.children.forEach(function (each) {
                     each.refresh();
@@ -1122,17 +1187,74 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
     this.palette.contents.acceptsDrops = false;
 
     this.palette.reactToDropOf = function (droppedMorph, hand) {
+    	if (droppedMorph.JMLfrom) {droppedMorph.JMLfrom=null}
         if (droppedMorph instanceof DialogBoxMorph) {
             myself.world().add(droppedMorph);
         } else if (droppedMorph instanceof SpriteMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+	    //console.log('suppr lutin',droppedMorph.name,droppedMorph.version);
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"sprite",
+        	    	valueChar:droppedMorph.name,
+        	    	valueInt:droppedMorph.version
+        	    	});
+            
+	    droppedMorph.JMLfrom='DropSprite';
+	    /**
+	     * Fin Modification JML
+	     **/
             myself.removeSprite(droppedMorph);
         } else if (droppedMorph instanceof SpriteIconMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+            //console.log('suppr sptriteicon',droppedMorph.labelString,droppedMorph.version);
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"spriteIcon",
+        	    	valueChar:droppedMorph.object.name,
+        	    	valueInt:droppedMorph.object.version
+        	    	});
+            
+            droppedMorph.object.JMLfrom='DropIcon';
+	    /**
+	     * Fin Modification JML
+	     **/
             droppedMorph.destroy();
             myself.removeSprite(droppedMorph.object);
         } else if (droppedMorph instanceof CostumeIconMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"costume",
+        	    	valueChar:droppedMorph.object.name,
+        	    	valueInt:droppedMorph.object.version
+        	    	});
+            
+	    /**
+	     * Fin Modification JML
+	     **/
+
             myself.currentSprite.wearCostume(null);
             droppedMorph.perish();
         } else if (droppedMorph instanceof BlockMorph) {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     * note: fait aussi un stopall
+	     **/
+            //console.log('suppr block',droppedMorph);
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"block",
+        	    	valueChar:droppedMorph.selector,
+        	    	valueInt:droppedMorph.id
+        	    	});
+            droppedMorph.JMLfrom='DropBlock';
+	    /**
+	     * Fin Modification JML
+	     **/
+
             myself.stage.threads.stopAllForBlock(droppedMorph);
             if (hand && hand.grabOrigin.origin instanceof ScriptsMorph) {
                 hand.grabOrigin.origin.clearDropInfo();
@@ -1141,13 +1263,25 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
             }
             droppedMorph.perish();
         } else {
+            /**
+	     * Modification JML (duff,  29 déc. 2017)
+	     **/
+            sendEvenement(type='ENV',
+        	    data={type:'DROPEX',detail:"autre",
+        	    	valueChar:droppedMorph        	    	
+        	    	});
+	    /**
+	     * Fin Modification JML
+	     **/
+
             droppedMorph.perish();
         }
     };
 
     this.palette.contents.reactToDropOf = function (droppedMorph) {
-        // for "undrop" operation
-        if (droppedMorph instanceof BlockMorph) {
+    	        // for "undrop" operation    	
+
+        if (droppedMorph instanceof BlockMorph) {            
             droppedMorph.destroy();
         }
     };
@@ -1956,6 +2090,14 @@ IDE_Morph.prototype.refreshPalette = function (shouldIgnorePosition) {
 };
 
 IDE_Morph.prototype.pressStart = function () {
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/
+    sendEvenement(type='ENV',data={type:'GREEN',detail:'button'})
+    /**
+     * Fin Modification JML
+     **/
+
     if (this.world().currentKey === 16) { // shiftClicked
         this.toggleFastTracking();
     } else {
@@ -1966,6 +2108,7 @@ IDE_Morph.prototype.pressStart = function () {
 };
 
 IDE_Morph.prototype.toggleFastTracking = function () {
+	console.log('toggle fast',this.stage.isFastTracked);
     if (this.stage.isFastTracked) {
         this.stopFastTracking();
     } else {
@@ -1974,6 +2117,7 @@ IDE_Morph.prototype.toggleFastTracking = function () {
 };
 
 IDE_Morph.prototype.toggleVariableFrameRate = function () {
+	console.log('toggle variable',StageMorph.prototype.frameRate);
     if (StageMorph.prototype.frameRate) {
         StageMorph.prototype.frameRate = 0;
         this.stage.fps = 0;
@@ -1984,6 +2128,14 @@ IDE_Morph.prototype.toggleVariableFrameRate = function () {
 };
 
 IDE_Morph.prototype.toggleSingleStepping = function () {
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/   
+    sendEvenement(type='ENV',data={type:'SBS',detail:'button',valueBool:!Process.prototype.enableSingleStepping});
+    /**
+     * Fin Modification JML
+     **/
+
     this.stage.threads.toggleSingleStepping();
     this.controlBar.steppingButton.refresh();
     this.controlBar.refreshSlider();
@@ -1998,6 +2150,7 @@ IDE_Morph.prototype.toggleCameraSupport = function () {
 };
 
 IDE_Morph.prototype.startFastTracking = function () {
+	console.log('toggle startfast',this.stage.isFastTracked);
     this.stage.isFastTracked = true;
     this.stage.fps = 0;
     this.controlBar.startButton.labelString = new SymbolMorph('flash', 14);
@@ -2006,6 +2159,7 @@ IDE_Morph.prototype.startFastTracking = function () {
 };
 
 IDE_Morph.prototype.stopFastTracking = function () {
+	console.log('stop fast',this.stage.isFastTracked);
     this.stage.isFastTracked = false;
     this.stage.fps = this.stage.frameRate;
     this.controlBar.startButton.labelString = new SymbolMorph('flag', 14);
@@ -2018,6 +2172,17 @@ IDE_Morph.prototype.runScripts = function () {
 };
 
 IDE_Morph.prototype.togglePauseResume = function () {
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     **/    
+    evt=this.stage.threads.isPaused()?'REPR':'PAUSE';
+    sendEvenement(type='ENV',data={type:evt,detail:'button'});
+   
+    /**
+     * Fin Modification JML
+     **/
+
+    
     if (this.stage.threads.isPaused()) {
         this.stage.threads.resumeAll(this.stage);
     } else {
@@ -2032,6 +2197,18 @@ IDE_Morph.prototype.isPaused = function () {
 };
 
 IDE_Morph.prototype.stopAllScripts = function () {
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+     * envoi de l'évènement + un snapshot
+     **/
+    sendEvenement(type='ENV',data={type:'STOP',detail:'button',valueChar:'all'});
+    var ide = this.parentThatIsA(IDE_Morph);
+    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
+    
+    /**
+     * Fin Modification JML
+     **/
+
     if (this.stage.enableCustomHatBlocks) {
         this.stage.threads.pauseCustomHatBlocks =
             !this.stage.threads.pauseCustomHatBlocks;
@@ -2320,6 +2497,16 @@ IDE_Morph.prototype.instantiateSprite = function (sprite) {
 
 IDE_Morph.prototype.removeSprite = function (sprite) {
     var idx, myself = this;
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     * provenance de la suppression dans sprite.JMLfrom:
+     * 'Drop', 'Drop Icon', 'Menu', 'Remove Clone', et dans ce cas JMLblock=block d'origine 
+     **/
+    console.log('removesprite',sprite,sprite.JMLfrom);
+    /**
+     * Fin Modification JML
+     **/
+
     sprite.parts.forEach(function (part) {myself.removeSprite(part); });
     idx = this.sprites.asArray().indexOf(sprite) + 1;
     this.stage.threads.stopAllForReceiver(sprite);
@@ -2372,7 +2559,7 @@ IDE_Morph.prototype.removeBlock = function (aBlock, justThis) {
 // IDE_Morph menus
 
 IDE_Morph.prototype.userMenu = function () {
-    var menu = new MenuMorph(this);
+    var menu = new MenuMorph(this);   
     // menu.addItem('help', 'nop');
     return menu;
 };
@@ -2426,6 +2613,20 @@ IDE_Morph.prototype.snapMenu = function () {
             new Color(100, 0, 0)
         );
     }
+    /**
+     * Modification JML (duff,  6 janv. 2018)
+     **/
+
+    menu.addLine();
+    menu.addItem(
+	        'Changer de mot de passe',
+	        function () {
+	            window.open(url_passwordchange, 'Snap4Gironde');
+	        });    
+    /**
+     * Fin Modification JML
+     **/
+
     menu.popup(world, this.logo.bottomLeft());
 };
 
@@ -2629,7 +2830,11 @@ IDE_Morph.prototype.settingsMenu = function () {
             'check for higher resolution,\nuses more computing resources'
         );
     }
-    addPreference(
+    /**
+     * Modification JML (duff,  30 déc. 2017)
+    **/  
+
+    /*addPreference(
         'Input sliders',
         'toggleInputSliders',
         MorphicPreferences.useSliderForInput,
@@ -2651,7 +2856,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         this.stage.isFastTracked,
         'uncheck to run scripts\nat normal speed',
         'check to prioritize\nscript execution'
-    );
+    );    
     addPreference(
         'Visible stepping',
         'toggleSingleStepping',
@@ -2659,7 +2864,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'uncheck to turn off\nvisible stepping',
         'check to turn on\n visible stepping (slow)',
         false
-    );
+    );    
     addPreference(
         'Ternary Boolean slots',
         function () {
@@ -2846,7 +3051,10 @@ IDE_Morph.prototype.settingsMenu = function () {
         'uncheck to disable support\nfor first-class sprites',
         'check to enable support\n for first-class sprite',
         true
-    );
+    );*/    
+    /**
+     * Fin Modification JML
+     **/
     addPreference(
         'Keyboard Editing',
         function () {
@@ -2864,6 +3072,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to enable\nkeyboard editing support',
         true
     );
+    /* modif jml
     addPreference(
         'Table support',
         function () {
@@ -2974,6 +3183,7 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to enable\nsaving linked sublist identities',
         true
     );
+    */
     menu.popup(world, pos);
 };
 
@@ -2990,10 +3200,132 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem('Project notes...', 'editProjectNotes');
     menu.addLine();
     menu.addPair('New', 'createNewProject', '^N');
+    /**
+     * Modification JML (duff,  31 déc. 2017)
+     **/
+    
     //menu.addPair('Open...', 'openProjectsBrowser', '^O');
     //menu.addPair('Save', "save", '^S');
     //menu.addItem('Save As...', 'saveProjectsBrowser');
-    menu.addLine();
+    menu.addLine();   
+    menu.addItem(
+            'Charger le programme de la séance',
+            function () {
+            	this.confirm(
+            	        'Remplacer le projet actuel par le programme de base?',
+            	        'Charger le programme',
+            	        function () {
+            	        	$.ajax({
+                                type: "GET",
+                                url: "fichier",
+                                dataType: "xml",
+                                statusCode: {
+                                    404: function() {
+                                      alert( "Programme non existant" );
+                                    }
+                                  },
+                                success: function upon_success(xml) {                                    
+                                	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
+                                	sendEvenement('EPR',{type:'LOAD',detail:name});
+                                	//sendEvt({type:"LOAD",click:false,detail:name},url='env/');
+                                   var target=world.hand.morphAtPointer(),
+                                   xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
+                                   while (!target.droppedText) {
+                                            target = target.parent;
+                                   }   
+                                   target.droppedText(xmltxt,name);                            
+                                   
+                                }
+                            });
+            	        	
+            	        }
+            	    );
+            	
+            },
+            'Charge le programme prévu comme base de travail\npour cette séance pour '+userName // looks up the actual text in the translator
+        );
+    menu.addItem(
+    		'Charger un de mes programmes...',
+    		function() {
+    			var dialog=$( '#trucdialog' );    			
+    			dialog.html('<b>En attente....</b>');
+    			dialog.dialog({
+    			      //autoOpen: false,
+    				  title:"Charger un programme",
+    			      height: 400,
+    			      width: 350,
+    			      modal: true,
+    			      buttons: {    			       
+    			    	"Charger":function () {
+    			    		file_id=$("input[name=file]:checked" ).val();
+    		            	if (file_id) {
+    		            		$.ajax({
+    		            			type: "GET",
+    		            			url: "fichier/" + file_id,
+    		            			dataType: "xml",
+    		            			success: function upon_success(xml) {
+    		            			    	var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
+    		            			    	sendEvenement('EPR',{type:'LOAD',detail:file_id});
+		            				
+    		            				//console.log('xml recu',xml);
+    		            				var target=world.hand.morphAtPointer(),
+    		            				xmltxt=new XMLSerializer().serializeToString(xml.documentElement);;
+    		            				while (!target.droppedText) {
+    		                                target = target.parent;
+    		            				}   
+    		            				target.droppedText(xmltxt,name);
+    		            				dialog.dialog('close');
+    		                        
+    		            			}
+    		            		});
+    		            	}
+    		            },
+    			        "Annuler" : function() {
+    			          dialog.dialog( "close" );
+    			        }
+    			      },
+    			      close: function() {
+    			    	  console.log('closed');
+    			      }
+    			    
+    				});
+    			
+    			$.ajax({
+                        type: "GET",
+                        url:'cd',  //'pageref',
+                        dataType:'text',
+                        success: function upon_success(html) {
+                        	//console.info('recu',html);
+                        	dialog.html(html);                        	
+                        }
+                    });
+    			
+    			
+    			
+    			//window.open('cd','nom_de_ma_popup','menubar=no, scrollbars=no, top=100, left=100, width=300, height=200');
+    		} ,
+    		'Charge un des programmes préalablement sauvegardés'
+    );
+    menu.addItem(
+            'Sauvegarder le programme...',
+            function () {
+                if (myself.projectName) {
+                    myself.exportProjectToDjango(myself.projectName, shiftClicked);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectToDjango(name, shiftClicked);
+                    }, null, 'exportProject');
+                }
+            },
+            'Sauvegarder une version du programme',
+            shiftClicked ? new Color(100, 0, 0) : null
+        );
+
+    /**
+     * Fin Modification JML
+     **/
+
+    menu.addLine();   
     menu.addItem(
         'Import...',
         function () {
@@ -3104,6 +3436,7 @@ IDE_Morph.prototype.projectMenu = function () {
     }
 
     menu.addLine();
+    /* suppression des menus inutiles
     menu.addItem(
         'Import tools',
         function () {
@@ -3144,7 +3477,7 @@ IDE_Morph.prototype.projectMenu = function () {
         },
         'Select a sound from the media library'
     );
-
+	*/
     menu.popup(world, pos);
 };
 
@@ -3677,6 +4010,37 @@ IDE_Morph.prototype.rawSaveProject = function (name) {
     }
 };
 
+/**
+ * Modification JML (duff,  31 déc. 2017)
+ **/
+IDE_Morph.prototype.exportProjectToDjango = function (name, plain) {
+    // Export project XML, saving a file to disk
+    // newWindow requests displaying the project in a new tab.
+    var menu, str, dataPrefix;
+
+    if (name) {
+        this.setProjectName(name);
+        dataPrefix = 'data:text/' + plain ? 'plain,' : 'xml,';
+        try {
+            menu = this.showMessage('Sauvegarde en cours');
+            str = this.serializer.serialize(this.stage);
+            UploadXML(str,name);            
+            menu.destroy();
+            this.showMessage('Sauvegardé!', 1);
+        } catch (err) {
+            if (Process.prototype.isCatchingErrors) {
+                this.showMessage('Erreur de sauvegarde: ' + err);
+            } else {
+                throw err;
+            }
+        }
+    }
+};
+
+/**
+ * Fin Modification JML
+ **/
+
 
 IDE_Morph.prototype.exportProject = function (name, plain) {
     // Export project XML, saving a file to disk
@@ -4115,6 +4479,91 @@ IDE_Morph.prototype.openProjectString = function (str) {
     ]);
 };
 
+/**
+ * Modification JML (duff,  7 janv. 2018)
+ **/
+IDE_Morph.prototype.initIds = function() {
+    recurs=function(block) {
+	
+	block.JMLdroppedId=block.JMLid
+	//console.log('>',block.JMLid,block,block.inputs(),block.nextBlock?block.nextBlock():'--');
+	var script={
+	    JMLid:block.JMLid, 
+	    typeMorph:block.constructor.name,
+	    selector:block.selector,
+	    blockSpec:block.blockSpec,
+	    category:block.category,
+	    parent:block.parent?block.parent.JMLid:null
+	    };
+	if (block.inputs && block.inputs()) {
+	    var inputs= new Array();
+	    var inputsBlock=new Array();
+	    block.inputs().forEach(function(input) {    				
+    		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
+    		    contenu:input.contents?input.contents().text:null,
+    		    rang:block.inputs().indexOf(input),
+    		    isNumeric:input.isNumeric,
+    		    isPredicate:input.isPredicate}
+    		);
+    		if (input instanceof InputSlotMorph) {
+    		    //console.log ("input normal");
+    		} else {
+    		    //console.log("input "+input.constructor.name,input.inputs()[0]);
+    		    inputsBlock.push(recurs(input));
+    		    /*
+    		    input.inputs().forEach(function(i) {
+    			inputsBlock.push(recurs(i));
+    		    });
+    		    */
+    		}
+    		}
+	    	
+    	    );
+    	    if (inputs) script['inputs']=inputs;
+    	    if (inputsBlock) script['inputsBlock']=inputsBlock;
+    	    
+	}
+	
+	if (block.nextBlock && block.nextBlock()) {
+	    //le.log('next:',block.nextBlock());
+	    script['nextBlock']=recurs(block.nextBlock());
+	}
+	//console.log('scrit',script);
+	return script;
+    }
+    //lors d'un chargement, recontruit la structure des blocs (en fixant le JMLdroppedId)
+    // puis envoi
+    scriptsObj = this.currentSprite.scripts.children
+    scripts=[]
+    //console.log('chrgé',scriptsObj);
+    for (i=0;i<scriptsObj.length;i++) {
+	var s=scriptsObj[i];
+	//console.log('block',s.JMLid,' next: ',s.nextBlock()?s.nextBlock().JMLid:'--');	
+	//console.log(d+'Structure de '+this.constructor.name+", ("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
+	
+	scripts.push(recurs(s));	
+    }
+    //console.log('scripts:',scripts);
+    //console.info(JSON.stringify(scripts));
+    sendEvenement('SPR',{type:'OPEN',scripts:scripts});
+}
+    /*
+    console.log(d+'Structure de '+this.constructor.name+", ("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
+	//affichage des inputs
+	if (this.inputs()) console.log(d+">INPUTS");
+	this.inputs().forEach(function(i){
+	i.printStruct(decal+1);
+	//console.log(d+">>"+i);
+});
+if (this.nextBlock && this.nextBlock()) {
+	console.log(d+'/NEXTBLOCK');
+	this.nextBlock().printStruct(decal);
+}
+*/
+/**
+ * Fin Modification JML
+ **/
+
 IDE_Morph.prototype.rawOpenProjectString = function (str) {
     this.toggleAppMode(false);
     this.spriteBar.tabBar.tabTo('scripts');
@@ -4140,6 +4589,15 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
             this
         );
     }
+    /**
+     * Modification JML (duff,  7 janv. 2018)
+     **/
+
+    this.initIds();    
+    /**
+     * Fin Modification JML
+     **/
+
     this.stopFastTracking();
 };
 
@@ -4413,6 +4871,15 @@ IDE_Morph.prototype.saveFileAs = function (
     }
 };
 
+/**
+ * Modification JML (duff,  17 févr. 2018)
+ **/
+IDE_Morph.prototype.uploadCanvas = function (canvas,detail='') {
+    sendEvenement('EPR',{type:'SNP',image64:canvas.toDataURL(),detail:detail});
+}
+/**
+ * Fin Modification JML
+ **/
 IDE_Morph.prototype.saveCanvasAs = function (canvas, fileName) {
     // Export a Canvas object as a PNG image
     // Note: This commented out due to poor browser support.
@@ -4426,8 +4893,10 @@ IDE_Morph.prototype.saveCanvasAs = function (canvas, fileName) {
     //     });
     //     return;
     // }
-
     this.saveFileAs(canvas.toDataURL(), 'image/png', fileName);
+    
+
+
 };
 
 IDE_Morph.prototype.saveXMLAs = function(xml, fileName) {
@@ -4651,7 +5120,14 @@ IDE_Morph.prototype.toggleAppMode = function (appMode) {
         this.controlBar.setColor(this.color);
         this.controlBar.appModeButton.refresh();
         elements.forEach(function (e) {
-            e.hide();
+            /**
+	     * Modification JML (duff,  30 déc. 2017)
+	     **/
+            //e.hide(); bizarre.. une element undifined rajouté par erreur?
+            if (e) e.hide();
+	    /**
+	     * Fin Modification JML
+	     **/            
         });
         world.children.forEach(function (morph) {
             if (morph instanceof DialogBoxMorph) {
@@ -4668,7 +5144,8 @@ IDE_Morph.prototype.toggleAppMode = function (appMode) {
         this.setColor(this.backgroundColor);
         this.controlBar.setColor(this.frameColor);
         elements.forEach(function (e) {
-            e.show();
+        	if (e) {e.show();}
+            
         });
         this.stage.setScale(1);
         // show all hidden dialogs
@@ -6820,6 +7297,13 @@ function SpriteIconMorph(aSprite, aTemplate) {
 
 SpriteIconMorph.prototype.init = function (aSprite, aTemplate) {
     var colors, action, query, hover, myself = this;
+    /**
+     * Modification JML (duff,  29 déc. 2017)
+     **/
+    console.log('creation sprite');
+    /**
+     * Fin Modification JML
+     **/
 
     if (!aTemplate) {
         colors = [
@@ -7100,6 +7584,14 @@ SpriteIconMorph.prototype.instantiateSprite = function () {
 SpriteIconMorph.prototype.removeSprite = function () {
     var ide = this.parentThatIsA(IDE_Morph);
     if (ide) {
+	/**
+	 * Modification JML (duff,  29 déc. 2017)
+	 **/
+	console.log('supprresion sprite',this.object,this.object.from);
+	/**
+	 * Fin Modification JML
+	 **/
+
         ide.removeSprite(this.object);
     }
 };
@@ -8089,7 +8581,7 @@ SoundIconMorph.prototype.userMenu = function () {
 };
 
 
-SoundIconMorph.prototype.renameSound = function () {
+SoundIconMorph.prototype.stSound = function () {
     var sound = this.object,
         ide = this.parentThatIsA(IDE_Morph),
         myself = this;
