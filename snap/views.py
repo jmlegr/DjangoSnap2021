@@ -1471,7 +1471,11 @@ def testblock(request,id=277):
                 listeBlocks.addTick(a.time)            
                 spr= a.evenementspr_set.all()[0]
                 action='SPR_%s' % spr.type
-                print('mod',spr.type,spr.blockId,spr.blockSpec,spr.detail)
+                print('mod id:',spr.id,spr.type,spr.blockId,spr.blockSpec,spr.detail)
+                print('loc:%s parentId:%s next:%s child:%s target:%s'
+                    % (spr.location,spr.parentId,spr.nextBlockId,spr.childId,spr.targetId))
+                print('inputs',[i for i in spr.inputs.all()])
+                print('--')
                 newNode=BlockSnap(spr.blockId, 
                                   a.time,
                                   spr.typeMorph,
@@ -1505,7 +1509,26 @@ def testblock(request,id=277):
                     """
                     inputA=listeBlocks.lastBlock(spr.detail,a.time) #cible remplacée
                     inputB=listeBlocks.lastBlock(spr.blockId,a.time) # block(s) déplacé, seulement inputs
-                    
+                    if inputA is None:
+                        #normalement, c'est parceque c'est un inpuSlotMorph qui a été créé suite à un précédent DROPVAL
+                        #on vérifie:
+                        parentInputA=listeBlocks.lastBlock(spr.parentId,a.time)
+                        print('nin',parentInputA)
+                        nb=0
+                        for i in parentInputA.inputs:
+                            if (i.JMLid>100000):
+                                id=i.JMLid
+                                print('on en a trouvé un',i.JMLid)
+                                nb+=1
+                                inputA=i
+                        if nb!=1:
+                            raise ValueError('Ce block n\'existe pas et son parent supposé a %s enfants' %nb,spr.detail,spr.parentId)
+                        #on renumérote le JMLid
+                        inputA.JMLid=int(spr.detail)
+                        listeBlocks.addBlock(inputA)
+                        del listeBlocks.liste[id]
+                        print('removesd')
+                        #parentInputA.inputs.filter()
                     #On recherche si parentA existe, et dans ce cas il faudra
                     # 1) copier les inputs 
                     # 2) remplacer l'inputA par une copie de inputB
@@ -1552,7 +1575,7 @@ def testblock(request,id=277):
                      'links':listeBlocks.links,
                      'etapes':etapes,
                      'actions':[a.evenementspr_set.all()[0].toD3() if a.type=='SPR'
-                                            else a.evenementenv_set.all()[0].toD3() if a.type=='ENV'
+                                            else a.environnement.all()[0].toD3() if a.type=='ENV'
                                             else a.evenementepr_set.all()[0].toD3() if a.type=='EPR' else None
                                  for a in actions]
                      })

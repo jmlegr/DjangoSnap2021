@@ -59,6 +59,7 @@ class Evenement(models.Model):
     creation=models.DateTimeField(auto_now_add=True)
     def toD3(self):
         res={}
+        res['id']=self.id
         res['type']=self.type
         res['type_display']=self.get_type_display()
         res['numero']=self.numero
@@ -116,6 +117,7 @@ class EvenementENV(models.Model):
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
+        res['id']=self.id
         res["evenement"]=self.evenement.toD3()
         res['type']=self.type
         res['type_display']=self.get_type_display()
@@ -187,6 +189,7 @@ class EvenementEPR(SnapProcess):
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
+        res['id']=self.id
         res["evenement"]=self.evenement.toD3()
         res['type']=self.type
         res['type_display']=self.get_type_display()
@@ -268,6 +271,7 @@ class EvenementSPR(models.Model):
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
+        res['id']=self.id
         res["evenement"]=self.evenement.toD3()
         res['type']=self.type
         res['type_display']=self.get_type_display()

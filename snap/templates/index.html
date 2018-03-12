@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
+.etape rect {
+    cursor: pointer;
+    fill: Aquamarine;
+    /*fill-opacity: 0.5;*/
+    stroke: green;
+    stroke-width: 1.5px;
+}
 .node rect {
 	cursor: pointer;
 	fill: #fff;
@@ -55,7 +62,14 @@ body {
 	right: 0;
 	bottom: 0;
 	left: 0;
+	height:100vh;
 }
+html {
+    overflow: -moz-scrollbars-vertical; 
+    overflow-y: scroll;
+}
+
+
 
 .graph-svg-component {
 	background-color: AliceBlue;
@@ -82,6 +96,7 @@ body {
     left: 0;
 }
 #liste {
+/*#actions {*/
     height: 100px;
     width: 100%;
     border:2px solid #000;
@@ -101,10 +116,26 @@ body {
 font: 8px sans-serif;
     pointer-events: none;
 }
+#resultats {
+    height: 80vh;
+    width: 100%;
+    border:2px solid green;
+    /*overflow-y: scroll;*/
+    overflow-x: hidden;
+}
 </style>
 <body>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
 	<script>
+	var grapheSvg,tree, liste;
+	document.addEventListener("DOMContentLoaded", function(e) {
+	    /* Your D3.js here */
+	    console.log("document prêt")
+	    initAffichages();
+	    initListeEleves();
+	    
+	   });
+	
 	Set.prototype.union = function(setB) {
 	    var union = new Set(this);
 	    for (var elem of setB) {
@@ -112,7 +143,138 @@ font: 8px sans-serif;
 	    }
 	    return union;
 	}
-var donnees=[], root1={},ticks=[]
+	var margin = {top: 20, right: 20, bottom: 20, left: 20},
+	    width = "100%",
+	    height = 400;
+	    barHeight = 12,
+	    //barWidth = (width - margin.left - margin.right) * 0.8;
+	    barWidth=100;
+
+	var i = 0,
+	    duration = function(dragged) {
+	     return dragged?0:500
+	},
+	    root;
+
+	var diagonal = d3.linkHorizontal()
+	    .x(function(d) { return d.y; })
+	    .y(function(d) { return d.x; });
+
+	//Define Zoom Function Event Listener
+	function zoomFunction() {
+	    var transform = d3.zoomTransform(this);
+	    //console.log(this)
+	    //d3.select("#treesSvg")
+	    if (this.id=="affichageSvg")   
+	        d3.select("#treesSvg")
+	    //.transition().duration(500)
+	        .attr("transform", "translate(" 
+	        + (transform.x+0) + "," + (transform.y+0) 
+	        + ") "
+	        + "scale(" + transform.k + ")");
+	    else 
+	       d3.select(this)
+	        //.transition().duration(500)
+	            .attr("transform", "scale(" + transform.k + ")");
+	}
+
+	// Define Zoom Behavior
+	var zoom = d3.zoom()
+	        .scaleExtent([0.1, 20])
+	        .wheelDelta(function() {return -d3.event.deltaY * 10/500;})
+	        .on("zoom", zoomFunction);
+	var drag=d3.drag()
+
+
+function initAffichages() {
+	grapheSvg = d3.select("#affichage").append("svg")    
+	    //.attr("preserveAspectRatio", "xMinYMin meet")
+	   //.attr("viewBox", "0 0 600 400")
+	   //class to make it responsive
+	   //.classed("svg-content-responsive", true)
+	    .attr("id","affichageSvg")
+	    .attr("width", width) // + margin.left + margin.right)
+	    .attr("height",height)  
+	    .attr("class", "graph-svg-component")
+
+	    grapheSvg.call(zoom)    
+	    //.call(d3.zoom()
+	    //.on("zoom", function () {svg.attr("transform", d3.event.transform)})
+	    .on("dblclick.zoom", function() {
+	       console.log("dezoom");
+	        //svg.attr("transform", "translate(" + margin.left + "," + margin.top + ") scale(1)");
+	        grapheSvg.call(zoom.transform, d3.zoomIdentity);
+	    })
+
+	 grapheSvg=grapheSvg.append("g").attr("id","treesSvg"); 
+
+	tree=grapheSvg.append("g")
+	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+	    .attr("class","tree1")
+    
+                 
+	liste=d3.select("#actions")
+	             .append("div").attr("id","liste")
+	            .append("svg")
+	            .attr("width","100%")
+	            //.attr("height",2000)
+	            .call(zoom);
+	d3.select("#liste").attr("align","left")
+	
+	
+	}
+
+function initListeEleves() {
+    console.log('initialiation')
+    d3.json('spropen/users', function(error,data) {
+	    console.info("reception liste elveves");
+	    console.log("reception",data);
+	    data.unshift({id:0})
+	    var el=d3.select('#selectEleves')
+	    el.selectAll("option").data(data)
+	           .enter()
+	           .append("option")
+	           .attr("value",function(d) {return d.id})
+	           .text(function(d) {
+	                 return d.id==0?"---":(d.username+"("+(d.eleve?d.eleve.classe:'prof')+")")
+	                 })
+	     el.on("change",changeEleve)
+	       
+	});
+}
+
+function changeEleve() {
+    //var selectedIndex=d3.select("#selectEleves").property('selectedOptions')[0].value
+    var selectedValue=d3.select("#selectEleves").property('value')
+    /*
+    var s=d3.select("#selectEleves").selectAll("option").filter(function (d,i) {
+            return d.id==selectedValue}),
+        data=s.datum()    
+    console.log('eke',data)
+    */
+    if (selectedValue!=0) 
+	    d3.json('spropen/'+selectedValue+"/openUser", function(error,data) {
+		    console.log('data session',data);
+		    data.unshift({id:0})
+		    var session=d3.select('#selectSessions')
+		        session.selectAll("option").data(data,function(d) {return d.id})
+		               .enter()
+		               .append("option")
+		               .attr("value",function(d) {return d.id})
+		               .text(function(d) {
+		                     return d.id==0?"---":((new Date(d.evenement.creation)).toUTCString()+"("+d.evenement.user+")")
+		                     })
+		         session.on("change",changeSession)
+		         //session.selectAll("option").call(function(d){console.log('update',d)})
+		         session.selectAll("option").data(data,function(d) {return d.id}).exit().remove()
+            }) ;
+}
+
+function changeSession() {
+    var selectedValue=d3.select("#selectSessions").property('value')
+    console.log('evnoi',selectedValue)
+    getJson(selectedValue);
+}
 
 function getPrevNode(node) {
     //renvoie le noeud temporellement précédent, s'il existe
@@ -140,92 +302,149 @@ function getLastParentId(node){
     }
     return null
 }
-function getJson() {
-    d3.json("tb",function(error,data) {
-    if (error) {
-	    console.warn("error",error.type,":",error.target.statusText)
-	    return   
-    }
-    //console.log("rec",data.inputs.filter(function(d) {return d.time==0 }))
-	/*donnees={name:data.name,
-		    inputs:data.inputs.filter(function(d) {return d.time==0 })
-	}*/
-	/*
-	preparation des donnees: 
+var donnees=[], root1={},ticks=[],autresLinks=[], actions=[],data
+function getJson(session) {
+    if (session!=0) {
+	   console.log('session',session)
+	    d3.json("tb/"+session,function(error,data) {
+		  if (error) {
+		      console.warn("error",error.type,":",error.target.statusText)
+	          return   
+	      }
+		 /*
+	   preparation des donnees: 
 	    tous les blocks au temps 0,
 	    avec ajout d'une racine fictive
 	    ajouts des blocks contenus en enfant des blocks contenant
-	*/
-	//donnees=data.inputs.filter(function(d) {return d.time==0 })
-	donnees=data.data
-	donnees.filter(function(d) {return d.parentBlock==null && d.conteneurBlock==null})
-	   .forEach(function(d) {d.parentBlock='racine'})
-	ticks=data.ticks
-	racine={name:"racine",id:"racine",time:-1,rang:null,inputs:donnees.filter(function(d) {return d.parentBlock=='racine'})}
-	//root1=d3.hierarchy(donnees,function children(d) {return d.inputs;})
-	donnees.push(racine)
-	console.log(donnees)
-	root1=d3.stratify()
-	       .parentId(function(d) {		        
-		        parentId=getLastParentId(d);		        
-		        return parentId
-		    })
-	       (donnees)
-	root1.x0 = 0;
-    root1.y0 = 0;
-    //calcul des coordonnées et ajout éventuel des liens avec le prevNode
-    root1._autresLinks=data.links
-    var index = -1;
-    var last=null
-    /*
-    root1.sort(function(a,b) {return a.data.time-b.data.time || a.data.rang-b.data.rang})
-        .eachAfter(function(n) {
-            n.JMLids=new Set([n.data.JMLid])
-            if (n.height>0){            
-        	 n.children.forEach(function(d) {n.JMLids=n.JMLids.union(d.JMLids)})
-            }        	   
-        })
-    */
-    root1.sort(function(a,b) {return a.data.time-b.data.time || a.data.rang-b.data.rang})       
-       .eachBefore(function(n) {
-	    n.last=last
-	    last=n
-	    //if (!n.dragged) {
-	    //calcul des coordonnées
-	    p=getPrevNode(n)	      
-	    if (n.data.lastModifBlock==null && p==undefined ) {
-	          n.x = ++index * barHeight ;       
-	    } else if (n.data.lastModifBlock==null && p!=undefined) {
-		   if (n.parent.data.time==n.data.time) n.x=n.last.x+barHeight;
-		   else n.x=n.parent.x+(n.data.rang+1)*barHeight;		  
-	    } else if (n.data.lastModifBlock!=null) {	     
-		   n.x=root1.descendants().filter(function(d) {return d.id==n.data.lastModifBlock})[0].x
-		} 
-	    n.y = n.depth * 20 +ticks.indexOf(n.data.time)*120;
-	    });
-    
-    root1.autresLinks=function() {
-	   //renvoie les liens entre prevNode et Node, s'ils sont visibles
-	    var edges=[];
-	    for (i in this._autresLinks) {
-	    e=this._autresLinks[i];
-	     var sourceNode = this.descendants().filter(function(n) { 
-		    return n.id === e.source; })[0],
-	       targetNode = this.descendants().filter(function(n) { return n.id === e.target; })[0];
-	     if (sourceNode!=undefined && targetNode!=undefined){
-		  // Add the edge to the array	     
-	      edges.push({source: sourceNode, target: targetNode, type:e.type});
-	     }
+	    */
+	    console.log('donnee recoes',data)
+	    donnees=data.data
+	    donnees.filter(function(d) {return d.parentBlock==null && d.conteneurBlock==null})
+	       .forEach(function(d) {d.parentBlock='racine'})	    
+	    ticks=data.ticks
+	    autresLinks=data.links
+	    actions=data.actions
+	    racine={name:"racine",id:"racine",time:-1,rang:null,inputs:donnees.filter(function(d) {return d.parentBlock=='racine'})}
+	    //root1=d3.hierarchy(donnees,function children(d) {return d.inputs;})
+	    donnees.push(racine)
+	    console.log(donnees,donnees.length)
+	    root1=d3.stratify()
+	           .parentId(function(d) {              
+	                parentId=getLastParentId(d);                
+	                return parentId
+	            })
+	           (donnees)
+	    root1.x0 = 0;
+	    root1.y0 = 0;
+	    //calcul des coordonnées et ajout éventuel des liens avec le prevNode
+	    root1._autresLinks=autresLinks
+	    var index = -1;
+	    var last=null
+	    /*
+	    root1.sort(function(a,b) {return a.data.time-b.data.time || a.data.rang-b.data.rang})
+	        .eachAfter(function(n) {
+	            n.JMLids=new Set([n.data.JMLid])
+	            if (n.height>0){            
+	             n.children.forEach(function(d) {n.JMLids=n.JMLids.union(d.JMLids)})
+	            }              
+	        })
+	    */
+	    root1.sort(function(a,b) {return a.data.time-b.data.time || a.data.rang-b.data.rang})       
+	       .eachBefore(function(n) {
+	        n.last=last
+	        last=n
+	        //if (!n.dragged) {
+	        //calcul des coordonnées
+	        p=getPrevNode(n)          
+	        if (n.data.lastModifBlock==null && p==undefined ) {
+	              n.x = ++index * barHeight ;       
+	        } else if (n.data.lastModifBlock==null && p!=undefined) {
+	           if (n.parent.data.time==n.data.time) n.x=n.last.x+barHeight;
+	           else n.x=n.parent.x+(n.data.rang+1)*barHeight;         
+	        } else if (n.data.lastModifBlock!=null) {        
+	           n.x=root1.descendants().filter(function(d) {return d.id==n.data.lastModifBlock})[0].x
+	        } 
+	        n.y = n.depth * 20 +ticks.indexOf(n.data.time)*120;
+	        });
+	    
+	    root1.autresLinks=function() {
+	       //renvoie les liens entre prevNode et Node, s'ils sont visibles
+	        var edges=[];
+	        for (i in this._autresLinks) {
+	        e=this._autresLinks[i];
+	         var sourceNode = this.descendants().filter(function(n) { 
+	            return n.id === e.source; })[0],
+	           targetNode = this.descendants().filter(function(n) { return n.id === e.target; })[0];
+	         if (sourceNode!=undefined && targetNode!=undefined){
+	          // Add the e</div>dge to the array         
+	          edges.push({source: sourceNode, target: targetNode, type:e.type});
+	         }
+	        }
+	        //console.log('edges',edges)
+	        return edges;
 	    }
-	    //console.log('edges',edges)
-	    return edges;
-    }
-	update(root1,root1)	
-	
-	updateListe(data.actions)
-	})
-}
+	    update(root1,root1) 
+	    
+	    updateListe(actions)
+	    updateEtapes(data.etapes)
 
+	    })	        
+    }
+	else {
+	    donnees=[]; ticks=[]; autresLinks=[]; actions=[];
+	    
+	}
+		
+}
+var idex=0, sizeHeight=20
+function updateEtapes(etapes){
+    etapesDiv=d3.select("#etapes")
+        .append("svg")
+        .attr("width","100%")
+        .attr("height",200)
+    etapes.forEach(function(d,index) {
+	   d.y=index*sizeHeight; d.index=index})
+    
+    //etapesEnter=etapesDiv.selectAll(".etape").data(etapes,function(d) {return d.id?d.id:idex++})
+	    etapesEnter=etapesDiv.selectAll(".etape").data(etapes,function(d) { return d.id || (d.id = ++i); })
+                .enter()
+    etapesGroupe=etapesEnter.append("g")
+        .attr("class","etape")
+         .attr("transform", function(d) { 
+            return "translate(" 
+                + 0 + "," 
+                + d.y 
+                + ")"; 
+            })       
+    etapesGroupe
+        .append("text")
+        .attr("class","textetape")
+        .text(function(d){return "("+d.id+")"+d.time})
+        .attr("dy",sizeHeight-1)
+    
+    etapesGroupe.append("text")
+        .text(function(d) {
+                        
+            for (c in d.commandes) {
+        	   t+=d[i]
+            }
+            return t
+            })
+        .attr("dx",50)
+        
+        //.attr("x",2).attr("y",function(d){return d.y})
+    etapesGroupe
+        .insert("rect",".textetape")
+        //.attr("x",2).attr("y",function(d){return d.y-sizeHeight})
+        .attr("height",sizeHeight)
+        .attr("width",function (d, i) {
+            return d3.selectAll('.textetape').filter(function (d, j) { 
+                return i === j; })
+            .node().getComputedTextLength(); 
+             })
+    etapesDiv.selectAll(".etape").exit().remove()    
+    
+}
 function updateListe(actions) {
     //affiche la liste des étapes
     /*
@@ -244,7 +463,7 @@ function updateListe(actions) {
     */
     var rectHeight=25, padding=1
     var action=liste.selectAll(".action")
-          .data(actions)
+          .data(actions,function(d){return d.id})
     var actionEnter=action.enter().append("g")
         .attr("class", function(d) {return "action "+d.evenement.type})
         .attr("transform", function(d) { 
@@ -267,87 +486,24 @@ function updateListe(actions) {
      //obligé de mettre le calcul de la largeur après la création
       rect.transition().duration(500)
         .attr('width', function (d, i) {
-            console.log('zv',d3.selectAll('.actiontext'))
             return d3.selectAll('.actiontext').filter(function (d, j) { 
             return i === j; })
         .node().getComputedTextLength()+40; //20 de décalage texte à droite
          })
+     actionEnter.call(function(d) {
+	 //ajustement de la taille du svg (bizarre?) 
+      liste.attr("height",liste.node().getBBox().height+40)
+	 })
+     
+     action.exit().remove()
 }
 
-var margin = {top: 20, right: 20, bottom: 20, left: 20},
-    width = "100%",
-    height = "80%"
-    barHeight = 12,
-    //barWidth = (width - margin.left - margin.right) * 0.8;
-    barWidth=100;
 
-var i = 0,
-    duration = function(dragged) {
-     return dragged?0:500
-},
-    root;
 
-var diagonal = d3.linkHorizontal()
-    .x(function(d) { return d.y; })
-    .y(function(d) { return d.x; });
-
-//Define Zoom Function Event Listener
-function zoomFunction() {
-    var transform = d3.zoomTransform(this);
-    console.log(this)
-    //d3.select("#treesSvg")
-    if (this.id=="#treesSvg")	
-	    d3.select(this)
-    //.transition().duration(500)
-        .attr("transform", "translate(" 
-	    + (transform.x+0) + "," + (transform.y+0) 
-	    + ") "
-	    + "scale(" + transform.k + ")");
-    else 
-	   d3.select(this)
-	    //.transition().duration(500)
-	        .attr("transform", "scale(" + transform.k + ")");
-}
-
-// Define Zoom Behavior
-var zoom = d3.zoom()
-        .scaleExtent([0.1, 20])
-        .wheelDelta(function() {return -d3.event.deltaY * 10/500;})
-        .on("zoom", zoomFunction);
-var drag=d3.drag()
-var svg = d3.select("body").append("svg")    
-    .attr("preserveAspectRatio", "xMinYMin meet")
-   .attr("viewBox", "0 0 600 400")
-   //class to make it responsive
-   .classed("svg-content-responsive", true)
-    .attr("width", width) // + margin.left + margin.right)
-    .attr("height",height)  
-    .attr("class", "graph-svg-component")
-
-    svg.call(zoom)    
-    //.call(d3.zoom()
-    //.on("zoom", function () {svg.attr("transform", d3.event.transform)})
-    .on("dblclick.zoom", function() {
-	   console.log("dezoom");
-	    //svg.attr("transform", "translate(" + margin.left + "," + margin.top + ") scale(1)");
-        svg.call(zoom.transform, d3.zoomIdentity);
-    })
-
- svg=svg.append("g").attr("id","treesSvg"); 
-
-var tree1=svg.append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-    .attr("class","tree1")
-
-var liste=d3.select("body").append("div").attr("id","liste")            
-            .append("svg")
-            .attr("width","100%")
-            .call(zoom);
    
 
 
 
-getJson()
 
 /*
 root1._autresLinks=[{"source":2,"target":8},
@@ -386,10 +542,7 @@ function update(source,root,dragged=false) {
   // Compute the "layout". TODO https://github.com/d3/d3-hierarchy/issues/67
   
 
-  // Update the nodes…
-  if (root==root1) tree=tree1
-  else tree=tree2;
-  
+  // Update the nodes… 
   
   var node = tree.selectAll(".node")
     .data(nodes, function(d) { return d.id || (d.id = ++i); })
@@ -472,7 +625,7 @@ function update(source,root,dragged=false) {
         return diagonal({source: o, target: o});
       })
       .remove();
-  var lines=svg.selectAll('.autreslink')
+  var lines=grapheSvg.selectAll('.autreslink')
         .data(root1.autresLinks(),function(d) { return d.target.id; }) 
   function xpos(d) {
       return d.type=='nextblock'?d.source.y:(d.source.y+barWidth)
@@ -548,4 +701,23 @@ function color(d) {
   }
 }
 
-</script>
+</script></body><h3>Liste des dernières ouvertures de programme</h3>
+
+  <label for="eleves">Choisir un élève: </label>
+  <select  list="listeEleves" id="selectEleves"></select>
+  <datalist id="listeEleves">  
+  </datalist>
+  <input type="submit" id="envoiEleve">
+  
+  <div id="session">
+  <label for="session">Choisir une sessions: </label>
+  <select  list="listeSessions" id="selectSessions"></select>
+  <datalist id="listeSessions">  
+  </datalist>
+  <input type="submit" id="envoiSession">
+  </div>
+  <div id="resultats">
+  <div id="affichage"></div>
+  <div id="actions"></div>
+  <div id="etapes"></div> 
+  </div>

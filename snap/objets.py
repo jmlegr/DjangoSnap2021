@@ -48,12 +48,13 @@ class ListeBlockSnap:
             b=[b for b in self.liste[block.JMLid] if b.getId()==block.getId()]
             if len(b)>0:
                 #soucis, ça existe
-                raise ValueError('Un block ajouté existe déjà',block.toJson())
+                #raise ValueError('Un block ajouté existe déjà',block.toJson())
                 print('EXISTING')
                 print(b[0].toJson())
                 print(block.toJson())
                 print('FEXIST')
-            self.liste[block.JMLid].append(block)
+            else:
+                self.liste[block.JMLid].append(block)
     def addLink(self,sourceId,targetId,typeLien='changed'):
         """ ajout d'un lien entre les ids (et pas JMLid)
          typeLien: changed sit le block a été modifié
