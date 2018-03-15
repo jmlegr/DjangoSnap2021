@@ -116,6 +116,11 @@ html {
 font: 8px sans-serif;
     pointer-events: none;
 }
+.etape .textetape {
+font: 8px sans-serif;
+    pointer-events: none;
+}
+}
 #resultats {
     height: 80vh;
     width: 100%;
@@ -396,52 +401,70 @@ function getJson(session) {
 	}
 		
 }
-var idex=0, sizeHeight=20
+var idex=0, sizeHeight=20, spaceTime=200
 function updateEtapes(etapes){
     etapesDiv=d3.select("#etapes")
         .append("svg")
         .attr("width","100%")
         .attr("height",200)
+    /*
+    on reconstruit les données sous la forme
+     [{time,action,commandes:[{scriptIt,numero,JMLid,niveau,commande}]}...]
+    */
+    data=etapes.map(function(d,index){
+	      a=[]
+	      for (k in d.commandes){
+	            b=d.commandes[k]
+	            for (j in b) {
+	        	a.push({scriptId:k,
+	            	        	    numero:j,	        	
+	        	                    id:b[j].id,
+	        	                    niveau:b[j].niveau,
+	        	                    commande:b[j].commande})
+	        	}
+	      }
+	      return {time:d.time,action:d.action,commandes:a}
+	})
+    console.log('data rendu',data)
+    /*
     etapes.forEach(function(d,index) {
-	   d.y=index*sizeHeight; d.index=index})
-    
+	   //d.y=index*sizeHeight;
+	   d.x=index*spaceTime
+	   d.index=index
+	   })
+    */
     //etapesEnter=etapesDiv.selectAll(".etape").data(etapes,function(d) {return d.id?d.id:idex++})
-	    etapesEnter=etapesDiv.selectAll(".etape").data(etapes,function(d) { return d.id || (d.id = ++i); })
+	    etapesEnter=etapesDiv.selectAll(".etape").data(data,function(d) { return d.id || (d.id = ++i); })
                 .enter()
     etapesGroupe=etapesEnter.append("g")
         .attr("class","etape")
-         .attr("transform", function(d) { 
+         .attr("transform", function(d,index) { 
             return "translate(" 
-                + 0 + "," 
-                + d.y 
+                + index*spaceTime + "," 
+                + 0 
                 + ")"; 
-            })       
+            })  
     etapesGroupe
         .append("text")
-        .attr("class","textetape")
+        .attr("class","timeetape")
         .text(function(d){return "("+d.id+")"+d.time})
         .attr("dy",sizeHeight-1)
-    
-    etapesGroupe.append("text")
-        .text(function(d) {
-                        
-            for (c in d.commandes) {
-        	   t+=d[i]
-            }
-            return t
+        //.call(function(d){console.log('d',d,d.node().data())})
+    etapesGroupe.each(function(d,i) {
+            console.log('traitement',d,i)
+            var coms=d3.select(this)
+        	         .selectAll('text')
+        	         .data(d.commandes)
+        	         .enter()
+        	         .append('text')
+        	         .attr("class","textetape")
+        	         .attr("dy",function(d,j) {return (j+1)*sizeHeight})
+        	         .text(function(e,j) {
+        	             console.log(j+":"+e.numero+":"+'.'.repeat(e.niveau)+e.commande)
+        	             return '..'.repeat(e.niveau)+e.commande})
+        	         
             })
-        .attr("dx",50)
         
-        //.attr("x",2).attr("y",function(d){return d.y})
-    etapesGroupe
-        .insert("rect",".textetape")
-        //.attr("x",2).attr("y",function(d){return d.y-sizeHeight})
-        .attr("height",sizeHeight)
-        .attr("width",function (d, i) {
-            return d3.selectAll('.textetape').filter(function (d, j) { 
-                return i === j; })
-            .node().getComputedTextLength(); 
-             })
     etapesDiv.selectAll(".etape").exit().remove()    
     
 }
