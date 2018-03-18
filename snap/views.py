@@ -1570,7 +1570,9 @@ def testblock(request,id=277):
         etapes.append({'time':t, 'commandes':listeBlocks.snapAt(t),'action':action})
         print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx')
     
-    return Response({"data":listeBlocks.toJson(),
+    return Response({
+                     "scripts":listeBlocks.firstBlocks,
+                     "data":listeBlocks.toJson(),
                      "ticks":listeBlocks.ticks,
                      'links':listeBlocks.links,
                      'etapes':etapes,

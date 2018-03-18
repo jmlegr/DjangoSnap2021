@@ -1,0 +1,164 @@
+.etape rect {
+    cursor: pointer;
+    fill: Aquamarine;
+    /*fill-opacity: 0.5;*/
+    stroke: green;
+    stroke-width: 1.5px;
+}
+
+.node rect {
+    cursor: pointer;
+    fill: #fff;
+    /*fill-opacity: 0.5;*/
+    stroke: #3182bd;
+    stroke-width: 1.5px;
+}
+
+.node text {
+    font: 8px sans-serif;
+    pointer-events: none;
+}
+
+.link {
+    fill: none;
+    stroke: green;
+    stroke-width: 1.5px;
+    opacity: 0.2;
+}
+
+.autreslink {
+    fill: none;
+    stroke: red;
+    stroke-width: 1.5px;
+}
+
+.nextblock {
+    fill: none;
+    stroke: blue;
+    stroke-width: 1.5px;
+}
+
+.changed {
+    fill: none;
+    stroke: red;
+    stroke-width: 1.5px;
+}
+
+.moved {
+    fill: none;
+    stroke: green;
+    stroke-width: 1.5px;
+    stroke-dasharray: 5, 10, 5;
+}
+
+.replaced {
+    fill: none;
+    stroke: pink;
+    stroke-width: 1.5px;
+    /*stroke-dasharray: 5,10,5;*/
+}
+
+body {
+    margin: 0;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 100vh;
+}
+
+html {
+    overflow: -moz-scrollbars-vertical;
+    overflow-y: scroll;
+}
+
+
+
+.graph-svg-component {
+    background-color: AliceBlue;
+
+}
+
+.tree1 {
+    /* background-color: AliceBlue; marche pas sur <g>, seulement sur ses enfants*/
+    fill: black;
+}
+
+/* voir https://stackoverflow.com/questions/16265123/resize-svg-when-window-is-resized-in-d3-js#25978286*/
+
+.svg-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    /* aspect ratio */
+    vertical-align: top;
+    overflow: hidden;
+}
+
+.svg-content-responsive {
+    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 0;
+}
+
+#liste {
+    /*#actions {*/
+    height: 100%;
+    width: 100%;
+    /*border: 2px solid #000;*/
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+#actions {
+    position: fixed;
+    bottom:0;
+    left: 0;
+    height: 85%;
+}
+.action rect {
+    opacity: 0.5;
+}
+
+.action.SPR rect {
+    fill: url(#gradient);
+}
+
+.action.ENV rect {
+    fill: blue;
+}
+
+.action text {
+    font: 8px sans-serif;
+    pointer-events: none;
+}
+
+.etape .textetape {
+    font: 8px sans-serif;
+    pointer-events: none;
+}
+.groupeetape .pair {
+    fill: url(#gradientPair);
+    /*fill-opacity: 0.5;*/
+    stroke: None;
+}
+
+.groupeetape .impair {
+    fill: url(#gradientImpair);
+    /*fill-opacity: 0.5;*/
+    stroke: None;
+   
+}
+
+
+
+#resultats {
+    height: 80vh;
+    width: 100%;
+    /*border: 2px solid green;*/
+    /*overflow-y: scroll;*/
+    overflow-x: hidden;
+}
