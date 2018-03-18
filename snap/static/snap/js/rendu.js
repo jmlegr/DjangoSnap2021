@@ -703,7 +703,7 @@ function update(source, root, dragged = false) {
 
     // Enter any new links at the parent's previous position.
     link.enter().insert("path", "g")
-        .attr("class", "link")
+        .attr("class", function (d) {return (d.source.id=="racine")?"linkRacine":"link"})
         .attr("d", function (d) {
             var o = {
                 x: source.x0,
@@ -717,6 +717,7 @@ function update(source, root, dragged = false) {
         .on("click", function (e) {
             console.log('source:', e.source.id, ' target:', e.target.id, e)
         })
+        //.style("opacity",function(d) {return (d.source.id=="racine")?0:1})
         .transition()
         .duration(duration(dragged))
         .attr("d", diagonal);

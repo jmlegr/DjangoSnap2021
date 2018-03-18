@@ -25,6 +25,9 @@
     stroke-width: 1.5px;
     opacity: 0.2;
 }
+.linkRacine {
+    opacity: 0;
+}
 
 .autreslink {
     fill: none;
