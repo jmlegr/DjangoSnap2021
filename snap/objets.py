@@ -88,7 +88,9 @@ class ListeBlockSnap:
         """
     @classmethod
     def lastBlockFromListe(cls,liste,block,time,veryLast=False, exact=False):
-        #print('liste',[i for i in liste])        
+        #print('liste',[i for i in liste])
+        if block is None:
+            return None        
         if type(block)==dict or type(block)==BlockSnap:
             JMLid=block.JMLid        
         else:
@@ -185,6 +187,7 @@ class ListeBlockSnap:
         #on le copie avec modification (sans les inputs)
         #copieParent=parent.copy(time,action)
         copieParent=copie(parent)        
+        copieParent.action+="_REPLACE"
         #et on l'ajoute à la liste
         #voir si ajoute le lien?
         self.addBlock(copieParent)
@@ -194,7 +197,7 @@ class ListeBlockSnap:
             if i.rang==rang: #c'est l'input correspondant à block
                 if replacement is None:
                     copieReplacement=BlockSnap(round(thetime.time() * 1000),time,'InputSlotMorph') #aucune chance de trouver un JMLid aussi grand!
-                    copieReplacement.action=action
+                    copieReplacement.action=action+"_REPLACE"
                     copieReplacement.rang=rang
                     self.addBlock(copieReplacement)
                     self.addLink(i.getId(), copieReplacement.getId(), 'replaced')
@@ -209,6 +212,7 @@ class ListeBlockSnap:
                         self.addLink(replacement.getId(), copieReplacement.getId(), 'moved')
                     else:
                         copieReplacement=copieExiste
+                        self.addLink(i.getId(), copieReplacement.getId(), 'replaced')
                 
                 copieParent.replaceInput(copieReplacement)
                 copyLastInputs(copieReplacement)

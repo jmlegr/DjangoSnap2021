@@ -1484,7 +1484,22 @@ def testblock(request,id=277):
                                   spr.category,
                                   action=action
                                   )               
-               
+                if spr.type=='DEL':
+                    #c'est une suppression d'au moins un bloc et ses inputs
+                    #on ajoute dans la liste, avec les inputs (comme "NEW")
+                    cible=listeBlocks.lastBlock(spr.blockId,a.time) #cible supprimée
+                    """
+                    listeBlocks.addBlock(newNode)
+                    for c in spr.inputs.all():
+                        inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
+                        newNode.addInput(inputNode)
+                    """
+                    if cible.rang is not None:
+                        #c'est donc un input, on le remplace
+                        newNode.rang=cible.rang 
+                        #newNode.setParent(parent)
+                        listeBlocks.copyLastParentBlockandReplace(cible, a.time, action, None)
+                      
                 if spr.type=='VAL':
                     #c'est une modification d'un truc qui existe
                     for i in spr.inputs.all():   
@@ -1503,12 +1518,23 @@ def testblock(request,id=277):
                     for c in spr.inputs.all():
                         inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
                         newNode.addInput(inputNode)
-                elif spr.type=='DROPVAL':
+                elif spr.type=='DROPVAL' or spr.type=='NEWVAL':                    
                     """
-                    #c'est un reporter existant déplacé                    
+                    #c'est un reporter existant(DROP) ou nouveau(NEW) déplacé dans un inputSlotMorph                    
                     """
                     inputA=listeBlocks.lastBlock(spr.detail,a.time) #cible remplacée
-                    inputB=listeBlocks.lastBlock(spr.blockId,a.time) # block(s) déplacé, seulement inputs
+                    if spr.type=='NEWVAL':
+                        #on ajoute dans la liste, avec les inputs (comme "NEW")
+                        listeBlocks.addBlock(newNode)
+                        for c in spr.inputs.all():
+                            inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
+                            newNode.addInput(inputNode)
+                        #inputB=listeBlocks.lastBlock(spr.blockId,a.time,exact=True)
+                        inputB=newNode
+                        inputB.rang=inputA.rang if inputA is not None else None                   
+                    else:
+                        inputB=listeBlocks.lastBlock(spr.blockId,a.time) # block(s) déplacé, seulement inputs
+                        
                     if inputA is None:
                         #normalement, c'est parceque c'est un inpuSlotMorph qui a été créé suite à un précédent DROPVAL
                         #on vérifie:
@@ -1524,7 +1550,8 @@ def testblock(request,id=277):
                         if nb!=1:
                             raise ValueError('Ce block n\'existe pas et son parent supposé a %s enfants' %nb,spr.detail,spr.parentId)
                         #on renumérote le JMLid
-                        inputA.JMLid=int(spr.detail)
+                        inputA.JMLid=int(spr.detail)                        
+                        inputB.rang=inputA.rang
                         listeBlocks.addBlock(inputA)
                         del listeBlocks.liste[id]
                         print('removesd')
@@ -1537,7 +1564,8 @@ def testblock(request,id=277):
                     #On recherche si parentB existe, et dans ce cas il faudra
                     # 1) copier les inputs 
                     # 2) remplacer l'inputB par un InputSlotMorph inconnu
-                    listeBlocks.copyLastParentBlockandReplace(inputB, a.time, action)
+                    if spr.type=='DROPVAL':
+                        listeBlocks.copyLastParentBlockandReplace(inputB, a.time, action)
                     
                     
     """

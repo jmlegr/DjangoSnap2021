@@ -582,7 +582,7 @@ function updateListe(actions) {
     //actionsSvg.attr("height", actionsSvg.node().getBBox().height + 40)
     actionsSvg.attr("height", "100%");
     console.info(d3.select(".actionG").node().getBBox())
-    d3.select(".actionG").attr("transform", "rotate(-90,0,0) translate(-" +
+    d3.select(".actionG").attr("transform", "rotate(-90,0,0) translate(" +(-1)*
         (d3.select("#liste svg").node().getBBox().height-30) + ",0)");
         
 }
@@ -664,8 +664,12 @@ function update(source, root, dragged = false) {
     nodeEnter.append("text")
         .attr("dy", 3.5)
         .attr("dx", 5.5)
+        .style("opacity",function(d) { 
+            if (!d.data.action) return 1;
+            return d.data.action.indexOf('DEL')!=-1?d.data.action.indexOf('_REPLACE')!=-1?1:0:1;
+        })
         .text(function (d) {
-            return d.data.name;
+            return d.data.name+d.data.action;
         });
 
     // Transition nodes to their new position.
@@ -674,17 +678,18 @@ function update(source, root, dragged = false) {
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         })
-        .style("opacity", 1);
+        .style("opacity", opacityNode);
 
     node.transition()
         .duration(duration(dragged))
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         })
-        .style("opacity", 1)
+        //.style("opacity", 1)
         .select("rect")
         .style("fill", color)
-        .style("opacity", opacity)
+        //.style("opacity", opacity)
+        .style("opacity", opacityNode);
 
     // Transition exiting nodes to the parent's new position.
     node.exit().transition()
@@ -822,6 +827,11 @@ function click(d) {
     ancestors = d.ancestors()
     update(d, ancestors[ancestors.length - 1]);
     console.log('click sur', d.id, d)
+}
+
+function opacityNode(d) {
+    if (!d.data.action) return 1;
+    return d.data.action.indexOf('DEL')!=-1?d.data.action.indexOf('_REPLACE')!=-1?1:0.2:1;
 }
 
 function opacity(d) {
