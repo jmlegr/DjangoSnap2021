@@ -752,13 +752,13 @@ function update(source, root, dragged = false) {
         })
 
     function xpos(d) {
-        return d.type == 'nextblock' ? d.source.y : (d.source.y + barWidth)
+        return (d.type == 'nextblock' || d.type=='inserted')  ? d.source.y : (d.source.y + barWidth)
     }
 
     function ypos(d) {
         return {
-            debut: d.type == 'nextblock' ? (d.source.x - barHeight / 2) : d.source.x,
-            fin: d.type == 'nextblock' ? (d.target.x + barHeight / 2) : d.target.x,
+            debut: (d.type == 'nextblock'|| d.type=='inserted') ? (d.source.x - barHeight / 2) : d.source.x,
+            fin: (d.type == 'nextblock' || d.type=='inserted')? (d.target.x + barHeight / 2) : d.target.x,
         }
     }
     lines.enter()

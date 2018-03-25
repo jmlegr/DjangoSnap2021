@@ -29,6 +29,20 @@ class ListeBlockSnap:
     def addTick(self,time):
         if time not in self.ticks:
             self.ticks.append(time)
+    
+    def setFirstBlock(self,block):
+        """
+        définit block comme étant un bloc de tête
+        """
+        if block.JMLid not in self.firstBlocks:
+            self.firstBlocks.append(block.JMLid)
+        #pour être sur, on vérifie qu'il n'a pas de predecesseur
+        if block.prevBlock is not None:
+            #raise ValueError('On ne peut pas mettre en tête un block qui a un prédecesseur',block.getId(),block.prevBlock.getId())
+            if block.prevBlock.nextBlock==block:
+                block.prevBlock.nextBlock=None
+            block.prevBlock=None
+        
     def addFirstBlock(self,block):
         """
         ajoute la block dans liste des blocs de tête des scripts
@@ -37,7 +51,10 @@ class ListeBlockSnap:
         if block.JMLid not in self.firstBlocks:
             self.firstBlocks.append(block.JMLid)
         self.addBlock(block)
-              
+        #pour être sur, on vérifie qu'il n'a pas de predecesseur
+        if block.prevBlock is not None:
+            raise ValueError('On ne peut pas mettre en tête un block qui a un prédecesseur',block.getId(),block.prevBlock.getId())
+            
     def addBlock(self,block):
         """
         ajoute un blockSnap à la liste, s'il n'y est pas déjà
@@ -270,7 +287,21 @@ class ListeBlockSnap:
         parcours(copieblocks,lastblocks)
         
         return copieblocks
-        
+    
+    def changeJMLid(self,ancien,nouveau):
+        #remplace toutes les occurences de JMLid=ancien par nouveau
+        #et met à jour les liens
+        self.liste[nouveau]=self.liste[ancien]
+        for i in self.liste[nouveau]:
+            i.JMLid=int(nouveau)
+        for i in self.links:
+            source=i['source'].split('_')
+            target=i['target'].split('_')
+            if source[0]==ancien:
+                i.source='%s_%s' %(nouveau,source[1])
+            if target[0]==ancien:
+                i.target='%s_%s' %(nouveau,target[1])
+                
         
     
                 
@@ -407,7 +438,9 @@ class ListeBlockSnap:
             print('Debut',d)
             try:
                 e=next(n for n in liste if n is not None and n.JMLid==d)
-                resultat[d]+=parcours(liste,e,0)
+                if e.prevBlock is None:
+                    #si ce n'est plus un bloc de tête, on ne le traite pas
+                    resultat[d]+=parcours(liste,e,0)
             except:
                 pass
             print('resultat')
@@ -494,12 +527,34 @@ class ListeBlockSnap:
             #create.append(newblock)
             #self.addBlock(newblock)
             
+        elif block is None:
+            newblock=None
         else:
             print('on ne sait pas ce quest ',block)
         
         print('nex',newblock,'create:',['%s_%s (%s)' % (b.JMLid,b.time,b.action) for b in create])                               
         return newblock, create    
-    
+    def setNextBlock(self,source,destination,type='nextblock'):
+        """
+        (re)définit le nextBlock de source sur destination
+        et met à jour les liens
+        """
+        source.setNextBlock(destination)
+        if destination is not None:
+            self.links.append({'source':source.getId(),
+                           'target':destination.getId(),
+                           'type':type})
+    def setPrevBlock(self,source,destination,type='nextblock'):
+        """
+        (re)définit le prevBlock de source sur destination
+        et met à jour les liens
+        """
+        if destination is not None:
+            destination.setNextBlock(source)    
+            self.links.append({'source':destination.getId(),
+                           'target':source.getId(),
+                           'type':type})
+        
     def toJson(self):
         """ renvoie sous la forme [{BlockSnap},{}]"""
         j=[]
@@ -581,6 +636,14 @@ class BlockSnap:
         self.nextBlock=nextBlock
         if nextBlock is not None:
             nextBlock.prevBlock=self
+    def setPrevBlock(self,prevBlock):
+        """ définit le bloc prevBlock comme étant le précédent 
+        (et modifie le nextBlock de prevblock)
+        """
+        self.prevBlock=prevBlock
+        if prevBlock is not None:
+            prevBlock.nextBlock=self
+            
     def addWrappedBlock(self,block):
         """
         ajoute le block comme étant contenu dans self

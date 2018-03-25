@@ -1499,22 +1499,156 @@ def testblock(request,id=277):
                         newNode.rang=cible.rang 
                         #newNode.setParent(parent)
                         listeBlocks.copyLastParentBlockandReplace(cible, a.time, action, None)
-                      
+                if spr.type=='DROP':
+                    if spr.location=='bottom':
+                        #c'est un bloc ajouté à la suite d'un autre
+                        #On récupère le block et on le recopie
+                        lastBlock=listeBlocks.lastBlock(spr.blockId, a.time)
+                        newLastBlock,create=listeBlocks.addFromBlock(lastBlock,time=a.time,action='inserted_%s' % spr.location)
+                        #si il a un precBlock, il faut le mettre à None
+                        lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
+                        if lastPrevBlock is not None:
+                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.addBlock(newLastPrevBlock)
+                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())                            
+                            newLastBlock.setPrevBlock(None)                        
+                        prevBlock=listeBlocks.lastBlock(spr.targetId, a.time)
+                        newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
+                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())
+                        listeBlocks.setNextBlock(newPrevBlock,newLastBlock,'inserted')                        
+                        nextBlock=listeBlocks.lastBlock(prevBlock.nextBlock, a.time)
+                        if nextBlock is not None:                        
+                            newNextBlock, create=listeBlocks.addFromBlock(nextBlock,time=a.time,action='inserted_%s' % spr.location)
+                            listeBlocks.setNextBlock(newLastBlock,newNextBlock)                        
+                    elif spr.location=='top':
+                        #c'est un bloc ajouté au dessus d'un autre                        
+                        #listeBlocks.addBlock(newNode)
+                        lastBlock=listeBlocks.lastBlock(spr.blockId, a.time)
+                        newLastBlock,create=listeBlocks.addFromBlock(lastBlock,time=a.time,action='inserted_%s' % spr.location)
+                        #si il a un precBlock, il faut le mettre à None
+                        lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
+                        if lastPrevBlock is not None:
+                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.addBlock(newLastPrevBlock)
+                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())
+                            newLastBlock.setPrevBlock(None)                        
+                        nextBlock=listeBlocks.lastBlock(spr.targetId, a.time)
+                        newNextBlock, create=listeBlocks.addFromBlock(nextBlock,time=a.time,action='inserted_%s' % spr.location)
+                        listeBlocks.addLink(nextBlock.getId(), newNextBlock.getId())
+                        listeBlocks.setNextBlock(newLastBlock,newNextBlock,'inserted')                        
+                        prevBlock=listeBlocks.lastBlock(nextBlock.prevBlock, a.time)
+                        if prevBlock is not None:                        
+                            newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
+                            listeBlocks.setNextBlock(newPrevBlock,newLastBlock)
+                        else:
+                            #c'est un bloc de tête
+                            listeBlocks.setFirstBlock(newLastBlock)               
+                    else:
+                        #on ajoute le block et ses enfants
+                        #listeBlocks.addFirstBlock(newNode)
+                        lastBlock=listeBlocks.lastBlock(spr.blockId, a.time)
+                        newLastBlock,create=listeBlocks.addFromBlock(lastBlock,time=a.time,action='dropped')
+                        lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
+                        if lastPrevBlock is not None:
+                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.addBlock(newLastPrevBlock)
+                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())                            
+                            newLastBlock.setPrevBlock(None)                          
+                        listeBlocks.setFirstBlock(newLastBlock) 
+                    """
+                    for c in spr.inputs.all():
+                        inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
+                        newNode.addInput(inputNode)
+                    """
+                    #soit c'est un input déplacé, soit c'est un block qui change de palce 
+                    #donc possiblement de bloc suivant/précédant
+                    #on recherche la dernière occurence du bloc
+                    inputB=listeBlocks.lastBlock(spr.blockId,a.time)
+                    if inputB.parentBlock is not None:
+                        #c'est un input supprimé
+                        parentInputB=listeBlocks.lastBlock(inputB.parentBlock,a.time)
+                        inputA=next(b for b in parentInputB.inputs if b.JMLid==inputB.JMLid) #input supprimé
+                        #On modifie le parent d'inputB :
+                        # 1) copier les inputs 
+                        # 2) remplacer l'inputB par un InputSlotMorph inconnu
+                        listeBlocks.copyLastParentBlockandReplace(inputB, a.time, action)
+                    
                 if spr.type=='VAL':
                     #c'est une modification d'un truc qui existe
-                    for i in spr.inputs.all():   
-                        inputNode,created=listeBlocks.addFromBlock(i, a.time,action=action)
-                        newNode.addInput(inputNode)
-                        if inputNode.JMLid==int(spr.detail):
+                    for i in spr.inputs.all():                           
+                        
+                        if i.JMLid==int(spr.detail):
+                            inputNode,created=listeBlocks.addFromBlock(i, a.time,action=action)
                             inputNode.lastModifBlock=listeBlocks.lastBlock(spr.detail, a.time)
-                            #c'est l'input changé
-                            listeBlocks.addLink(
-                                inputNode.lastModifBlock.getId(),
-                                inputNode.getId(),
-                                'changed')
+                            newNode.addInput(inputNode)
+                            if inputNode.lastModifBlock is None:
+                                #on ne le trouve pas, c'est sans doute parce que c'est un InputSlotMorph qui a été créé
+                                parentInputA=listeBlocks.lastBlock(spr.blockId,a.time)
+                                nb=0
+                                print('pare,nt',parentInputA)
+                                for i in parentInputA.inputs:
+                                    print('a passe',i)
+                                    if (i.JMLid>100000 
+                                            and spr.location is not None 
+                                            and i.rang==int(spr.location)):
+                                        id=i.JMLid
+                                        print('on en a trouvé un',i.JMLid, 'de rang ',i.rang, 'et loc=',spr.location,i.rang==int(spr.location))
+                                        nb+=1
+                                        inputA=i
+                                if nb!=1:
+                                    raise ValueError('Ce block n\'existe pas et son parent supposé a %s enfants' %nb,spr.detail,spr.parentId)
+                                #on renumérote le JMLid
+                                listeBlocks.changeJMLid(inputA.JMLid,spr.detail)
+                                listeBlocks.addLink(
+                                    inputA.getId(),
+                                    inputNode.getId(),
+                                'changed')             
+                            else:
+                                #c'est l'input changé
+                                listeBlocks.addLink(
+                                    inputNode.lastModifBlock.getId(),
+                                    inputNode.getId(),
+                                    'changed')
+                        else:
+                            #c'est un input inchangé, on recopie
+                            b=listeBlocks.lastBlock(i.JMLid,a.time)
+                            inputNode,created=listeBlocks.addFromBlock(b,a.time,action=action)
+                            newNode.addInput(inputNode)
                 elif spr.type=='NEW':
                     #c'est un nouveau bloc, ses inputs éventuels aussi 
-                    listeBlocks.addFirstBlock(newNode) 
+                    if spr.location=='bottom':
+                        #c'est un bloc ajouté à la suite d'un autre
+                        listeBlocks.addBlock(newNode)
+                        prevBlock=listeBlocks.lastBlock(spr.targetId, a.time)
+                        newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
+                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())
+                        listeBlocks.setNextBlock(newPrevBlock,newNode,'inserted')                        
+                        nextBlock=listeBlocks.lastBlock(prevBlock.nextBlock, a.time)
+                        if nextBlock is not None:                        
+                            newNextBlock, create=listeBlocks.addFromBlock(nextBlock,time=a.time,action='inserted_%s' % spr.location)
+                            listeBlocks.setNextBlock(newNode,newNextBlock)                        
+                    elif spr.location=='top':
+                        #c'est un bloc ajouté au dessus d'un autre                        
+                        listeBlocks.addBlock(newNode)
+                        nextBlock=listeBlocks.lastBlock(spr.targetId, a.time)
+                        newNextBlock, create=listeBlocks.addFromBlock(nextBlock,time=a.time,action='inserted_%s' % spr.location)
+                        listeBlocks.addLink(nextBlock.getId(), newNextBlock.getId())
+                        listeBlocks.setNextBlock(newNode,newNextBlock,'inserted')                        
+                        prevBlock=listeBlocks.lastBlock(nextBlock.prevBlock, a.time)
+                        if prevBlock is not None:                        
+                            newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
+                            listeBlocks.setNextBlock(newPrevBlock,newNode)
+                        else:
+                            #c'est un bloc de tête
+                            listeBlocks.setFirstBlock(newNode)                        
+                    else:                       
+                        #soit un wrap? soit une tête de script
+                        #pour test:
+                        #raise ValueError('pas de location (%s) connue' % spr.location,spr.blockId)                            
+                        listeBlocks.addFirstBlock(newNode) 
                     for c in spr.inputs.all():
                         inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
                         newNode.addInput(inputNode)
@@ -1542,15 +1676,17 @@ def testblock(request,id=277):
                         print('nin',parentInputA)
                         nb=0
                         for i in parentInputA.inputs:
-                            if (i.JMLid>100000):
+                            if (i.JMLid>100000 
+                                and spr.location is not None 
+                                and i.rang==int(spr.location)):
                                 id=i.JMLid
-                                print('on en a trouvé un',i.JMLid)
+                                print('on en a trouvé un',i.JMLid, 'de rang ',i.rang, 'et loc=',spr.location,i.rang==int(spr.location))
                                 nb+=1
                                 inputA=i
                         if nb!=1:
                             raise ValueError('Ce block n\'existe pas et son parent supposé a %s enfants' %nb,spr.detail,spr.parentId)
                         #on renumérote le JMLid
-                        inputA.JMLid=int(spr.detail)                        
+                        listeBlocks.changeJMLid(inputA.JMLid,spr.detail)                        
                         inputB.rang=inputA.rang
                         listeBlocks.addBlock(inputA)
                         del listeBlocks.liste[id]

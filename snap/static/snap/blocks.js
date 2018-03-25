@@ -440,8 +440,8 @@ SyntaxElementMorph.prototype.replaceInput = function (oldArg, newArg) {
      * Modification JML (duff,  4 janv. 2018)
      **/
 
-    //console.info('replacemetn'+oldArg+'par'+newArg);
-    //console.info('replacemetn',oldArg,newArg);
+    console.info('replacemetn'+oldArg+'par'+newArg);
+    console.info('replacemetn',oldArg,newArg);
     //if (oldArg instanceof InputSlotMorph) console.log('childre:'+oldArg.children[0]);
     //if (oldArg instanceof ReporterBlockMorph) console.log('childrep',oldArg.parent.id);
     
@@ -6926,6 +6926,9 @@ ScriptsMorph.prototype.donnee = function(record) {
 		   case 'valeur': {
 		       data['type']='VAL'; 
 		       data['detail']=record.detailAction;
+		       childs=record.lastDroppedBlock.inputs()
+		       child=childs.filter(function(d) {return d.JMLid==record.detailAction})[0]
+		       data['location']=childs.indexOf(child); //index de l'input remplacé
 		       break;
 		   }
 		   default: 
@@ -6935,7 +6938,10 @@ ScriptsMorph.prototype.donnee = function(record) {
 	    if (record.lastReplacedInput) {
 	    	    // il y a un changement dans les inputs
 		    data['type']=data['type']+'VAL';
-	    	    data['detail']=record.lastReplacedInput.JMLid;	    	    
+	    	    data['detail']=record.lastReplacedInput.JMLid;
+	    	    childs=record.lastDropTarget.inputs()
+	    	    idx=childs.indexOf(record.lastDroppedBlock)
+	    	    data['location']=idx; //index de l'input remplacé
 	    	}
 	    // Normalement on a un blockMorph
 	    data['typeMorph']=record.lastDroppedBlock.constructor.name
@@ -6958,7 +6964,7 @@ ScriptsMorph.prototype.donnee = function(record) {
 		    }
 		} else {
     	    	    data['targetId']=record.lastDropTarget.JMLid
-    	    	    data['location']=record.lastDropTarget.loc;
+    	    	    data['location']=record.lastDropTarget.loc?record.lastDropTarget.loc:data['location'];
 		}
 		
 		
@@ -6985,7 +6991,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    );
     	    if (inputs) data['inputs']=inputs;
     	    //this.lastDroppedBlock.inputs=inputs;  
-    	    //console.log('data',data)
+    	    console.log('data',data)
     	    sendEvenement('SPR',data);
     	    //sendJsonData(this);
 	}
