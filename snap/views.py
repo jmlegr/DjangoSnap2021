@@ -1544,7 +1544,66 @@ def testblock(request,id=277):
                             listeBlocks.setNextBlock(newPrevBlock,newLastBlock)
                         else:
                             #c'est un bloc de tête
-                            listeBlocks.setFirstBlock(newLastBlock)               
+                            listeBlocks.setFirstBlock(newLastBlock)  
+                    elif spr.location=='wrap':
+                        #c'est un bloc englobant, le parentId est le bloc précédent, target est englobé
+                        lastBlock=listeBlocks.lastBlock(spr.blockId, a.time)
+                        newLastBlock,create=listeBlocks.addFromBlock(lastBlock,time=a.time,action='inserted_%s' % spr.location)
+                        #s'il a un précédent, il faut lemettre à None
+                        lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
+                        if lastPrevBlock is not None:
+                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.addBlock(newLastPrevBlock)
+                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())
+                            newLastBlock.setPrevBlock(None)                        
+                        #le bloc précédent va pointer son nextBlock sur newNode
+                        prevBlock=listeBlocks.lastBlock(spr.parentId, a.time)
+                        newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
+                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())
+                        listeBlocks.setNextBlock(newPrevBlock,newNode,'inserted')                        
+                        #le wrap englobe jusqu'àla fin, donc le nextBlock est forcément None                      
+                        listeBlocks.setNextBlock(newNode,None)                        
+                        #on traite maintenant les blocks wrappés
+                        wrapBlock=listeBlocks.lastBlock(spr.targetId,a.time)
+                        newWrapBlock,create=listeBlocks.addFromBlock(wrapBlock,time=a.time,action='wrapped')
+                        for i in newNode.inputs:
+                            if i.typeMorph=='CSlotMorph':
+                                newWrapBlock.rang=0
+                                i.addInput(newWrapBlock)        
+                    elif spr.location=='slot':
+                        #c'est un drop dans le CSLotMorph d'une boucle englobante
+                        #parentId est le bloc englobant, targetId le CslotMorph    
+                        lastBlock=listeBlocks.lastBlock(spr.blockId, a.time)
+                        newLastBlock,create=listeBlocks.addFromBlock(lastBlock,time=a.time,action='inserted_%s' % spr.location)
+                        listeBlocks.addLink(lastBlock.getId(),newLastBlock.getId(),'moved')                      
+                        #on récupère le parent et on le recopie
+                        parentBlock=listeBlocks.lastBlock(spr.parentId,a.time)
+                        newParentBlock,create=listeBlocks.addFromBlock(parentBlock,time=a.time,action='inserted_%s' % spr.location)
+                        
+                        #on fixe le nouveau contenu
+                        #newSlotBlock,create=listeBlocks.addFromBlock(slotBlock,time=a.time,action='inserted_%s' % spr.location)
+                        #newSlotBlock.inputs[0]=newLastBlock
+                        for i in newParentBlock.inputs:
+                            if i.typeMorph=='CSlotMorph':
+                                #le contenu devient le block suivant (on le rajoute ou pas?->on le copy ou pas)
+                                listeBlocks.setNextBlock(newLastBlock,i.inputs[0])
+                                i.inputs[0]=newLastBlock  
+                                
+                        #si le bloc déplacé a un précédent, il faut lemettre à None
+                        #on fait ça après les modifs du parent, car le parent est petu-être l eprécédent...
+                        lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
+                        if lastPrevBlock is not None:
+                            #cas où le parent est aussi le précédent
+                            if lastPrevBlock==parentBlock:
+                                listeBlocks.setNextBlock(newParentBlock, None)                                
+                            else:
+                                newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                                newLastPrevBlock.setNextBlock(None)
+                                listeBlocks.addBlock(newLastPrevBlock)
+                                listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())
+                                newLastBlock.setPrevBlock(None)                         
+                        
                     else:
                         #on ajoute le block et ses enfants
                         #listeBlocks.addFirstBlock(newNode)
@@ -1618,7 +1677,11 @@ def testblock(request,id=277):
                             inputNode,created=listeBlocks.addFromBlock(b,a.time,action=action)
                             newNode.addInput(inputNode)
                 elif spr.type=='NEW':
-                    #c'est un nouveau bloc, ses inputs éventuels aussi 
+                    #c'est un nouveau bloc, ses inputs éventuels aussi
+                    #on crée les inputs
+                    for c in spr.inputs.all():
+                        inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
+                        newNode.addInput(inputNode) 
                     if spr.location=='bottom':
                         #c'est un bloc ajouté à la suite d'un autre
                         listeBlocks.addBlock(newNode)
@@ -1643,15 +1706,30 @@ def testblock(request,id=277):
                             listeBlocks.setNextBlock(newPrevBlock,newNode)
                         else:
                             #c'est un bloc de tête
-                            listeBlocks.setFirstBlock(newNode)                        
+                            listeBlocks.setFirstBlock(newNode) 
+                    elif spr.location=='wrap':
+                        #c'est un bloc englobant, le parentId est le bloc précédent, target est englobé
+                        listeBlocks.addBlock(newNode)
+                        #le bloc précédent va pointer son nextBlock sur newNode
+                        prevBlock=listeBlocks.lastBlock(spr.parentId, a.time)
+                        newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
+                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())
+                        listeBlocks.setNextBlock(newPrevBlock,newNode,'inserted')                        
+                        #le wrap englobe jusqu'àla fin, donc le nextBlock est forcément None                      
+                        listeBlocks.setNextBlock(newNode,None)                        
+                        #on traite maintenant les blocks wrappés
+                        wrapBlock=listeBlocks.lastBlock(spr.targetId,a.time)
+                        newWrapBlock,create=listeBlocks.addFromBlock(wrapBlock,time=a.time,action='wrapped')
+                        for i in newNode.inputs:
+                            if i.typeMorph=='CSlotMorph':
+                                newWrapBlock.rang=0
+                                i.addInput(newWrapBlock)
                     else:                       
                         #soit un wrap? soit une tête de script
                         #pour test:
                         #raise ValueError('pas de location (%s) connue' % spr.location,spr.blockId)                            
                         listeBlocks.addFirstBlock(newNode) 
-                    for c in spr.inputs.all():
-                        inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
-                        newNode.addInput(inputNode)
+                    
                 elif spr.type=='DROPVAL' or spr.type=='NEWVAL':                    
                     """
                     #c'est un reporter existant(DROP) ou nouveau(NEW) déplacé dans un inputSlotMorph                    

@@ -449,7 +449,7 @@ class ListeBlockSnap:
             
         return resultat
 
-    def addFromBlock(self,block,time=None,action=''):
+    def addFromBlock(self,block,time=None,action='',withNextBlocks=False):
         
         """
         crée un nouveau block (et ses netx/inputs) 
