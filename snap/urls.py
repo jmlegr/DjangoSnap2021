@@ -48,7 +48,8 @@ urlpatterns = [
     path('cyto2',views.cyto3),
     path('tb',views.testblock),
     path('tb/<str:id>/',views.testblock),
-    path('d3',TemplateView.as_view(template_name='index.html')),
+    #path('d3',TemplateView.as_view(template_name='index.html')),
+    path('d3',TemplateView.as_view(template_name='representation.html')),
      path('c2',TemplateView.as_view(template_name='testcyto2.html')),
      path('ajax',views.testAjax),
     ]

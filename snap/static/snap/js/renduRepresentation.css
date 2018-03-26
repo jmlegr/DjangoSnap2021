@@ -1,0 +1,47 @@
+#entete {
+    position: fixed;
+    top:0;
+    left: 0;
+    height: 120px;
+    width: 100%;
+    background-color: yellow;
+}
+#affichage {
+	position: fixed;
+    top:130px;
+    bottom: 110px;    
+    width: 1000px;
+    left: 50%;
+    margin-left: -500px; /* Half of the width */    
+    background-color: blue;
+}
+#actions {
+    position: fixed;
+    bottom:0;
+    height: 100px;
+    width: 1000px;
+    left: 50%;
+    margin-left: -500px; /* Half of the width */   
+    background-color: Olive;
+}
+
+.graph-svg-component {
+    background-color:blue;
+
+}
+
+#affichageSvg {
+	background-color:AliceBlue;
+}
+#actionSvg {
+	background-color:AliceBlue;
+}
+.arbre {
+	background-color: bisque;
+}
+.scripts {
+    background-color: burlywood;
+}
+.actions {
+    background-color: coral;
+}

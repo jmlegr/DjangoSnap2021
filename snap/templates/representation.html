@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+{% load static %}
+<head>
+<link rel="stylesheet" type="text/css" href="{% static 'snap/js/renduRepresentation.css' %}" >
+</head>
+<body>
+	<script src="https://d3js.org/d3.v4.min.js"></script>
+	
+    
+    
+	
+<div id="entete">
+<h3>Actions suite à une ouverture de programme</h3>
+  <label for="eleves">Choisir un élève: </label>
+  <select  list="listeEleves" id="selectEleves"></select>
+  <datalist id="listeEleves">  
+  </datalist>
+  <div id="session">
+  <label for="session">Choisir une session: </label>
+  <select  list="listeSessions" id="selectSessions"></select>
+  <datalist id="listeSessions">  
+  </datalist>
+  </div>
+</div>
+  
+  <div id="affichage"></div>
+  <div id="actions"></div>
+  <script src="{% static 'snap/js/renduRepresentation.js' %}"></script>
+  </body>
