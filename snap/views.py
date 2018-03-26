@@ -1442,13 +1442,13 @@ def testblock(request,id=277):
     if suivant is not None:
         actions=Evenement.objects.filter(user=ev.evenement.user,
                                          creation__gte=ev.evenement.creation,
-                                         numero__gt=ev.evenement.numero,
+                                         numero__gte=ev.evenement.numero,
                                          creation__lt=suivant.evenement.creation).order_by('numero')
     else:
         #c'est le dernier OPen
         actions=Evenement.objects.filter(user=ev.evenement.user,
                                          creation__gte=ev.evenement.creation,
-                                         numero__gt=ev.evenement.numero).order_by('numero')
+                                         numero__gte=ev.evenement.numero).order_by('numero')
        
     #on prepare la liste id->[node time x, node time y ...]
     #liste,nextLiens,ret,inp,nodes,liens=self.constructionListeOpen(pk) 

@@ -1,3 +1,4 @@
+
 #entete {
     position: fixed;
     top:0;
@@ -25,6 +26,11 @@
     background-color: Olive;
 }
 
+.zoom {
+  cursor: move;
+  fill: none;
+  pointer-events: visibleFill;
+}
 .graph-svg-component {
     background-color:blue;
 
@@ -32,6 +38,7 @@
 
 #affichageSvg {
 	background-color:AliceBlue;
+	clip-path: url(#clip);
 }
 #actionSvg {
 	background-color:AliceBlue;
@@ -49,16 +56,29 @@
 .actionLine {
 	stroke: grey;
 	stroke-width: 2;
+	pointer-events:all;
 }
-.actionLine.ENV {
+.ENV {
 	stroke:yellow;
+	fill:yellow;
 }
-.actionLine.SPR {
+.SPR {
 	stroke: red;
+	fill: red;
 }
-.actionLine.EPR {
+.EPR {
 	stroke: green;
+	fill:green;
 }
+.detail text {
+	fill: black;
+    font: 8px sans-serif;
+    pointer-events: none;
+}
+.detail rect {    
+    opacity: 0.5;
+}
+
 
 div.tooltip {   
   position: absolute;           
