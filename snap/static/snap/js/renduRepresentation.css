@@ -45,3 +45,30 @@
 .actions {
     background-color: coral;
 }
+
+.actionLine {
+	stroke: grey;
+	stroke-width: 2;
+}
+.actionLine.ENV {
+	stroke:yellow;
+}
+.actionLine.SPR {
+	stroke: red;
+}
+.actionLine.EPR {
+	stroke: green;
+}
+
+div.tooltip {   
+  position: absolute;           
+  text-align: center;           
+  width: 200px;                  
+  height: 28px;                 
+  padding: 2px;             
+  font: 8px sans-serif;        
+  background: lightsteelblue;   
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;         
+}
