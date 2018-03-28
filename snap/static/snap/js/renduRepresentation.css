@@ -78,7 +78,22 @@
 .detail rect {    
     opacity: 0.5;
 }
+.etape .textetape {
+    font: 8px sans-serif;
+    pointer-events: none;
+}
+.groupeetape .pair {
+    fill: url(#gradientPair);
+    /*fill-opacity: 0.5;*/
+    stroke: None;
+}
 
+.groupeetape .impair {
+    fill: url(#gradientImpair);
+    /*fill-opacity: 0.5;*/
+    stroke: None;
+   
+}
 
 div.tooltip {   
   position: absolute;           

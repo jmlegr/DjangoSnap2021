@@ -117,6 +117,7 @@ class EvenementENV(models.Model):
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
+        res['d3id']='%s_%s' % (self.evenement.id, self.id) #id pour les data de d3.js
         res['id']=self.id
         res["evenement"]=self.evenement.toD3()
         res['type']=self.type
@@ -189,6 +190,7 @@ class EvenementEPR(SnapProcess):
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
+        res['d3id']='%s_%s' % (self.evenement.id, self.id) #id pour les data de d3.js
         res['id']=self.id
         res["evenement"]=self.evenement.toD3()
         res['type']=self.type
@@ -271,6 +273,7 @@ class EvenementSPR(models.Model):
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
+        res['d3id']='%s_%s' % (self.evenement.id, self.id) #id pour les data de d3.js
         res['id']=self.id
         res["evenement"]=self.evenement.toD3()
         res['type']=self.type
