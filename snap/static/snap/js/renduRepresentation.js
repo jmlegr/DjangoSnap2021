@@ -47,12 +47,19 @@ var zoom = d3.zoom().scaleExtent([1, Infinity]).translateExtent(
 affichageSvg.append("defs").append("clipPath").attr("id", "clip")
     .append("rect").attr("width", width).attr("height", heightPpal + 20);
 var affichageActionNode; //noeud avec les data
+var zoomSvg=affichageSvg.append("rect")
+    .attr("class", "zoom")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("transform", "translate(" + margin.left + "," +
+        margin.top + ")")
+    .call(zoom);
 var arbreSvg = affichageSvg.append("g").attr("class", "arbre").attr(
     "transform", "translate(" + margin.left + "," + margin.top + ")")
 var scriptSvg = affichageSvg.append("g") //affichage scripts 
     .attr("class", "scripts").attr("transform",
         "translate(" + margin2.left + "," + margin2.top + ")")
-
+var ligneActionSvg = affichageSvg.append("g").attr("class","ligneAction")
 initListeEleves();
 // on initialise les axes le brush et le zoom (pour ne pas les rajouter à chaque chargement)
 actionSvg.append("g").attr("class", "axis axis--x").attr("transform",
@@ -61,13 +68,7 @@ actionSvg.append("g").attr("class", "brush actionNode").call(brush).call(
     brush.move, x.range());
 affichageSvg.append("g").attr("class", "axis axis--x").attr("transform",
     "translate(0," + (heightPpal - 20) + ")").call(xAxis);
-affichageSvg.append("rect")
-    .attr("class", "zoom")
-    .attr("width", width)
-    .attr("height", height)
-    .attr("transform","translate(" + margin.left + "," +
-                            margin.top + ")")
-    .call(zoom);
+
 
 function initListeEleves() {
     console.log('initialiation')
@@ -162,7 +163,7 @@ var ticks = {
         //c'est un ticks correspondant à un évènement autre que SPR
         for (i in this.times) {
             if (this.times[i] > d) {
-                return (i - 1 + d / (this.times[i] - this.times[i - 1]))
+                return (i - 1 + (d - this.times[i - 1]) / (this.times[i] - this.times[i - 1]))
             }
         }
         return this.length();
@@ -214,14 +215,14 @@ function getJson(session) {
                         .call(xAxis);
                     //ici si besoin les modifs du rectangle de zoom
                     /**
-                    *affichageSvg.selectAll("rect.zoom")
-                    *    .attr("class", "zoom")
-                    *    .attr("width", width)
-                    *    .attr("height", height)
-                    *    .attr("transform","translate(" + margin.left + "," +
-                    *        margin.top + ")")
-                    *    .call(zoom);
-                    **/
+                     *affichageSvg.selectAll("rect.zoom")
+                     *    .attr("class", "zoom")
+                     *    .attr("width", width)
+                     *    .attr("height", height)
+                     *    .attr("transform","translate(" + margin.left + "," +
+                     *        margin.top + ")")
+                     *    .call(zoom);
+                     **/
                     //brush
                     actionSvg.selectAll("g.brush").attr("class",
                         "brush actionNode").call(brush).call(
@@ -285,11 +286,14 @@ function getJson(session) {
                             });
                     actionNode.exit().remove()
                     //actions dans affichage
-                    affichageActionNode = affichageSvg.selectAll(
-                        ".actionLine").data(actions, function (d) {
-                        return d.d3id;
-                    })
-                    affichageActionNode.enter().append("line").attr(
+                    affichageActionNode = ligneActionSvg
+                        .selectAll(".actionNode")
+                        .data(actions, function (d) {return d.d3id;})
+                    affichageActionNodeEnter=affichageActionNode
+                        .enter()
+                        .append("g").attr("class","actionNode")
+                    
+                    affichageActionNodeEnter.append("line").attr(
                         "class",
                         function (d) {
                             return "actionLine " + d.evenement.type
@@ -301,18 +305,20 @@ function getJson(session) {
                         affichageSvg.attr("height"))
 
                     affichageActionNode.exit().remove()
-                    detail = affichageSvg
+                    detail = ligneActionSvg
                         .selectAll(".detail")
                         .data(actions, function (d) {
                             //return d.id || (d.id = ++i)
                             //return d.evenement.id+'_'+d.id
                             return d.d3id;
                         });
-                    detailEnter=detail
-                        .enter()
+                    detailEnter = affichageActionNodeEnter//.selectAll(".detail")
+                        //.enter()
                         .append("g")
                         .attr("class", "detail")
-                        .attr("id",function(d){return "detail_"+d.id})
+                        .attr("id", function (d) {
+                            return "detail_" + d.id
+                        })
                         .on(
                             "mouseover",
                             function (d) {
@@ -484,21 +490,22 @@ function getJson(session) {
 function updateAffichageActions() {
     if (affichageActionNode) {
         console.log('sel', affichageSvg.selectAll(".actionLine"))
-        affichageSvg.selectAll(".actionLine").attr("x1", function (d) {
-            console.log('cakc');
-            return x(ticks.invert(d.evenement.time))
-        }).attr("x2", function (d) {
-            return x(ticks.invert(d.evenement.time))
-        }).attr("y1", 0).attr("y2", affichageSvg.attr("height")).on(
-            "mouseover",
-            function (d) {
-                divTooltip.transition().duration(200).style("opacity", .9);
-                divTooltip.html(
-                    d.evenement.type_display + "<br/>" + d.type_display +
-                    "A<br/>" + d.evenement.time).style(
-                    "left", (d3.event.pageX) + "px").style("top",
-                    (d3.event.pageY - 28) + "px");
-            })
+        affichageSvg.selectAll(".actionLine")
+            .attr("x1", function (d) {
+                console.log('cakc');
+                return x(ticks.invert(d.evenement.time))
+            }).attr("x2", function (d) {
+                return x(ticks.invert(d.evenement.time))
+            }).attr("y1", 0).attr("y2", affichageSvg.attr("height")).on(
+                "mouseover",
+                function (d) {
+                    divTooltip.transition().duration(200).style("opacity", .9);
+                    divTooltip.html(
+                        d.evenement.type_display + "<br/>" + d.type_display +
+                        "A<br/>" + d.evenement.time).style(
+                        "left", (d3.event.pageX) + "px").style("top",
+                        (d3.event.pageY - 28) + "px");
+                })
 
         affichageSvg.selectAll(".detail").attr(
             "transform",
