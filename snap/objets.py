@@ -291,9 +291,14 @@ class ListeBlockSnap:
     def changeJMLid(self,ancien,nouveau):
         #remplace toutes les occurences de JMLid=ancien par nouveau
         #et met à jour les liens
-        self.liste[nouveau]=self.liste[ancien]
-        for i in self.liste[nouveau]:
-            i.JMLid=int(nouveau)
+        nouveau=int(nouveau)
+        #on verifie si quelque chose a déjà été créé
+        if not nouveau in self.liste: self.liste[nouveau]=[]
+        for i in self.liste[ancien]:
+            i.JMLid=nouveau
+            self.liste[nouveau].append(i)
+        #on supprime l'ancien
+        del self.liste[ancien]
         for i in self.links:
             source=i['source'].split('_')
             target=i['target'].split('_')

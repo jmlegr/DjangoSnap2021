@@ -1456,7 +1456,7 @@ def testblock(request,id=277):
     #on récupère le block de tête
     #blockRoot=BlockSnap.newBlock(ev.scripts.all()[0],0)
     listeBlocks=objets.ListeBlockSnap()    
-    firstBlock,created=listeBlocks.addFromBlock(ev.scripts.all()[0],0, 'OPEN')
+    firstBlock,created=listeBlocks.addFromBlock(ev.scripts.all()[0],0, 'OPEN')#TODO: time à timer du open, et ajout autres scripts
     #création des liens nextblocks
     for b in created:
         if b.prevBlock is not None:
@@ -1654,7 +1654,9 @@ def testblock(request,id=277):
                                             and spr.location is not None 
                                             and i.rang==int(spr.location)):
                                         id=i.JMLid
-                                        print('on en a trouvé un',i.JMLid, 'de rang ',i.rang, 'et loc=',spr.location,i.rang==int(spr.location))
+                                        print('on en a trouvé un',i.JMLid, 'de rang ',i.rang, 
+                                              'et loc=',spr.location,i.rang==int(spr.location),
+                                              ' -> ',spr.detail)
                                         nb+=1
                                         inputA=i
                                 if nb!=1:
@@ -1767,8 +1769,8 @@ def testblock(request,id=277):
                         listeBlocks.changeJMLid(inputA.JMLid,spr.detail)                        
                         inputB.rang=inputA.rang
                         listeBlocks.addBlock(inputA)
-                        del listeBlocks.liste[id]
-                        print('removesd')
+                        #del listeBlocks.liste[id]
+                        #print('removesd')
                         #parentInputA.inputs.filter()
                     #On recherche si parentA existe, et dans ce cas il faudra
                     # 1) copier les inputs 
