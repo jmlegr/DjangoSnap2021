@@ -26,9 +26,15 @@
     background-color: Olive;
 }
 
-.zoom {
-  cursor: move;
+.zoomEW {
+  cursor: ew-resize;
   fill: none;
+  pointer-events: visibleFill;
+}
+.zoomNS {
+  cursor: ns-resize;
+  fill: red;
+  opacity:0.2;
   pointer-events: visibleFill;
 }
 .graph-svg-component {

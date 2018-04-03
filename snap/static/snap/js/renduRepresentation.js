@@ -1,15 +1,15 @@
 var widthPpal = 1000,
-    heightPpal = d3.select("#affichage").node()
-    .getBoundingClientRect().height;
+    heightPpal = d3.select("#affichage").node().getBoundingClientRect().height,
+    heightAction = 100, //hauteur de la vue globale des actions (+actionSvg.attr("height"));
+    heightArbre=350; //hateur de la vue arbre
+    
 
-var divTooltip = d3.select("body").append("div").attr("class", "tooltip")
-    .style("opacity", 0);
-var affichageSvg = d3.select("#affichage").append("svg").attr("id",
-        "affichageSvg").attr("width", widthPpal) // + margin.left + margin.right)
-    .attr("height", heightPpal).attr("class", "graph-svg-component"), // l'affichage arbre+script
+var affichageSvg, // l'affichage arbre+script
+    ligneActionSvg, //ligne et indication des actions
     arbreSvg, // afficahge arbre    
-    actionSvg = d3.select("#actions").append("svg").attr("class", "actions").attr(
-        "id", "actionSvg").attr("width", 1000).attr("height", 100), //affichage actions
+    affichageActionNode, //noeud avec les data d'actions
+    scriptSvg, //emplacement le reconstitution des scripts
+    actionSvg, // actions
     margin = {
         top: 0,
         right: 0,
@@ -17,22 +17,17 @@ var affichageSvg = d3.select("#affichage").append("svg").attr("id",
         left: 0
     }, //pour arbre
     margin2 = {
-        top: 430,
+        top: heightArbre,
         right: 0,
         bottom: 0,
         left: 0
     }, //pour scripts
-    width = +affichageSvg.attr("width") - margin.left - margin.right,
-    height = +affichageSvg
-    .attr("height") -
-    margin.top - margin.bottom,
-    height2 = +affichageSvg.attr("height") -
-    margin2.top - margin2.bottom,
-    heightAction = +actionSvg
-    .attr("height")
+    width = widthPpal- margin.left - margin.right, //+affichageSvg.attr("width") 
+    height = heightPpal - margin.top - margin.bottom, //+affichageSvg.attr("height")
+    height2 = heightPpal - margin2.top - margin2.bottom // +affichageSvg.attr("height") enlever la position de xaxis 
+    
 var x = d3.scaleLinear().range([0, width]),
-    x2 = d3.scaleLinear().range(
-	[0, width]);
+    x2 = d3.scaleLinear().range([0, width]);
 
 var xAxis = d3.axisBottom(x),
     xAxis2 = d3.axisBottom(x2);
@@ -44,36 +39,72 @@ var zoom = d3.zoom().scaleExtent([1, Infinity]).translateExtent(
 	[[0, 0], [width, height + height2]]).extent(
 	[[0, 0], [width, height + height2]]).on("zoom", zoomed);
 
-affichageSvg.append("defs").append("clipPath").attr("id", "clip")
-    .append("rect").attr("width", width).attr("height", heightPpal + 20);
-var affichageActionNode; //noeud avec les data
-var zoomSvg=affichageSvg.append("rect")
-    .attr("class", "zoom")
+
+initSvg();
+initListeEleves();
+
+
+function initSvg() {
+    //initialise les svg de base
+    
+    // l'affichage arbre+script
+    affichageSvg = d3.select("#affichage")
+        .append("svg")
+        .attr("id","affichageSvg")
+        .attr("width", widthPpal) // + margin.left + margin.right)
+        .attr("height", heightPpal)
+        //.attr("class", "graph-svg-component"), 
+    //ajout du clp path pour l'affichage
+    affichageSvg.append("defs")
+        .append("clipPath").attr("id", "clip")
+            .append("rect").attr("width", width).attr("height", heightPpal + 20);   
+    // zoom sur l'affichage (brush) (ici pour être sous les autres éléments)
+    var zoomSvg=affichageSvg.append("rect")
+    .attr("class", "zoomEW")
     .attr("width", width)
     .attr("height", height)
     .attr("transform", "translate(" + margin.left + "," +
         margin.top + ")")
     .call(zoom);
-var arbreSvg = affichageSvg.append("g").attr("class", "arbre").attr(
-    "transform", "translate(" + margin.left + "," + margin.top + ")")
-var scriptSvg = affichageSvg.append("g") //affichage scripts 
+    //lignes et indication des action
+    ligneActionSvg = affichageSvg.append("g").attr("class","ligneAction")
+    //arbre
+    arbreSvg = affichageSvg
+        .append("g")
+        .attr("class", "arbre")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    //scripts
+    scriptSvg = affichageSvg.append("svg").attr("height",height2) //affichage scripts 
     .attr("class", "scripts").attr("transform",
         "translate(" + margin2.left + "," + margin2.top + ")")
-var ligneActionSvg = affichageSvg.append("g").attr("class","ligneAction")
-initListeEleves();
-// on initialise les axes le brush et le zoom (pour ne pas les rajouter à chaque chargement)
-actionSvg.append("g").attr("class", "axis axis--x").attr("transform",
-    "translate(0," + (actionSvg.attr("height") / 2) + ")").call(xAxis2);
-actionSvg.append("g").attr("class", "brush actionNode").call(brush).call(
-    brush.move, x.range());
-affichageSvg.append("g").attr("class", "axis axis--x").attr("transform",
-    "translate(0," + (heightPpal - 20) + ")").call(xAxis);
-
+    
+    //affichage global des actions en bas
+    actionSvg = d3.select("#actions")
+        .append("svg")
+        .attr("class", "actions")
+        .attr("id", "actionSvg")
+        .attr("width", widthPpal)
+        .attr("height", heightAction) //affichage actions
+        
+    // on initialise les axes le brush et le zoom (pour ne pas les rajouter à chaque chargement)        
+    
+    actionSvg
+        .append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform","translate(0," + (actionSvg.attr("height") / 2) + ")").call(xAxis2);
+    actionSvg
+        .append("g")
+        .attr("class", "brush actionNode")
+        .call(brush)
+        .call(brush.move, x.range());
+    affichageSvg.append("g").attr("class", "axis axis--x").attr("transform",
+    "translate(0," + (heightPpal - 20) + ")").call(xAxis);    
+}
 
 function initListeEleves() {
+    //initialisation de la liste des élèves
     console.log('initialiation')
     d3.json('spropen/users', function (error, data) {
-        console.info("reception liste elveves");
         console.log("reception", data);
         data.unshift({
             id: 0
@@ -87,21 +118,14 @@ function initListeEleves() {
             function (d) {
                 return d.id == 0 ? "---" : (d.username + "(" +
                     (d.eleve ? d.eleve.classe : 'prof') + ")")
-            })
-        el.on("change", changeEleve)
-
+            })        
+        el.on("change", initSessions)
     });
 }
 
-function changeEleve() {
-    // var
-    // selectedIndex=d3.select("#selectEleves").property('selectedOptions')[0].value
+function initSessions() {
+    //récupération de la liste des sessions
     var selectedValue = d3.select("#selectEleves").property('value')
-    /*
-     * var s=d3.select("#selectEleves").selectAll("option").filter(function
-     * (d,i) { return d.id==selectedValue}), data=s.datum()
-     * console.log('eke',data)
-     */
     if (selectedValue != 0)
         d3.json('spropen/' + selectedValue + "/openUser",
             function (error, data) {
@@ -120,17 +144,13 @@ function changeEleve() {
                                 d.evenement.creation)).toUTCString() +
                             "(" + d.evenement.user + ")")
                     })
-                session.on("change", changeSession)
-                // session.selectAll("option").call(function(d){console.log('update',d)})
-                session.selectAll("option").data(data, function (d) {
-                    return d.id
-                }).exit().remove()
+                session.on("change", chargeSession)
+                session.selectAll("option").data(data, d=>d.id).exit().remove()
             });
 }
 
-function changeSession() {
+function chargeSession() {
     var selectedValue = d3.select("#selectSessions").property('value')
-    console.log('evnoi', selectedValue)
     getJson(selectedValue);
 }
 
@@ -154,6 +174,8 @@ function getLastParentId(node) {
     return null
 }
 
+//objet ticks, pour scale.
+//note: si on veut un scale linéaire et temporel if fau redéfinir invert comme x2.invert() (àtester)
 var ticks = {
     times: [],
     invert: function (d) {
@@ -171,6 +193,29 @@ var ticks = {
     length: function () {
         return this.times.length
     }
+}
+
+function tooltip(selection,html,duration=200) {
+    //affichage d'un tooltip sur la selection
+    //usage: selection.call(tooltip,"texte html" [,durée])
+    var divTooltip = d3.select("#tooltip").attr("class", "tooltip").style("opacity", 0);
+    console.log("html!",html,"select",selection)
+     return selection.on(
+         "mouseover",
+         function (d) {
+             divTooltip.transition()
+                 .duration(duration).style("opacity", .9);
+             divTooltip
+                 .html(html)
+                 .style("left", (d3.event.pageX) + "px")
+                 .style("top", (d3.event.pageY - 28) + "px");
+         }).on(
+         "mouseout",
+         "mouseout",
+         function (d) {
+             divTooltip.transition()
+                 .duration(500).style("opacity", 0);
+         });
 }
 
 function getJson(session) {
@@ -204,169 +249,25 @@ function getJson(session) {
                     //on chage pour tester: ordinal
 
                     // construction des axes
-                    actionSvg.selectAll("g.axis").attr("class",
-                        "axis axis--x").attr(
-                        "transform",
-                        "translate(0," + actionSvg.attr("height") /
-                        2 + ")").call(xAxis2);
-                    affichageSvg.selectAll("g.axis").attr("class",
-                            "axis axis--x").attr("transform",
-                            "translate(0," + (heightPpal - 20) + ")")
+                    actionSvg.selectAll("g.axis")
+                        .attr("class","axis axis--x")
+                        .attr("transform", "translate(0," + actionSvg.attr("height")/2 + ")")
+                        .call(xAxis2);
+                    affichageSvg.selectAll("g.axis")
+                        .attr("class","axis axis--x")
+                        .attr("transform","translate(0," + (heightPpal - 20) + ")")
                         .call(xAxis);
-                    //ici si besoin les modifs du rectangle de zoom
-                    /**
-                     *affichageSvg.selectAll("rect.zoom")
-                     *    .attr("class", "zoom")
-                     *    .attr("width", width)
-                     *    .attr("height", height)
-                     *    .attr("transform","translate(" + margin.left + "," +
-                     *        margin.top + ")")
-                     *    .call(zoom);
-                     **/
+                    
                     //brush
                     actionSvg.selectAll("g.brush").attr("class",
                         "brush actionNode").call(brush).call(
                         brush.move, x.range());
                     // actions dans actionSvg
-                    actionNode = actionSvg.selectAll(".actionLine")
-                        .data(actions, function (d) {
-                            return d.d3id;
-                        })
-                    actionNode
-                        .enter()
-                        .append("line")
-                        .attr("class", function (d) {
-                            return "actionLine " + d.evenement.type
-                        })
-                        .attr(
-                            "x1",
-                            function (d) {
-                                return x2(ticks
-                                    .invert(d.evenement.time))
-                            })
-                        .attr(
-                            "x2",
-                            function (d) {
-                                return x2(ticks
-                                    .invert(d.evenement.time))
-                            })
-                        .attr("y1", 0)
-                        .attr("y2", actionSvg.attr("height"))
-                        .on(
-                            "mouseover",
-                            function (d) {
-                                divTooltip.transition()
-                                    .duration(200).style(
-                                        "opacity", .9);
-                                divTooltip
-                                    .html(
-                                        d.evenement.type_display +
-                                        "<br/>" +
-                                        d.type_display +
-                                        "<br/>" +
-                                        d.evenement.time +
-                                        "(" +
-                                        ticks
-                                        .invert(d.evenement.time) +
-                                        ")")
-                                    .style(
-                                        "left",
-                                        (d3.event.pageX) +
-                                        "px")
-                                    .style(
-                                        "top",
-                                        (d3.event.pageY - 28) +
-                                        "px");
-                            }).on(
-                            "mouseout",
-                            function (d) {
-                                divTooltip.transition()
-                                    .duration(500).style(
-                                        "opacity", 0);
-                            });
-                    actionNode.exit().remove()
-                    //actions dans affichage
-                    affichageActionNode = ligneActionSvg
-                        .selectAll(".actionNode")
-                        .data(actions, function (d) {return d.d3id;})
-                    affichageActionNodeEnter=affichageActionNode
-                        .enter()
-                        .append("g").attr("class","actionNode")
-                    
-                    affichageActionNodeEnter.append("line").attr(
-                        "class",
-                        function (d) {
-                            return "actionLine " + d.evenement.type
-                        }).attr("x1", function (d) {
-                        return x(ticks.invert(d.evenement.time))
-                    }).attr("x2", function (d) {
-                        return x(ticks.invert(d.evenement.time))
-                    }).attr("y1", 0).attr("y2",
-                        affichageSvg.attr("height"))
-
-                    affichageActionNode.exit().remove()
-                    detail = ligneActionSvg
-                        .selectAll(".detail")
-                        .data(actions, function (d) {
-                            //return d.id || (d.id = ++i)
-                            //return d.evenement.id+'_'+d.id
-                            return d.d3id;
-                        });
-                    detailEnter = affichageActionNodeEnter//.selectAll(".detail")
-                        //.enter()
-                        .append("g")
-                        .attr("class", "detail")
-                        .attr("id", function (d) {
-                            return "detail_" + d.id
-                        })
-                        .on(
-                            "mouseover",
-                            function (d) {
-                                divTooltip.transition()
-                                    .duration(200).style(
-                                        "opacity", .9);
-                                divTooltip
-                                    .html(
-                                        d.evenement.type_display +
-                                        "<br/>" +
-                                        d.type_display +
-                                        "<br/>" +
-                                        d.evenement.time)
-                                    .style(
-                                        "left",
-                                        (d3.event.pageX) +
-                                        "px")
-                                    .style(
-                                        "top",
-                                        (d3.event.pageY - 28) +
-                                        "px");
-                            }).on(
-                            "mouseout",
-                            function (d) {
-                                divTooltip.transition()
-                                    .duration(500).style(
-                                        "opacity", 0);
-                            });
-
-                    detailEnter.append("rect").attr("class", function (d) {
-                        return "actionrect " + d.evenement.type
-                    }).attr("width", 100).attr("height", 20).attr(
-                        "fill", "brown")
-                    detailEnter.append("text").text(function (d) {
-                        return d.type_display
-                    }).attr("dy", 10).attr("dx", 5)
-
-                    detailEnter.attr("transform", function (d) {
-                        return "translate(" +
-                            x(ticks.invert(d.evenement.time)) +
-                            "," + affichageSvg.attr("height") +
-                            ") rotate(-90)"
-                    })
-                    detail.exit().remove()
+                    setActions(actions)
                     //préparation des scripts
                     /*
                      * 	on reconstruit les données sous la forme
-                     * 	[{time,action,commandes:[{index,scriptIt,numero,JMLid,niveau,commande}]}...]
+                     * 	[{time,action,commandes:[{index,scriptIt,numero,Jhttps://github.com/d3/d3-zoom#zoom_onMLid,niveau,commande}]}...]
                      */
                     etapes = data.etapes.map(function (d, index) {
                         a = []
@@ -405,8 +306,42 @@ function getJson(session) {
                         	.attr("id",function(d){return "ii"})    	    		
                         	.attr("width",20)
                          */
-                        etapesGroupe = etapesSvg.enter().append("g").attr(
-                            "class", "etape")
+                        zoomEtape=d3.zoom()
+                            .scaleExtent([1,1])
+                            .on("zoom",function() {
+                                //on cache le tooltip (si besoin)
+                                d3.select("#tooltip").transition().duration(100).style("opacity", 0);
+                                //on assigne le transform à l'étape correspondante (seulement en y) 
+                                etapesGroupeEnter.select("#etape_"+this.getAttribute("id"))
+                                    .attr("transform",d=>"translate(0,"+d3.event.transform.y+")")})                            
+                        etapesGroupeEnter = etapesSvg.enter()
+                            .append("svg").attr("class", "etape")
+                            .attr("width",function(d){
+                                indice=ticks.invert(d.time)
+                                return x(indice+1)-x(indice)-15 //10 à gauche, 5 à droite
+                            }).attr("height","100%").attr("transform",d=>"translate("+(x(ticks.invert(d.time)) + 10)+")")
+                        etapesGroupe=etapesGroupeEnter
+                            .append("g")
+                            .attr("id",d=>"etape_"+d.id);
+                   //ajout du rectangle de zoom 
+                    etapesGroupeEnter.append("rect")
+                        .attr("class","zoomNS")
+                        .attr("id",d=>d.id) //pour retourver l'étape g correspondante  
+                        .attr("width","100%")
+                        .attr("height","100%")
+                        .style("opacity",0.2)
+                        .style("fill","red")
+                        .call(tooltip,"Click pour pan <br/>Double click pour RAZ",2000)
+                        .call(zoomEtape)
+                        .on("dblclick.zoom",function(){
+                            etapesGroupeEnter.select("#etape_"+this.getAttribute("id"))
+                                .attr("transform",d=>"translate(0,0)")
+                        })
+                       
+                        
+                            
+                            
+                        
                     /*
                     définition des gradients
                      */
@@ -471,6 +406,7 @@ function getJson(session) {
                                 return e.commande
                             })
                     })
+                    /*
                     scriptSvg
                         .selectAll(".etape")
                         .attr(
@@ -481,10 +417,87 @@ function getJson(session) {
                                         .invert(d.time)) + 10) +
                                     ",0)"
                             })
-
+*/
                     etapesSvg.selectAll(".etape").exit().remove()
                 })
     }
+}
+function setActions(actions) {
+    //constrruit les lignes d'actions et les details
+    actionNode = actionSvg.selectAll(".actionLine")
+        .data(actions, d=>d.d3id);
+    actionNode
+        .enter()
+        .append("line")
+        .attr("class", d=>"actionLine " + d.evenement.type)
+        .attr("x1",d=> x2(ticks.invert(d.evenement.time)))
+        .attr("x2",d=>x2(ticks.invert(d.evenement.time)))
+        .attr("y1", 0)
+        .attr("y2", actionSvg.attr("height"))
+        .call(function (d) {
+            tooltip(d, d.datum().evenement.type_display +
+                "<br/>" +
+                d.datum().type_display +
+                "<br/>" +
+                d.datum().evenement.time +
+                "(" +
+                ticks
+                .invert(d.datum().evenement.time)
+            )
+        });
+
+    actionNode.exit().remove();
+    //actions dans affichage
+    affichageActionNode = ligneActionSvg
+        .selectAll(".actionNode")
+        .data(actions, d=> d.d3id);
+    affichageActionNodeEnter = affichageActionNode
+        .enter()
+        .append("g").attr("class", "actionNode");
+    affichageActionNodeEnter
+        .append("line")
+        .attr("class",d=> "actionLine " + d.evenement.type)
+        .attr("x1", d=> x(ticks.invert(d.evenement.time)))
+        .attr("x2", d=> x(ticks.invert(d.evenement.time)))
+        .attr("y1", 0)
+        .attr("y2",affichageSvg.attr("height"));
+
+    affichageActionNode.exit().remove();
+    //construction des détails (rectabnlge et texte)
+    detail = ligneActionSvg
+        .selectAll(".detail")
+        .data(actions, d=>d.d3id);
+    detailEnter = affichageActionNodeEnter
+        .append("g")
+        .attr("class", "detail")
+        .attr("id", d=>"detail_" + d.id)
+        .call(function (d) {
+            tooltip(d, d.datum().evenement.type_display +
+                "<br/>" +
+                d.datum().type_display +
+                "<br/>" +
+                d.datum().evenement.time
+            )
+        });
+    detailEnter
+        .append("rect")
+        .attr("class", d=> "actionrect " + d.evenement.type)
+        .attr("width", 100)
+        .attr("height", 20)
+        .attr("fill", "brown")
+    detailEnter
+        .append("text")
+        .text(d=> d.type_display)
+        .attr("dy", 10)
+        .attr("dx", 5)
+    //placemeent
+    detailEnter
+        .attr("transform", d=> "translate(" +
+                                x(ticks.invert(d.evenement.time)) +
+                                "," + affichageSvg.attr("height") +
+                                ") rotate(-90)"
+        );
+    detail.exit().remove();
 }
 
 function updateAffichageActions() {
@@ -513,13 +526,12 @@ function updateAffichageActions() {
                 return "translate(" + x(ticks.invert(d.evenement.time)) +
                     "," + affichageSvg.attr("height") +
                     ") rotate(-90)"
-            })
-        scriptSvg.selectAll(".etape").attr("transform", function (d) {
-            return "translate(" + (x(ticks.invert(d.time)) + 10) + ",0)"
-        })
-        scriptSvg.selectAll(".ii").attr("width", function (d) {
-            return Math.floor((Math.random() * 25) + 1);
-        })
+            })       
+        scriptSvg.selectAll(".etape") .attr("width",function(d){
+                                indice=ticks.invert(d.time)
+                                return x(indice+1)-x(indice)-15 //10 à gauche, 5 à droite
+                            }).attr("height","100%").attr("transform",d=>"translate("+(x(ticks.invert(d.time)) + 10)+")")
+        
     }
 }
 
