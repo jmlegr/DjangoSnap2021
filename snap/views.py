@@ -1456,7 +1456,7 @@ def testblock(request,id=277):
     #on récupère le block de tête
     #blockRoot=BlockSnap.newBlock(ev.scripts.all()[0],0)
     listeBlocks=objets.ListeBlockSnap()    
-    firstBlock,created=listeBlocks.addFromBlock(ev.scripts.all()[0],0, 'OPEN')#TODO: time à timer du open, et ajout autres scripts
+    firstBlock,created=listeBlocks.addFromBlock(ev.scripts.all()[0],ev.evenement.time, 'OPEN')#TODO: time à timer du open, et ajout autres scripts
     #création des liens nextblocks
     for b in created:
         if b.prevBlock is not None:
@@ -1605,10 +1605,12 @@ def testblock(request,id=277):
                                 newLastBlock.setPrevBlock(None)                         
                         
                     else:
+                        #il est droppé tout seul
                         #on ajoute le block et ses enfants
                         #listeBlocks.addFirstBlock(newNode)
                         lastBlock=listeBlocks.lastBlock(spr.blockId, a.time)
                         newLastBlock,create=listeBlocks.addFromBlock(lastBlock,time=a.time,action='dropped')
+                        newLastBlock.setParent(None)
                         lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
                         if lastPrevBlock is not None:
                             newLastPrevBlock=lastPrevBlock.copy(a.time)                            
@@ -1661,12 +1663,13 @@ def testblock(request,id=277):
                                         inputA=i
                                 if nb!=1:
                                     raise ValueError('Ce block n\'existe pas et son parent supposé a %s enfants' %nb,spr.detail,spr.parentId)
-                                #on renumérote le JMLid
-                                listeBlocks.changeJMLid(inputA.JMLid,spr.detail)
+                                #on renumérote le JMLid après avoir ajouté le lien
                                 listeBlocks.addLink(
                                     inputA.getId(),
                                     inputNode.getId(),
-                                'changed')             
+                                'changed')  
+                                listeBlocks.changeJMLid(inputA.JMLid,spr.detail)
+                                           
                             else:
                                 #c'est l'input changé
                                 listeBlocks.addLink(

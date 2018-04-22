@@ -302,11 +302,11 @@ class ListeBlockSnap:
         for i in self.links:
             source=i['source'].split('_')
             target=i['target'].split('_')
-            if source[0]==ancien:
-                i.source='%s_%s' %(nouveau,source[1])
-            if target[0]==ancien:
-                i.target='%s_%s' %(nouveau,target[1])
-                
+            if int(source[0])==ancien:
+                i['source']='%s_%s' %(nouveau,source[1])
+            if int(target[0])==ancien:
+                i['target']='%s_%s' %(nouveau,target[1])
+        pass        
         
     
                 
@@ -433,7 +433,7 @@ class ListeBlockSnap:
             le nom complet de la commande avec remplacement des %truc
         """
             
-            
+        print("temps ",time)
         resultat={}
         #on récupère la liste des blocks au temps time
         liste=self.lastListe(time, veryLast=True)
@@ -443,9 +443,12 @@ class ListeBlockSnap:
             print('Debut',d)
             try:
                 e=next(n for n in liste if n is not None and n.JMLid==d)
-                if e.prevBlock is None:
+                if e.prevBlock is None and e.parentBlock is None                :
+                    print("on traite ",e,e.parentBlock)
                     #si ce n'est plus un bloc de tête, on ne le traite pas
                     resultat[d]+=parcours(liste,e,0)
+                if e.prevBlock is None and e.parentBlock is not None:
+                    print("pas traité",e,e.parentBlock)
             except:
                 pass
             print('resultat')
@@ -672,7 +675,10 @@ class BlockSnap:
         """
         définit block comme étant le parent de self (ie self est input de block)
         """
-        block.addInput(self)
+        if block is not None:
+            block.addInput(self)
+        else:
+            self.parentBlock=None
     def replaceInput(self,block,rang=None):
         """
         remplace l'input de rang rang par le block
