@@ -5,111 +5,23 @@
     left: 0;
     height: 120px;
     width: 100%;
-    background-color: yellow;
+    background-color: beige;
 }
 #affichage {
 	position: fixed;
     top:130px;
     bottom: 110px;    
-    width: 1000px;
-    left: 50%;
-    margin-left: -500px; /* Half of the width */    
-    background-color: blue;
+    width: 100%;
+    left: 0;
+    /*margin-left: -500px; /* Half of the width */    
+    background-color: lavenderblush;
 }
 #actions {
     position: fixed;
     bottom:0;
     height: 100px;
-    width: 1000px;
-    left: 50%;
-    margin-left: -500px; /* Half of the width */   
-    background-color: Olive;
-}
-
-.zoomEW {
-  cursor: ew-resize;
-  fill: none;
-  pointer-events: visibleFill;
-}
-.zoomNS {
-  cursor: ns-resize;
-  fill: red;
-  opacity:0.2;
-  pointer-events: visibleFill;
-}
-.graph-svg-component {
-    background-color:blue;
-
-}
-
-#affichageSvg {
-	background-color:AliceBlue;
-	clip-path: url(#clip);
-}
-#actionSvg {
-	background-color:AliceBlue;
-}
-.arbre {
-	background-color: bisque;
-}
-.scripts {
-    background-color: burlywood;
-}
-.actions {
-    background-color: coral;
-}
-
-.actionLine {
-	stroke: grey;
-	stroke-width: 2;
-	pointer-events:all;
-}
-.ENV {
-	stroke:yellow;
-	fill:yellow;
-}
-.SPR {
-	stroke: red;
-	fill: red;
-}
-.EPR {
-	stroke: green;
-	fill:green;
-}
-.detail text {
-	fill: black;
-    font: 8px sans-serif;
-    pointer-events: none;
-}
-.detail rect {    
-    opacity: 0.5;
-}
-.etape .textetape {
-    font: 8px sans-serif;
-    pointer-events: none;
-}
-.groupeetape .pair {
-    fill: url(#gradientPair);
-    /*fill-opacity: 0.5;*/
-    stroke: None;
-}
-
-.groupeetape .impair {
-    fill: url(#gradientImpair);
-    /*fill-opacity: 0.5;*/
-    stroke: None;
-   
-}
-
-div.tooltip {   
-  position: absolute;           
-  text-align: center;           
-  width: 200px;                  
-  height: 28px;                 
-  padding: 2px;             
-  font: 8px sans-serif;        
-  background: lightsteelblue;   
-  border: 0px;      
-  border-radius: 8px;           
-  pointer-events: none;         
+    width: 100%;
+    left: 0;
+    /*margin-left: -500px; /* Half of the width */   
+    background-color: lightcyan;
 }

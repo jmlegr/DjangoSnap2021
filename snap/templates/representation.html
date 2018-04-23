@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 {% load static %}
-<head>
-<link rel="stylesheet" type="text/css" href="{% static 'snap/js/renduRepresentation.css' %}" >
+<head>    
+<link rel="stylesheet" type="text/css" href="{% static 'snap/js/ActionsLine.css' %}" >
+    <link rel="stylesheet" type="text/css" href="{% static 'snap/js/TreeBlocks.css' %}" >
+    <link rel="stylesheet" type="text/css" href="{% static 'snap/js/EtapeBlocks.css' %}" >
+    <link rel="stylesheet" type="text/css" href="{% static 'snap/js/renduRepresentation.css' %}" >
+
 </head>
 <body>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
@@ -27,5 +31,10 @@
   <div id="affichage"></div>
   <div id="actions"></div>
     <div id="tooltip" ></div>
+    <script src="{% static 'snap/js/DataModel.js' %}"></script>
+     <script src="{% static 'snap/js/scaleEvent.js' %}"></script>
+     <script src="{% static 'snap/js/ActionsLine.js' %}"></script>
+    <script src="{% static 'snap/js/TreeBlocks.js' %}"></script>
+    <script src="{% static 'snap/js/EtapeBlocks.js' %}"></script>
   <script src="{% static 'snap/js/renduRepresentation.js' %}"></script>
   </body>

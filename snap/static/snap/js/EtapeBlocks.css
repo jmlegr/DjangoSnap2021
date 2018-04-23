@@ -1,0 +1,50 @@
+
+/* etapes */
+.etape .textetape {
+    font: 8px sans-serif;
+    pointer-events: none;
+}
+.groupeetape .pair {
+    fill: url(#etapeGradientPair);
+    /*fill-opacity: 0.5;*/
+    stroke: None;
+}
+
+.groupeetape .impair {
+    fill: url(#etapeGradientImpair);
+    /*fill-opacity: 0.5;*/
+    stroke: None;
+   
+}
+.tousetapes {
+  opacity: 1;
+}
+.etape {
+  opacity: 0.5
+}
+.etape:hover {
+  opacity:1;
+}
+
+.etape text.label {
+  fill: black;
+  font-family: Verdana;
+  font-size: 10px;
+  text-anchor: left;
+  dominant-baseline: central;
+  cursor: move;
+  pointer-events: none;
+}
+
+ .etape rect.label {
+  fill: cadetblue;
+  opacity:1;
+}
+
+.tousetapes .zoomNS {
+  cursor: ns-resize;
+  fill: red;
+  opacity:0.0;
+  pointer-events: visibleFill;
+}
+

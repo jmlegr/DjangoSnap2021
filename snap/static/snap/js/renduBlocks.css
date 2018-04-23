@@ -1,0 +1,55 @@
+.label {
+  fill: black;
+  font-family: Verdana;
+  font-size: 8px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  cursor: move;
+  pointer-events: none;
+}
+.bloc rect {
+    cursor: pointer;
+    fill: #fff;
+    /*fill-opacity: 0.5;*/
+    stroke: #3182bd;
+    stroke-width: 1.5px;
+}
+
+.bloc text {
+    font: 8px sans-serif;
+    pointer-events: none;
+}
+
+.link {
+  stroke: #999;
+  stroke-width: 3px;
+  stroke-opacity: 1;
+}
+
+.nextblock {
+  stroke: blue;
+}
+
+.changed {
+  stroke: red;
+}
+
+.input {
+  stroke: green;
+}
+
+.replaced {
+  stroke: red;
+  stroke-dasharray: 5, 10, 5;
+}
+
+.moved {
+  stroke: green;
+  stroke-dasharray: 5, 10, 5;
+}
+.inserted{
+	fill: none;
+    stroke: blue;
+    stroke-width: 3.5px;
+    stroke-dasharray: 5, 10, 5;
+}
