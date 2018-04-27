@@ -187,7 +187,7 @@ function getJson(session) {
   	.links(data.links)
     .ticks(ticks)
     .scale(focus.scale())
-    .label(d => d.time).posx(0);  
+    .label(d => d.blockSpec?d.blockSpec:d.contenu).posx(0);  
  etapeBlocks.data(data)
     .ticks(ticks)
     .scale(focus.scale())
