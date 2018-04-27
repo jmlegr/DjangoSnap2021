@@ -399,7 +399,8 @@ function TreeBlocks(options={}) {
           })
           .attr("y1", function(d) {
            	var a= getTranslate(svg.select("#"+classScript+"s_"+d.source.time))
-            return d.source.y + barHeight / 2+a[1];
+            var b= getTranslate(svg.select("#"+classScript+"_"+d.source.idBloc))
+            return d.source.y + barHeight / 2+a[1]+b[1];
           })
           .attr("x2", function(d) {
           var clippedNode= 	d3.select("#"+classScript+"_"+d.target.idBloc)
@@ -410,7 +411,8 @@ function TreeBlocks(options={}) {
           })
           .attr("y2", function(d) {
           	var a= getTranslate(svg.select("#"+classScript+"s_"+d.target.time))      
-            return d.target.y + barHeight / 2+a[1];
+            var b= getTranslate(svg.select("#"+classScript+"_"+d.target.idBloc))            
+            return d.target.y + barHeight / 2+a[1]+b[1];
           });
         //exit
         sel.exit().remove();
