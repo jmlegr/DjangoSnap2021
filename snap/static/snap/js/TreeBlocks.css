@@ -75,7 +75,7 @@
 }
 .tousscripts .zoomNS {
   cursor: ns-resize;
-  fill: blue;
-  opacity:0.5;
+  fill: none;
+  /*opacity:0.5;*/
   pointer-events: visibleFill;
 }

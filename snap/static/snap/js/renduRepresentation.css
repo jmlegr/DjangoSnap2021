@@ -25,3 +25,16 @@
     /*margin-left: -500px; /* Half of the width */   
     background-color: lightcyan;
 }
+
+#tooltip_liste {   
+  position: absolute;           
+  text-align: center;           
+  width: 200px;                  
+  /*height: 100%;                 */
+  padding: 2px;             
+  font: 8px sans-serif;        
+  background: #a9c3a1;
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;         
+}

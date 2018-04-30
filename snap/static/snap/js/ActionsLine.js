@@ -206,10 +206,14 @@ function _getXaxisPos() {
   }
   chart.scale=function(value) {
   if (!arguments.length) return xscale;
-  xscale=value;
-  if (typeof updateActionLine === 'function') {
+  if (typeof value==="function") {
+    xscale=value;
+    if (typeof updateActionLine === 'function') {
       updateActionLine();
     }
+  } else {
+      return xscale(value);
+  }
     return chart;
   }
   chart.update=function() {

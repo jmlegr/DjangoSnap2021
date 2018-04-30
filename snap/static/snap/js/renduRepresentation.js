@@ -66,6 +66,13 @@ function initSvg() {
           .attr("cy",10)
           .attr("opacity",0.5)
         selection.on("click",function(d) {console.log("click",d)})
+        selection.on("mouseover", function(d) {         	
+          	listeDiv.transition().duration(200).style("opacity",0.9)
+            tooltipListe(d)
+         }).on("mouseout",function() {
+         	listeDiv.transition().duration(200).style("opacity",0)
+         })
+   
   }
 )
     
@@ -204,7 +211,7 @@ function getJson(session) {
  //svgTb.attr("transform","translate(0,200)")  
  var svgEt=svgFocus.append("svg")
  svgEt.call(etapeBlocks)
- svgTb.attr("transform","translate(0,"+((heightPpal-heightAxis)/2+20)+")")     
+ svgTb.attr("transform","translate(0,"+((heightPpal-heightAxis)/2)+")")     
  
 if (context.svg().select(".brush").empty()) {                
   context.svg()
@@ -231,7 +238,43 @@ if (context.svg().select(".brush").empty()) {
     }
 }
 
+var formatMillisecond = d3.timeFormat("%S.%Ls"),
+    				 formatSecond = d3.timeFormat(":%S"),
+    				 formatMinute = d3.timeFormat("%I:%M"),
+    				 formatHour = d3.timeFormat("%I %p");   
 
+function multiFormat(date) {
+  return (d3.timeSecond(date) < date ? formatMillisecond
+      : d3.timeMinute(date) < date ? formatSecond
+      : d3.timeHour(date) < date ? formatMinute:formatHour)(date)
+  }
+ var listeDiv=d3.select("body")
+  				.append("div")
+          .attr("class","tooltipListe")
+          .attr("id","tooltip_liste")
+          .style("opacity",0)
+ 
+function tooltipListe(datum) {
+       //recherche et affichage des evenments proches (barHeight)
+          var xd=focus.scale(datum.evenement.time)
+          var xd_min=xd-20,
+          		t_min=focus.scale().invert(xd_min),
+          		xd_max=xd+20,
+              t_max=focus.scale().invert(xd_max),
+              dt=datum.evenement.time-t_min;
+          var evts=focus.data().filter(e=>e.evenement.time>=t_min && e.evenement.time<=t_max)
+          var html="<h2>"+d3.timeFormat("%Mm %S.%Ls")(datum.evenement.time)+"</h2>"
+          html+="<h3>Liste des évènements de<br/> t-"+multiFormat(dt)+" à t+"+multiFormat(dt)+"</h3>"
+          evts.forEach(function(e){
+            if (e.evenement.time==datum.evenement.time)
+          			html+="<br/><b>"+e.type_display+"</b> ("+e.evenement.time+")"
+            else
+            		html+="<br/>"+e.type_display+" ("+e.evenement.time+")"
+          })
+          listeDiv.html(html)
+          				.style("left",d3.event.pageX+ "px")
+                  .style("top",d3.event.pageY-28+"px")
+  }
 
 function brushed() {	
   if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
