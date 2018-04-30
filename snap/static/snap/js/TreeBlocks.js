@@ -112,7 +112,9 @@ function TreeBlocks(options={}) {
         isracine = n.parentBlock == null || n.parentBlock.time != n.time
         isracine &= n.conteneurBlock == null || n.conteneurBlock.time != n.time
         isracine &= n.prevBlock == null || n.prevBlock.time != n.time
-        if (isracine) racines[temps].push(n)
+        if (isracine) {
+            racines[temps].push(n)            
+        }
       })
     })
     // console.log("nodes",nodes,"racine",racines)
@@ -158,7 +160,7 @@ function TreeBlocks(options={}) {
           .style("fill", color)
           .style("opacity", 0.9)         
           .append("title")
-          .text(d => d.typeMorph)
+          .text(d => d.typeMorph+"( id"+d.JMLid+" temps "+d.time+")")
         //ajout du texte
         selection.append("text")
           .attr("class", classLabel)

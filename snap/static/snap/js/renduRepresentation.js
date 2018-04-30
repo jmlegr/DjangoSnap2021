@@ -29,6 +29,7 @@ function initSvg() {
     focus = ActionsLine(options={xAxisPos: "down",width:widthPpal,xAxisHeight:50,height:heightPpal})
     etapeBlocks=EtapeBlocks({height:((heightPpal-heightAxis)/2-10)});
     treeBlocks=TreeBlocks({height:((heightPpal-heightAxis)/2-10)})
+    eprBlocks=EPRBlocks({height:((heightPpal-heightAxis)/2-10)})
     focus.detail(
 	function (selection) {
   //ajout des gradients
@@ -192,13 +193,19 @@ function getJson(session) {
     .ticks(ticks)
     .scale(focus.scale())
     .label(d => d.time).posx(0);    
+ eprBlocks.data(data.actions.filter(d=>d.evenement.type=="EPR"))
+    .ticks(data.actions.map(d=>d.evenement.time).filter(d=>d>0)) 
+    .scale(focus.scale())
+     
  var svgTb=svgFocus.append("svg")
  svgTb.call(treeBlocks)
+ svgTb.call(eprBlocks)
  //focus.svg().call(treeBlocks)                    
  //svgTb.attr("transform","translate(0,200)")  
  var svgEt=svgFocus.append("svg")
  svgEt.call(etapeBlocks)
- svgTb.attr("transform","translate(0,"+((heightPpal-heightAxis)/2+20)+")")         
+ svgTb.attr("transform","translate(0,"+((heightPpal-heightAxis)/2+20)+")")     
+ 
 if (context.svg().select(".brush").empty()) {                
   context.svg()
       .append("g")
@@ -232,9 +239,11 @@ function brushed() {
   focus.scale().domain(s.map(context.scale().invert,context.scale()))
   treeBlocks.scale().domain(s.map(context.scale().invert,context.scale()))
   etapeBlocks.scale().domain(s.map(context.scale().invert,context.scale()))
+  eprBlocks.scale().domain(s.map(context.scale().invert,context.scale()))
   focus.update();
   treeBlocks.update();
   etapeBlocks.update();
+  eprBlocks.update();
   focus.svg().select(".zoom").call(zoom.transform, d3.zoomIdentity
       .scale(focus.width() / (s[1] - s[0]))
       .translate(-s[0], 0));
@@ -247,8 +256,10 @@ function zoomed() {
   focus.update();
   treeBlocks.scale().domain(t.rescaleX(context.scale()).domain());
   treeBlocks.update();
-    etapeBlocks.scale().domain(t.rescaleX(context.scale()).domain());
+  etapeBlocks.scale().domain(t.rescaleX(context.scale()).domain());
   etapeBlocks.update();
+  eprBlocks.scale().domain(t.rescaleX(context.scale()).domain());
+  eprBlocks.update();
   context.svg().select(".brush").call(brush.move, focus.scale().range().map(t.invertX, t));
   
   
