@@ -297,10 +297,12 @@ function TreeBlocks(options={}) {
                       	.transition().duration(100)
                         .style("opacity", 0);
                      //on assigne le transform à l'étape correspondante (seulement en y)                              				
-                    svg                                        
-                    	.select("#"+classScript+"s_" +this.getAttribute("id"))                   		                      	                      
-                      .attr("transform",d => 
-                      "translate(0,"+d3.event.transform.y+")")
+                  var s=svg                                        
+                    	.select("#"+classScript+"s_" +this.getAttribute("id"));
+                    s.attr("transform",d => 
+                      "translate(0,"+d3.event.transform.y+")")                  
+                  d3.select(this.parentElement).select(".clipg rect")
+       		.attr("y",d => -getTranslate(s)[1])             
                     updateLinks()
                     })
                     
@@ -323,6 +325,7 @@ function TreeBlocks(options={}) {
           		.append("g")
              .attr("class",classScript+"s")
              .attr("id",d=>classScript+"s_"+d.key)
+            .attr("clip-path",d=>"url(#clip_"+d.key+")")
             
           // pour chaque temps, création d'un "g" par script           
           blocs.forEach(function(n) {
@@ -332,8 +335,7 @@ function TreeBlocks(options={}) {
                 .enter()
                 .append("g")
                 .attr("class",classScript)
-                .attr("id",d=>classScript+"_"+d.key)
-                .attr("clip-path",d=>"url(#clip_"+n.key+")")
+                .attr("id",d=>classScript+"_"+d.key)                
                  .on("click",function(d) {
              			//on place les scripts au premier plan                     
                   this.parentElement.appendChild(this)                 
@@ -342,11 +344,11 @@ function TreeBlocks(options={}) {
              })
                 .on("mouseenter",function(){
                 	//console.log("enter script de",n.key)
-                  d3.select(this).attr("clip-path","none" )  
+                  d3.select(this.parentElement).attr("clip-path","none" )  
                   updateLinks()
                   })
                 .on("mouseleave",function() {
-                	d3.select(this).attr("clip-path",d=>"url(#clip_"+n.key+")")
+                	d3.select(this.parentElement).attr("clip-path",d=>"url(#clip_"+n.key+")")
                   updateLinks()
                 })
               //on ajoute le Dnd
