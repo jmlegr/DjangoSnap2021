@@ -108,7 +108,7 @@ class EvenementENV(models.Model):
     type=models.CharField(max_length=6,choices=ENV_CHOICES, default='AUTRE') #type d'évènement
     click=models.BooleanField(default=False)
     key=models.BooleanField(default=False)    
-    detail=models.CharField(max_length=100,null=True,blank=True)
+    detail=models.TextField(null=True,blank=True)
     valueBool=models.NullBooleanField(null=True)
     valueInt=models.IntegerField(null=True)
     valueChar=models.CharField(max_length=30,null=True,blank=True)
@@ -253,7 +253,7 @@ class EvenementSPR(models.Model):
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
     type=models.CharField(max_length=7,choices=SPR_CHOICES, default='AUTRE') #type d'évènement    
-    detail=models.CharField(max_length=100,null=True,blank=True)
+    detail=models.TextField(null=True,blank=True)
     location=models.CharField(max_length=30,null=True,blank=True)
     #Informations sur le block    
     blockId=models.IntegerField(null=True) #JMLid du block en cause
