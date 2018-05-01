@@ -245,17 +245,29 @@ function EtapeBlocks(options={}) {
                       var  h= svg.select("#"+classEtape+"_"+this.getAttribute("id"))
                       				.node()
                               .getBBox().height //hauteur du bloc etape
+                      var ty=Math.max((y),-(h-barHeight))
                       svg                                       
                     	.select("#"+classEtape+"_"+this.getAttribute("id"))   	                      
                       .attr("transform",d => 
-                      "translate(0,"+Math.max((y),-(h-barHeight))+")")
+                      "translate(0,"+ty+")")
                      } else {
                      //le titre ne doit pas disparaitre
+                         var ty=Math.min((height-barHeight),(y))
                      svg                                       
                     	.select("#"+classEtape+"_"+this.getAttribute("id"))   	                      
                       .attr("transform",d => 
-                      "translate(0,"+Math.min((height-barHeight),(y))+")")                      
+                      "translate(0,"+ty+")")                      
                      }
+                    svg.select("#" + classEtape +"_clip_"+this.getAttribute("id")+" rect")
+                         .attr("y",-ty)
+                        
+                    //svg.                        selectAll(".tousetapes").select(clipg rect")
+          	           
+                      //  .attr("y",-ty)
+                                //return -getTranslate(d3.select(this))[1]
+                                
+                        //})
+
                     })
                     
           scriptsG          		
@@ -281,6 +293,8 @@ function EtapeBlocks(options={}) {
           	 .data(etapes,d=>d.time)
              .attr("width",d=>widthTicks(+d.time)-10)
               .attr("height",height)
+          
+                    
         svg.selectAll(".zoomNS")
           		.data(etapes,d=>d.time)     
            		.attr("width",function(d){ 
