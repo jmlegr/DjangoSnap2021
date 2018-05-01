@@ -363,7 +363,8 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
                 #c'est un block
                 nodes[b['JMLid']]={
                     'JMLid':b['JMLid'],
-                    'selector':b['selector'], 'blockSpec':'%s' % b['blockSpec'],
+                    'selector':b['selector'] if 'selector' in b else None,
+                     'blockSpec':'%s' % b['blockSpec'],
                     'typeMorph':b['typeMorph'], 
                     #TODO: pb category toujours à NONE?
                     'category':b['category'] if 'category' in b else None,
@@ -1455,13 +1456,16 @@ def testblock(request,id=277):
     #on construit les noeuds et les liens du programme initial  
     #on récupère le block de tête
     #blockRoot=BlockSnap.newBlock(ev.scripts.all()[0],0)
-    listeBlocks=objets.ListeBlockSnap()    
-    firstBlock,created=listeBlocks.addFromBlock(ev.scripts.all()[0],ev.evenement.time, 'OPEN')#TODO: time à timer du open, et ajout autres scripts
-    #création des liens nextblocks
-    for b in created:
-        if b.prevBlock is not None:
-            listeBlocks.addLink(b.prevBlock.getId(),b.getId(),'nextblock')
-    listeBlocks.addFirstBlock(firstBlock)
+    print("liste ",ev.scripts.all())
+    listeBlocks=objets.ListeBlockSnap()  
+    for script in ev.scripts.all():  
+        #firstBlock,created=listeBlocks.addFromBlock(ev.scripts.all()[0],ev.evenement.time, 'OPEN')#TODO: time à timer du open, et ajout autres scripts
+        firstBlock,created=listeBlocks.addFromBlock(script,ev.evenement.time, 'OPEN')
+        #création des liens nextblocks
+        for b in created:
+            if b.prevBlock is not None:
+                listeBlocks.addLink(b.prevBlock.getId(),b.getId(),'nextblock')
+        listeBlocks.addFirstBlock(firstBlock)
     #cyto=CytoElements.constructFrom(blockRoot)
     
     for a in actions:         

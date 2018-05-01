@@ -11,6 +11,7 @@ import re
 import time as thetime
 from builtins import StopIteration
 
+
 def aff(r,message='JSON'):
     print(message)
     print(json.dumps(r,sort_keys=True,indent=3,))
@@ -369,13 +370,7 @@ class ListeBlockSnap:
     %parms       - for an expandable list of formal parameters
     %ringparms   - the same for use inside Rings
     """
-            resultat=[]
-            nom=block.blockSpec    
-            #on cherche à remplacer les "%trucs" par les inputs        
-            txt=re.findall(r'(%\w+)',block.blockSpec)
-            repl={}
-            i=0 #rang du %truc traité
-            for e in txt:
+            def traiteElement(e,i,resultat):
                 try:
                     en=next(inp for inp in block.inputs if inp.rang==i)
                     en=self.findBlock(en, liste)
@@ -397,18 +392,46 @@ class ListeBlockSnap:
                     #print('EXCEPTION',ex)
                     repl=e
                     #print(e,'??')
-                nom=nom.replace(e,'%s' %repl,1)
-                #nom=nom.replace(e,'['+repl[e]+']',1)
-                i+=1
+                return repl
+            
+            resultat=[]
+            nom=block.blockSpec    
+            #on cherche à remplacer les "%trucs" par les inputs        
+            txt=re.findall(r'(%\w+)',block.blockSpec)            
+            repl={}
+            i=0 #rang du %truc traité
+            for e in txt:
+                if e[1:]!="words":
+                    repl=traiteElement(e,i,resultat)
+                    nom=nom.replace(e,'%s' %repl,1)                    
+                else:
+                    #linput[0] est un multiarg, on parcours les inputs de ce multiarg
+                    words=""
+                    inputs=block.inputs[0].inputs
+                    inputs.sort(key=lambda x: x.rang)
+                    for inputMulti in inputs:
+                        inputMulti=self.findBlock(inputMulti, liste)
+                        if len(inputMulti.inputs)>0:
+                            res,repl=afficheCommand(inputMulti, decal+1)
+                            repl='['+repl+']'
+                            resultat+=res                            
+                        else:
+                            repl=inputMulti.getValeur()
+                        words+="|"+repl+"|"                       
+                    nom=nom.replace(e,'%s' % words,1)
+                i+=1               
             #print('nom',nom,' résultat de niom',resultat)
             return resultat,nom
-                
+        def foo(x):
+            return x.rang
+               
         def parcours(l,block,decal=0):
             #parcours la liste du niveau decal           
             #on cherche dans la liste le block d'id JMLid
             e=next(n for n in l if n is not None and n.JMLid==block.JMLid)
             resultat=[]
             while e is not None:
+                #print(decal,"-",block.JMLid,"--",e.getNom())
                 elt={'JMLid':block.JMLid,
                      'id':e.getId(),
                      'nom':e.getNom(),
@@ -416,14 +439,18 @@ class ListeBlockSnap:
                      }
                 resultat.append(elt)       
                 res,elt['commande']=afficheCommand(e,decal)
+                #print(decal,"-",block.JMLid,"***resultat",resultat)
                 resultat+=res
+                #print(decal,"-",block.JMLid,"+++resultat",resultat)
                 #elt['children']=res                
                 nextblock=e.nextBlock
+                #print(decal,"-",block.JMLid,"---next:",e.nextBlock)
                 if nextblock is not None:
                     e=next(n for n in l if n is not None and n.JMLid==nextblock.JMLid)
                 else:
                     e=None
-            #print('resultat renvoyé par parcours',resultat)
+            #print(decal,"-",block.JMLid,'resultat renvoyé par parcours',resultat)
+            #print(decal,"-",block.JMLid,"-*-*-*-*-*-*-*-*-*")
             return resultat
         
         """ 
@@ -440,9 +467,10 @@ class ListeBlockSnap:
         #on commence par le début...
         for d in self.firstBlocks:
             resultat[d]=[]
-            print('Debut',d)
+            print('Debut',d)            
             try:
                 e=next(n for n in liste if n is not None and n.JMLid==d)
+                #print("avant traite",e,e.prevBlock,e.parentBlock,e.nextBlock)
                 if e.prevBlock is None and e.parentBlock is None                :
                     print("on traite ",e,e.parentBlock)
                     #si ce n'est plus un bloc de tête, on ne le traite pas
@@ -745,7 +773,7 @@ class BlockSnap:
         if self.contenu is not None:
             nom= "%s" % self.contenu
         elif self.blockSpec:
-            nom= "%s" %self.blockSpec
+            nom= "**%s**" %self.blockSpec
         else:
             nom= "(t)%s" % self.typeMorph
         return '%s' %(nom)
