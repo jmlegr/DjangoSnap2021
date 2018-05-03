@@ -131,7 +131,8 @@ function TreeBlocks(options={}) {
         .forEach(function(i) {
           node.lasty = t(i, dx + _decalx(node,i), node.lasty, idBloc)
         });
-      if (node.nextBlock) {
+      //on ne met le nextBlock que s'il est au même temps
+      if (node.nextBlock && node.nextBlock.time==temps) {
         node.lasty = t(node.nextBlock, dx, node.lasty, idBloc)
       }
       return node.lasty;

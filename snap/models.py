@@ -230,9 +230,10 @@ class EvenementSPR(models.Model):
         ou lors du changement d'une entrée. On pourra les retrouver ensuite.
     """
     SPR_CHOICES=(
-        ('DROP','Déplacement d\'une brique'), #si insertion, droppedTarget indiqué, location=
-        ('NEW','Création d\'une brique'),                 
-        ('DEL','Suppression d\'une brique'),
+        ('DROP','Déplacement d\'un bloc'), #si insertion, droppedTarget indiqué, location=
+        ('NEW','Création d\'une brique'),        
+        ('DUPLIC','Duplication de bloc' )  ,       
+        ('DEL','Suppression d\'un bloc'),
         ('NEWVAR','Création nouvelle variable globale'), #nom dans detail
         ('NEWVARL','Création nouvelle variable locale'), #nom dans detail
         ('DELVAR','Suppression variable'), #nom dans detail

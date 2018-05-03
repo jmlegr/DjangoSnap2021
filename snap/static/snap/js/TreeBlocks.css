@@ -57,6 +57,14 @@
   stroke: green;
 }
 
+.dupli_deb {
+  stroke: green;
+  stroke-dasharray: 5, 1;  
+}
+.dupli_fin {
+  stroke: green;
+  stroke-dasharray: 5, 1;  
+}
 .replaced {
   stroke: red;
   stroke-dasharray: 5, 1;

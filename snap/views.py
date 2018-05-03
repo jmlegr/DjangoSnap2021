@@ -1503,6 +1503,9 @@ def testblock(request,id=277):
                         newNode.rang=cible.rang 
                         #newNode.setParent(parent)
                         listeBlocks.copyLastParentBlockandReplace(cible, a.time, action, None)
+                    """tratiement suppression a voir
+                    notamment pour ne plus prendre ne compte si firstblock, ou nouveau firstblock
+                    """
                 if spr.type=='DROP':
                     if spr.location=='bottom':
                         #c'est un bloc ajouté à la suite d'un autre
@@ -1519,7 +1522,8 @@ def testblock(request,id=277):
                             newLastBlock.setPrevBlock(None)                        
                         prevBlock=listeBlocks.lastBlock(spr.targetId, a.time)
                         newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
-                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())
+                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())                        
+                        listeBlocks.addLink(lastBlock.getId(), newLastBlock.getId(),"moved")
                         listeBlocks.setNextBlock(newPrevBlock,newLastBlock,'inserted')                        
                         nextBlock=listeBlocks.lastBlock(prevBlock.nextBlock, a.time)
                         if nextBlock is not None:                        
@@ -1541,6 +1545,7 @@ def testblock(request,id=277):
                         nextBlock=listeBlocks.lastBlock(spr.targetId, a.time)
                         newNextBlock, create=listeBlocks.addFromBlock(nextBlock,time=a.time,action='inserted_%s' % spr.location)
                         listeBlocks.addLink(nextBlock.getId(), newNextBlock.getId())
+                        listeBlocks.addLink(lastBlock.getId(), newLastBlock.getId(),"moved")
                         listeBlocks.setNextBlock(newLastBlock,newNextBlock,'inserted')                        
                         prevBlock=listeBlocks.lastBlock(nextBlock.prevBlock, a.time)
                         if prevBlock is not None:                        
@@ -1564,7 +1569,8 @@ def testblock(request,id=277):
                         #le bloc précédent va pointer son nextBlock sur newNode
                         prevBlock=listeBlocks.lastBlock(spr.parentId, a.time)
                         newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
-                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())
+                        listeBlocks.addLink(prevBlock.getId(), newPrevBlock.getId())                        
+                        listeBlocks.addLink(lastBlock.getId(), newLastBlock.getId(),"moved")
                         listeBlocks.setNextBlock(newPrevBlock,newNode,'inserted')                        
                         #le wrap englobe jusqu'àla fin, donc le nextBlock est forcément None                      
                         listeBlocks.setNextBlock(newNode,None)                        
@@ -1789,7 +1795,61 @@ def testblock(request,id=277):
                     # 2) remplacer l'inputB par un InputSlotMorph inconnu
                     if spr.type=='DROPVAL':
                         listeBlocks.copyLastParentBlockandReplace(inputB, a.time, action)
-                    
+                
+            if a.type=="ENV":
+                env= a.environnement.all()[0]
+                action='ENV_%s' % env.type
+                print("ENV",env.type)
+                if env.type=="DUPLIC":
+                    #on duplique les blocs donnés (liste ancien-nouveau;ancien-nouveau; etc...)
+                    replacement={}
+                    l=[]
+                    for i in env.detail.split(";"):
+                        m=i.split("-")
+                        if (len(m)==2):
+                            print("aa",m)                        
+                            blockA=listeBlocks.lastBlock(m[0],a.time)
+                            blockB=blockA.copy(time=a.time)
+                            blockB.JMLid=int(m[1])
+                            l.append(blockA)                            
+                            replacement[int(m[0])]={'id':int(m[1]),'block':blockB}
+                    #modification des liens
+                    firstBlock=None
+                    for i in l:
+                        block=replacement[i.JMLid]["block"]
+                        if i.nextBlock is not None:
+                            block.nextBlock=replacement[i.nextBlock.JMLid]["block"]
+                        elif i.typeMorph=="CommandBlockMorph":
+                            #c'est le dernier dupliqué (hors inputs)
+                            listeBlocks.addLink(i.getId(),block.getId(),"dupli_fin")                         
+                        if i.prevBlock is not None:
+                            if i.prevBlock.JMLid in replacement:
+                                block.prevBlock=replacement[i.prevBlock.JMLid]["block"]
+                            else:
+                                #le bloc précédent ne fait pas partie de la liste dupliquée,
+                                #ce block est donc le premier
+                                listeBlocks.setFirstBlock(block)
+                                firstBlock=block   
+                                listeBlocks.addLink(i.getId(),block.getId(),"dupli_deb")                             
+                        if i.parentBlock is not None:
+                            block.parentBlock=replacement[i.parentBlock.JMLid]["block"]
+                        if i.lastModifBlock is not None:
+                            block.lastModifBlock=replacement[i.lastModifBlock.JMLid]["block"]
+                        if i.conteneurBlock is not None:
+                            block.conteneurBlock=replacement[i.conteneurBlock.JMLid]["block"] 
+                        if len(i.inputs)>0:
+                            block.inputs=[]
+                            for inp in i.inputs:
+                                block.inputs.append(replacement[inp.JMLid]["block"])
+                        if len(i.childs)>0:
+                            block.childs=[]
+                            for inp in i.childs:
+                                block.childs.append(replacement[inp.JMLid]["block"])
+                        if len(i.wraps)>0:
+                            block.wraps=[]
+                            for inp in i.wraps:
+                                block.wraps.append(replacement[inp.JMLid]["block"])
+                        listeBlocks.addBlock(block)
                     
     """
     datanodes=[{'data':n.toJson()} for n in cyto.nodes]
