@@ -258,10 +258,10 @@ class ListeBlockSnap:
                 copyLastInputs(copieInput)
         copieParent.lastModifBlock=parent
     
-    def copyLastBlock(self,block,time,action,deep=False,addToList=True):
+    def copyLastBlock(self,block,time,action,deep=False,addToList=True,withInputs=False):
         """ fait une copie du block, éventuellement progonde,
             en s'assurant qu'on copie bien la dernière version de chaque block
-            
+            si withInputs est vrai, on copie aussi les inputs (avec récursion)
         """
         def parcours(block, lastblocks):
             """
@@ -269,25 +269,40 @@ class ListeBlockSnap:
             ainsi que ses inputs/netxblocks si deep=True
             """
             if block is not None:
-                f=self.findBlock(block, lastblocks)                
+                f=self.findBlock(block, lastblocks)
+                if f!=block:
+                    block=copy.copy(f)                
                 if deep:
                     parcours(block.nextBlock,lastblocks)
                     for i in block.inputs:
                         parcours(i,lastblocks)
-                if f!=block:
-                    block=copy.copy(f)                
-                #on ajuste le temps et l'action
-                #blockC.time=time
-                #blockC.action=action                
-            
+                if withInputs:
+                    #on doit copier l'ensemble des inputs et les mettre dans un nouveau tableau
+                    #sinon les blocks justes copiés verraient un changement sur un input
+                    #répercuté sur toutes les copies
+                    newInputs=[]
+                    for i in block.inputs:        
+                        j=copy.copy(i)
+                        k=parcours(j,lastblocks)
+                        k.parentBlock=block
+                        newInputs.append(k)
+                        #block.replaceInput(k,i.rang)
+                    block.inputs=newInputs
+                               
+                    #on ajuste le temps et l'action
+                block.time=time
+                block.action=action                
+                if addToList: self.addBlock(block)
+            return block
+        
         lastblocks=self.lastListe(time)
         #on fait une copie des blocks
         copieblocks=copy.deepcopy(block) if deep else copy.copy(block)
         #on les remplace (éventuellement) par la dernière version de chaque bloc
                 
-        parcours(copieblocks,lastblocks)
+        copie=parcours(copieblocks,lastblocks)
         
-        return copieblocks
+        return copie
     
     def changeJMLid(self,ancien,nouveau):
         #remplace toutes les occurences de JMLid=ancien par nouveau
@@ -646,22 +661,17 @@ class BlockSnap:
         def modif(b):
             b.time=time
             b.action=action            
-            if b.JMLid==272:
-                print('AAAAAAAAAAAAAAAAAAAAAAa')
-                print('272:',b.toJson())
-                print('AAAAAAAAAAAAAAAAAAAAAAa')
             for i in b.inputs:
                 modif(i)
                 
         
         if deep:
             #copie profonde, mais pas de rajout dans la liste!
-            newblock=copy.deepcopy(self)
-            modif(newblock)
+            newblock=copy.deepcopy(self)            
         else:
             newblock=copy.copy(self)
-        newblock.time=time   
-        newblock.action=action
+        modif(newblock)
+                
         return newblock
             
         
@@ -707,7 +717,7 @@ class BlockSnap:
             block.addInput(self)
         else:
             self.parentBlock=None
-    def replaceInput(self,block,rang=None):
+    def replaceInput(self,block,rang=None,copy=False):
         """
         remplace l'input de rang rang par le block
         """

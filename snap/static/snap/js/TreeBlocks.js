@@ -127,6 +127,7 @@ function TreeBlocks(options={}) {
       node.y = y; //a changer pour bloc
       node.lasty = y + barHeight
       //traitement des intputs
+         if (node.time!=temps) console.log("pas normal,",node)
       node.inputs.sort((a, b) => a.rang - b.rang)
         .forEach(function(i) {
           node.lasty = t(i, dx + _decalx(node,i), node.lasty, idBloc)

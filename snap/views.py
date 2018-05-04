@@ -1515,10 +1515,11 @@ def testblock(request,id=277):
                         #si il a un precBlock, il faut le mettre à None
                         lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
                         if lastPrevBlock is not None:
-                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            #newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            newLastPrevBlock=listeBlocks.copyLastBlock(lastPrevBlock,a.time,action="bidule",withInputs=True)
                             newLastPrevBlock.setNextBlock(None)
-                            listeBlocks.addBlock(newLastPrevBlock)
-                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())                            
+                            #listeBlocks.addBlock(newLastPrevBlock)
+                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId(),"bidule")                            
                             newLastBlock.setPrevBlock(None)                        
                         prevBlock=listeBlocks.lastBlock(spr.targetId, a.time)
                         newPrevBlock, create=listeBlocks.addFromBlock(prevBlock,time=a.time,action='inserted_%s' % spr.location)
@@ -1540,7 +1541,7 @@ def testblock(request,id=277):
                             newLastPrevBlock=lastPrevBlock.copy(a.time)                            
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.addBlock(newLastPrevBlock)
-                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())
+                            listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId(),"truc")
                             newLastBlock.setPrevBlock(None)                        
                         nextBlock=listeBlocks.lastBlock(spr.targetId, a.time)
                         newNextBlock, create=listeBlocks.addFromBlock(nextBlock,time=a.time,action='inserted_%s' % spr.location)
