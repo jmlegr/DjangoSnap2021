@@ -1515,7 +1515,8 @@ def testblock(request,id=277):
                         #si il a un precBlock, il faut le mettre à None
                         lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
                         if lastPrevBlock is not None:
-                            #newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            #newLastPrevBlock=lastPrevBlock.copy(a.time)                
+                            #on copie le bloc précédent, avec ses inputs            
                             newLastPrevBlock=listeBlocks.copyLastBlock(lastPrevBlock,a.time,action="bidule",withInputs=True)
                             newLastPrevBlock.setNextBlock(None)
                             #listeBlocks.addBlock(newLastPrevBlock)
@@ -1538,7 +1539,9 @@ def testblock(request,id=277):
                         #si il a un precBlock, il faut le mettre à None
                         lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
                         if lastPrevBlock is not None:
-                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            #newLastPrevBlock=lastPrevBlock.copy(a.time)                
+                            #on copie le bloc précédent, avec ses inputs            
+                            newLastPrevBlock=listeBlocks.copyLastBlock(lastPrevBlock,a.time,action="bidule",withInputs=True)                          
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.addBlock(newLastPrevBlock)
                             listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId(),"truc")
@@ -1562,7 +1565,9 @@ def testblock(request,id=277):
                         #s'il a un précédent, il faut lemettre à None
                         lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
                         if lastPrevBlock is not None:
-                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            #newLastPrevBlock=lastPrevBlock.copy(a.time)                
+                            #on copie le bloc précédent, avec ses inputs            
+                            newLastPrevBlock=listeBlocks.copyLastBlock(lastPrevBlock,a.time,action="bidule",withInputs=True)                            
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.addBlock(newLastPrevBlock)
                             listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())
@@ -1624,12 +1629,15 @@ def testblock(request,id=277):
                         newLastBlock.setParent(None)
                         lastPrevBlock=listeBlocks.lastBlock(lastBlock.prevBlock, a.time)
                         if lastPrevBlock is not None:
-                            newLastPrevBlock=lastPrevBlock.copy(a.time)                            
+                            #newLastPrevBlock=lastPrevBlock.copy(a.time)                
+                            #on copie le bloc précédent, avec ses inputs            
+                            newLastPrevBlock=listeBlocks.copyLastBlock(lastPrevBlock,a.time,action="bidule",withInputs=True)                        
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.addBlock(newLastPrevBlock)
                             listeBlocks.addLink(lastPrevBlock.getId(),newLastPrevBlock.getId())                            
                             newLastBlock.setPrevBlock(None)                          
                         listeBlocks.setFirstBlock(newLastBlock) 
+                        listeBlocks.addLink(lastBlock.getId(),newLastBlock.getId(),'moved')
                     """
                     for c in spr.inputs.all():
                         inputNode,created=listeBlocks.addFromBlock(c,a.time,action=action)
@@ -1679,7 +1687,7 @@ def testblock(request,id=277):
                                     inputA.getId(),
                                     inputNode.getId(),
                                 'changed')  
-                                listeBlocks.changeJMLid(inputA.JMLid,spr.detail)
+                                listeBlocks.replaceJMLid(inputA.JMLid,spr.detail)
                                            
                             else:
                                 #c'est l'input changé
@@ -1780,7 +1788,7 @@ def testblock(request,id=277):
                         if nb!=1:
                             raise ValueError('Ce block n\'existe pas et son parent supposé a %s enfants' %nb,spr.detail,spr.parentId)
                         #on renumérote le JMLid
-                        listeBlocks.changeJMLid(inputA.JMLid,spr.detail)                        
+                        listeBlocks.replaceJMLid(inputA.JMLid,spr.detail)                        
                         inputB.rang=inputA.rang
                         listeBlocks.addBlock(inputA)
                         #del listeBlocks.liste[id]
@@ -1802,6 +1810,7 @@ def testblock(request,id=277):
                 action='ENV_%s' % env.type
                 print("ENV",env.type)
                 if env.type=="DUPLIC":
+                    listeBlocks.addTick(a.time) #même si ce n'est pas un SPR, on affiche quand même des blocs
                     #on duplique les blocs donnés (liste ancien-nouveau;ancien-nouveau; etc...)
                     replacement={}
                     l=[]
@@ -1809,11 +1818,17 @@ def testblock(request,id=277):
                         m=i.split("-")
                         if (len(m)==2):
                             print("aa",m)                        
-                            blockA=listeBlocks.lastBlock(m[0],a.time)
-                            blockB=blockA.copy(time=a.time)
-                            blockB.JMLid=int(m[1])
+                            blockA=listeBlocks.lastBlock(m[0],a.time,veryLast=True)
+                            if blockA.time!=a.time:
+                                #si le block n'a pas déjà été dupliqué (sans doute un input)                                
+                                blockB=listeBlocks.copyLastBlock(blockA,a.time,action="duplication",withInputs=True)  
+                            else:
+                                blockA=listeBlocks.lastBlock(m[0],a.time,veryLast=False)
+                                #blockB.JMLid=int(m[1])
+                            blockB=listeBlocks.changeJMLId(m[0],m[1], a.time)
                             l.append(blockA)                            
                             replacement[int(m[0])]={'id':int(m[1]),'block':blockB}
+                            
                     #modification des liens
                     firstBlock=None
                     for i in l:

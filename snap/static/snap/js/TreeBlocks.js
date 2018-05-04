@@ -49,7 +49,9 @@ function TreeBlocks(options={}) {
 	function xpos(node) {
   	//renvoie la position à l'échelle du node, avec décalage
     if (node && typeof node==="object") {
-    		return xscale(node.time)+node.dx
+                var a=xscale(node.time)
+                var b=a+(node.dx?node.dx:0)
+    		return xscale(node.time)+(node.dx?node.dx:0)
         }
     if (node) {
     //c'est un temps

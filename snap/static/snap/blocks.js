@@ -2644,14 +2644,16 @@ BlockMorph.prototype.userMenu = function () {
             dup.allChildren().filter(function (block) {        	
                 if (block instanceof SyntaxElementMorph) {
                     //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
-                    replace+=block.JMLid+"-";
-                    block.JMLdroppedId=null;
+                    replace+=block.JMLid+"-";                    
                     block.JMLid=objectId(block);
+                    block.JMLdroppedId=block.JMLid; //on considère qu'ils sont déjà droppés
                     replace+=block.JMLid+";";
                 }
             });
 	    sendEvenement('ENV',{type:'DUPLIC',click:true,
-		detail:replace, valueInt:myself.JMLid});
+		detail:replace, 
+		valueInt:myself.JMLid});
+	    
 	    
 	    /**
 	     * Fin Modification JML

@@ -143,6 +143,15 @@ class ListeBlockSnap:
         except:
             return None
         return e
+    def findBlockByTime(self,JMLid,temps):
+        """
+        renvoie le bloc correspondant à JMLid_temps
+        """
+        try:
+            e=next(n for n in self.liste[JMLid] if n is not None and n.time==temps)
+        except:
+            return None
+        return e
     
     def copyLastParentBlockandReplace(self,block,time,action,replacement=None):
         """ fait une copie du parent de block, ainsi que de ses inputs (recursif),
@@ -304,7 +313,7 @@ class ListeBlockSnap:
         
         return copie
     
-    def changeJMLid(self,ancien,nouveau):
+    def replaceJMLid(self,ancien,nouveau):
         #remplace toutes les occurences de JMLid=ancien par nouveau
         #et met à jour les liens
         nouveau=int(nouveau)
@@ -323,9 +332,27 @@ class ListeBlockSnap:
             if int(target[0])==ancien:
                 i['target']='%s_%s' %(nouveau,target[1])
         pass        
-        
     
-                
+    def changeJMLId(self,ancien,nouveau,time): 
+        # change le JMLid du bloc Ancien au temps time
+        # et met à jour liste et liens
+        ancien=int(ancien)
+        nouveau=int(nouveau)
+        time=int(time)
+        block=self.findBlockByTime(ancien,time)
+        if block is not None:
+            if not nouveau in self.liste: self.liste[nouveau]=[]
+            ancienId=block.getId()
+            block.JMLid=nouveau
+            self.liste[nouveau].append(block)
+            self.liste[ancien].remove(block)
+            links=[l for l in self.links if l["source"]==ancienId or l["target"]==ancienId]
+            for l in links:
+                if l["source"]==ancienId: l["source"]=block.getId()
+                if l["target"]==ancienId: l["target"]=block.getId()
+                 
+        return block
+                    
     def snapAt(self,time):
         liste=None
         def afficheCommand(block,decal=0):            
