@@ -1503,6 +1503,25 @@ def testblock(request,id=277):
                         newNode.rang=cible.rang 
                         #newNode.setParent(parent)
                         listeBlocks.copyLastParentBlockandReplace(cible, a.time, action, None)
+                    else:
+                        newCible=listeBlocks.copyLastBlock(cible,a.time,action,withInputs=True)
+                        listeBlocks.addLink(cible.getId(),newCible.getId(),'deleted')
+                        if cible.nextBlock is not None:
+                            #le block suivant devient tête de script
+                            newNextBlock=listeBlocks.copyLastBlock(cible.nextBlock,a.time,action+"_REPLACE",withInputs=True)
+                            listeBlocks.addLink(cible.nextBlock.getId(), newNextBlock.getId())
+                            newCible.setNextBlock(None)
+                            newNextBlock.setPrevBlock(None)
+                            listeBlocks.addLink(newCible.getId(),newNextBlock.getId(),"inserted")
+                            listeBlocks.setFirstBlock(newNextBlock)
+                        if cible.prevBlock is not None:
+                            newPrevBlock=listeBlocks.copyLastBlock(cible.prevBlock,a.time,action+"_REPLACE",withInputs=True)
+                            listeBlocks.addLink(cible.prevBlock.getId(), newPrevBlock.getId())
+                            newCible.setPrevBlock(None)
+                            newPrevBlock.setNextBlock(None)
+                            listeBlocks.addLink(newPrevBlock.getId(),newCible.getId(),"inserted")
+                            
+                        
                     """tratiement suppression a voir
                     notamment pour ne plus prendre ne compte si firstblock, ou nouveau firstblock
                     """

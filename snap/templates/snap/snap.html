@@ -42,7 +42,7 @@
 		  function sendJsonData(data) {
 		        var XHR = new XMLHttpRequest();
 		        //var response = {data:[{"a":1, "b":2},{"a":2, "b":2}]}
-		        console.info('data',data);
+		        console.info('data1',data);
 		        newdate=new Date();
 		        data.time=newdate.getTime()-date_debut;
 		        var string = JSON.stringify(data);
@@ -90,7 +90,7 @@
 		        enctype: 'multipart/form-data',
 		        processData: false,
 		        beforeSend: function() {
-		            console.log('Uploading...');
+		            console.log('Uploading XML...');
 		            //$('.upload-progress').show();
 		        },
 		        success: function (response) {
@@ -143,8 +143,8 @@
             dataType: 'json',
             //processData: true,
             beforeSend: function() {
-                //console.log('Uploading...',json);
-                console.log('Uploading...');
+                console.log('Uploading...',json);
+                //console.log('Uploading...');
                 //$('.upload-progress').show();
                 },
             success: function (response) {

@@ -513,10 +513,14 @@ class ListeBlockSnap:
             try:
                 e=next(n for n in liste if n is not None and n.JMLid==d)
                 #print("avant traite",e,e.prevBlock,e.parentBlock,e.nextBlock)
+                #si ce n'est plus un bloc de tête, on ne le traite pas
                 if e.prevBlock is None and e.parentBlock is None                :
                     print("on traite ",e,e.parentBlock)
-                    #si ce n'est plus un bloc de tête, on ne le traite pas
-                    resultat[d]+=parcours(liste,e,0)
+                    if e.action=="SPR_DEL": 
+                        #on ne le traite pas, il est supprimé
+                        pass
+                    else:
+                        resultat[d]+=parcours(liste,e,0)
                 if e.prevBlock is None and e.parentBlock is not None:
                     print("pas traité",e,e.parentBlock)
             except:
