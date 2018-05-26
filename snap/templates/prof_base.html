@@ -1,0 +1,6 @@
+<h1>prof base</h1>
+<h2>{{message}}</h2>
+{% for p in programmes %}
+<p>{{p.eleve.user.username}} - {{p.prg.nom}} ({{p.prg.file}})</p>
+
+{% endfor %}

@@ -1,0 +1,89 @@
+/* treeblock */
+.label {
+  fill: black;
+  font-family: Verdana;
+  font-size: 8px;
+  text-anchor: left;
+  dominant-baseline: central;
+  cursor: move;
+  pointer-events: none;
+}
+
+.bloc rect {
+  cursor: pointer;
+  fill: #fff;
+  /*fill-opacity: 0.5;*/
+  stroke: #3182bd;
+  stroke-width: 1.5px;
+}
+
+.bloc text {
+  font: 8px sans-serif;
+  pointer-events: none;
+}
+.scripts {
+  opacity: 0.5
+}
+.scripts:hover {
+  opacity:1;
+}
+.scripts:hover rect {
+  
+  stroke-dasharray: 1, 2, 1;
+  stroke:blue;
+}
+
+.script:hover rect  {
+  opacity:1;
+      stroke-dasharray: none;
+    }
+
+   
+.link {
+  stroke: #999;
+  stroke-width: 2px;
+  stroke-opacity: 1;
+}
+
+.nextblock {
+  stroke: blue;
+}
+
+.changed {
+  stroke: red;
+}
+
+.input {
+  stroke: green;
+}
+
+.dupli_deb {
+  stroke: green;
+  stroke-dasharray: 5, 1;  
+}
+.dupli_fin {
+  stroke: green;
+  stroke-dasharray: 5, 1;  
+}
+.replaced {
+  stroke: red;
+  stroke-dasharray: 5, 1;
+}
+
+.moved {
+  stroke: green;
+  stroke-dasharray: 5, 10, 5;
+}
+
+.inserted {
+  fill: none;
+  stroke: blue;
+  stroke-width: 3.5px;
+  stroke-dasharray: 5, 10, 5;
+}
+.tousscripts .zoomNS {
+  cursor: ns-resize;
+  fill: none;
+  /*opacity:0.5;*/
+  pointer-events: visibleFill;
+}

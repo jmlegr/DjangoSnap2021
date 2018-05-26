@@ -1,0 +1,58 @@
+.actionLine {
+	stroke: grey;
+	stroke-width: 2;
+	pointer-events:all;
+}
+.ENV {
+	stroke:yellow;
+	fill:yellow;
+}
+.SPR {
+	stroke: red;
+	fill: red;
+}
+.EPR {
+	stroke: green;
+	fill:green;
+}
+
+.tooltip {   
+  position: absolute;           
+  text-align: center;           
+  width: 200px;                  
+  height: 28px;                 
+  padding: 2px;             
+  font: 8px sans-serif;        
+  background: lightsteelblue;   
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;         
+}
+
+.axis--x text {
+  fill:blue;
+  font: 8px sans-serif; 
+  text-anchor:end;  
+  dominant-baseline: central;
+  transform: rotate(-35deg);
+}
+
+
+.zoom {
+  cursor: ew-resize;
+  fill: none;
+  pointer-events: visible;
+}
+.actionLine_detail {
+  cursor: pointer;
+}
+.gradient {
+   fill: url(#gradientPair);
+    /*fill-opacity: 0.5;*/
+    stroke: None;    
+}
+
+.actionLine_detail text {
+  font: 8px sans-serif;
+  dominant-baseline: central;
+}

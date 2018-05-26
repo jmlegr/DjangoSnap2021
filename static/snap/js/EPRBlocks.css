@@ -1,0 +1,8 @@
+.eprblock rect.label {
+  fill: cadetblue;
+  opacity:0.5;
+}
+.eprblock path {
+  stroke:black;
+  stroke-width:5;
+}
