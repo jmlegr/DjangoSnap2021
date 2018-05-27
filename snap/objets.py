@@ -297,8 +297,6 @@ class ListeBlockSnap:
                         newInputs.append(k)
                         #block.replaceInput(k,i.rang)
                     block.inputs=newInputs
-                    for i in block.inputs:
-                        i.setParent(block)
                     #on ajuste le temps et l'action
                 block.time=time
                 block.action=action                
