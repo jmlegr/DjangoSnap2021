@@ -11,10 +11,11 @@
 		<script type="text/javascript">
 		  var userid={{ request.user.id }};
 		  var userName="{{ request.user.username }}";
+		  var userGroup="{{request.user.groups.all.0.name}}"
 		  var csrf_token="{{ csrf_token }}";
 		  var newdate=new Date();
 		  var date_debut=newdate;
-		  console.info("csrf"+csrf_token);
+		  console.info("csrf"+csrf_token,"grup",userGroup);
 		//Test envoi
 		function sendAjaxData(data) {
                 var XHR = new XMLHttpRequest();

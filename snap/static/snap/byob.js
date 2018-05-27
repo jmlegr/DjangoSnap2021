@@ -811,11 +811,26 @@ CustomCommandBlockMorph.prototype.edit = function () {
             }
             def = rcvr.getMethod(this.blockSpec);
         }
-        Morph.prototype.trackChanges = false;
-        editor = new BlockEditorMorph(def, rcvr);
-        editor.popUp();
-        Morph.prototype.trackChanges = true;
-        editor.changed();
+        /**
+ * Modification JML (duff,  26 may 2018)
+ **/
+        //Morph.prototype.trackChanges = false;
+        //editor = new BlockEditorMorph(def, rcvr);
+        //editor.popUp();
+        //Morph.prototype.trackChanges = true;
+        //editor.changed();
+        if (userGroup=="prof") {
+            Morph.prototype.trackChanges = false;
+            editor = new BlockEditorMorph(def, rcvr);
+            editor.popUp();
+            Morph.prototype.trackChanges = true;
+            editor.changed();
+        } else {
+            alert("Pas le droit de modifer!")
+        }
+        /**
+        * fin modification JML
+        **/
     }
 };
 
