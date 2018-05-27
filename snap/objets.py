@@ -9,7 +9,7 @@ import json
 import copy
 import re
 import time as thetime
-from builtins import StopIteration
+from builtins import StopIteration, Exception
 
 
 def aff(r,message='JSON'):
@@ -297,7 +297,8 @@ class ListeBlockSnap:
                         newInputs.append(k)
                         #block.replaceInput(k,i.rang)
                     block.inputs=newInputs
-                               
+                    for i in block.inputs:
+                        i.setParent(block)
                     #on ajuste le temps et l'action
                 block.time=time
                 block.action=action                
@@ -416,7 +417,8 @@ class ListeBlockSnap:
                 try:
                     en=next(inp for inp in block.inputs if inp.rang==i)
                     en=self.findBlock(en, liste)
-                    if e[1]=='c' and e[1:]!='code':    
+                    
+                    if e[1:] in ['c','cs','cl']: #c'est une commande    
                         s=self.findBlock(en.inputs[0],liste)
                         resultat+=parcours(liste,self.findBlock(en.inputs[0], liste),decal+1)
                         repl='niveau %s' % (decal+1)                        
@@ -488,7 +490,7 @@ class ListeBlockSnap:
                 nextblock=e.nextBlock
                 #print(decal,"-",block.JMLid,"---next:",e.nextBlock)
                 if nextblock is not None:
-                    e=next(n for n in l if n is not None and n.JMLid==nextblock.JMLid)
+                    e=next(n for n in l if n is not None and n.JMLid==nextblock.JMLid)                    
                 else:
                     e=None
             #print(decal,"-",block.JMLid,'resultat renvoyé par parcours',resultat)
@@ -523,7 +525,8 @@ class ListeBlockSnap:
                         resultat[d]+=parcours(liste,e,0)
                 if e.prevBlock is None and e.parentBlock is not None:
                     print("pas traité",e,e.parentBlock)
-            except:
+            except Exception as ex:
+                print(ex)
                 pass
             print('resultat')
             for r in resultat[d]:
@@ -596,13 +599,8 @@ class ListeBlockSnap:
         elif type(block)==BlockSnap:            
             #c'est un BlockSnap inclus dans le SPR ou autre  
             #newblock=copy.deepcopy(block)
-            newblock=block.copy(time,action,deep=True)
-            if newblock.JMLid==329:
-                print('AAAAAAAAAAAAAAAAAAAAAAa')
-                print('newblock',newblock.toJson())
-                for i in block.inputs:
-                    print('i',i.toJson())
-                print('AAAAAAAAAAAAAAAAAAAAAAa')
+            #newblock=block.copy(time,action,deep=True)
+            newblock=self.copyLastBlock(block, time, action, deep=True, withInputs=True)
             parcours(newblock)
             #newblock.time=time       
             #newblock.action=action
@@ -737,7 +735,8 @@ class BlockSnap:
         """
         ajoute le block comme étant un input de self
         """
-        self.inputs.append(block)
+        if block not in self.inputs:
+            self.inputs.append(block)
         block.parentBlock=self
     
     def setParent(self,block):
