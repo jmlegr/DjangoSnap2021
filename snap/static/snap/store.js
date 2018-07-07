@@ -1908,10 +1908,23 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
 };
 
 ReporterBlockMorph.prototype.toXML = function (serializer) {
-    return this.selector === 'reportGetVar' ? serializer.format(
+    /**
+     * Modification JML (duff,  7 juil. 2018)
+     **/
+
+    /*return this.selector === 'reportGetVar' ? serializer.format(
         '<block var="@"/>',
         this.blockSpec
-    ) : this.toBlockXML(serializer);
+    ) : this.toBlockXML(serializer);*/    
+
+        return this.selector === 'reportGetVar' ? serializer.format(
+            '<block var="@" JMLid="@"/>',
+            this.blockSpec,this.JMLid,
+        ) : this.toBlockXML(serializer);
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 ReporterBlockMorph.prototype.toScriptXML = function (
@@ -1942,8 +1955,18 @@ ReporterBlockMorph.prototype.toScriptXML = function (
 CustomCommandBlockMorph.prototype.toBlockXML = function (serializer) {
     var scope = this.isGlobal ? undefined : 'local';
     return serializer.format(
-        '<custom-block s="@"%>%%%</custom-block>',
-        this.blockSpec,
+	    /**
+	     * Modification JML (duff,  7 juil. 2018)
+	     **/
+	    /*'<custom-block s="@"%>%%%</custom-block>',
+	        this.blockSpec,*/
+	    '<custom-block s="@" JMLid="@"%>%%%</custom-block>',
+	        this.blockSpec,this.JMLid
+	    /**
+	     * Fin Modification JML
+	     **/
+
+        
         this.isGlobal ?
                 '' : serializer.format(' scope="@"', scope),
         serializer.store(this.inputs()),
