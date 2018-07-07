@@ -1884,12 +1884,27 @@ BlockMorph.prototype.toXML = BlockMorph.prototype.toScriptXML = function (
 };
 
 BlockMorph.prototype.toBlockXML = function (serializer) {
+    /**
+     * Modification JML (duff,  7 juil. 2018)
+     **/
+    /*return serializer.format(
+	        '<block s="@">%%</block>',
+	        this.selector,
+	        serializer.store(this.inputs()),
+	        this.comment ? this.comment.toXML(serializer) : ''
+	    );
+	    */
     return serializer.format(
-        '<block s="@">%%</block>',
-        this.selector,
-        serializer.store(this.inputs()),
-        this.comment ? this.comment.toXML(serializer) : ''
-    );
+	        '<block s="@" JMLid="@">%%</block>',
+	        this.selector,this.JMLid,
+	        serializer.store(this.inputs()),
+	        this.comment ? this.comment.toXML(serializer) : ''
+	    );
+    /**
+     * Fin Modification JML
+     **/
+
+    
 };
 
 ReporterBlockMorph.prototype.toXML = function (serializer) {
