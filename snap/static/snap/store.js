@@ -1096,9 +1096,23 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
                 model.attributes,
                 'var'
             )) {
-            return SpriteMorph.prototype.variableBlock(
+            /**
+	     * Modification JML (duff,  7 juil. 2018)
+	     **/
+
+            /*return SpriteMorph.prototype.variableBlock(
                 model.attributes['var']
-            );
+                );*/
+            var bv=SpriteMorph.prototype.variableBlock(
+                        model.attributes['var']
+                        );
+            bv.JMLid=Number(model.attributes['JMLid'])
+            return bv;
+	    /**
+	     * Fin Modification JML
+	     **/
+
+            
         }
         /*
         // disable JavaScript functions, commented out for now
@@ -1112,6 +1126,14 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
         }
         */
         block = SpriteMorph.prototype.blockForSelector(model.attributes.s);
+        /**
+	 * Modification JML (duff,  7 juil. 2018)
+	 **/
+	block.JMLid=Number(model.attributes.JMLid)
+	/**
+	 * Fin Modification JML
+	 **/
+
         migration = SpriteMorph.prototype.blockMigrations[model.attributes.s];
         if (migration) {
             migrationOffset = migration.offset;
@@ -1961,12 +1983,10 @@ CustomCommandBlockMorph.prototype.toBlockXML = function (serializer) {
 	    /*'<custom-block s="@"%>%%%</custom-block>',
 	        this.blockSpec,*/
 	    '<custom-block s="@" JMLid="@"%>%%%</custom-block>',
-	        this.blockSpec,this.JMLid
+	        this.blockSpec,this.JMLid,
 	    /**
 	     * Fin Modification JML
-	     **/
-
-        
+	     **/        
         this.isGlobal ?
                 '' : serializer.format(' scope="@"', scope),
         serializer.store(this.inputs()),
