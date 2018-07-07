@@ -930,7 +930,7 @@ class EvenementSPROpenViewset(viewsets.ModelViewSet):
         return render(request,'liste_simple.html',{'evenements':actions,'eleve':eleve})
         #return Response(EvenementSerializer(actions,many=True).data)
                                    
-    
+
 class EvenementSPRViewset(viewsets.ModelViewSet):
     """
     API Endpoint pour EvenementENV (Evenement Changement de l'environnement)

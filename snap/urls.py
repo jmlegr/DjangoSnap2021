@@ -57,3 +57,5 @@ urlpatterns = [
 urlpatterns += [
     url(r'^', include(router.urls))
 ]
+urlpatterns += [url(r'^silk/', include('silk.urls', namespace='silk'))]
+
