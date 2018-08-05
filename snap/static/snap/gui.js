@@ -4486,7 +4486,7 @@ IDE_Morph.prototype.initIds = function() {
     recurs=function(block) {
 	
 	block.JMLdroppedId=block.JMLid
-	//console.log('>',block.JMLid,block,block.inputs(),block.nextBlock?block.nextBlock():'--');
+	console.log('>',block.JMLid,block,block.inputs(),block.nextBlock?block.nextBlock():'--');
 	var script={
 	    JMLid:block.JMLid, 
 	    typeMorph:block.constructor.name,

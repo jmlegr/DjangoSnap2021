@@ -942,9 +942,12 @@ class BlockViewSet(viewsets.ModelViewSet):
     queryset=Block.objects.all()
     serializer_class=BlockSerializer
     
+import time
 def current_datetime(request):
+    sec=20
+    time.sleep(sec)
     now = datetime.datetime.now()
-    html = "<html><body>It is now %s.</body></html>" % now
+    html = "<html><body>It is now %s (after %s seconds).</body></html>" % (now,sec)
     return HttpResponse(html)
 
 @login_required(login_url='/accounts/login/')

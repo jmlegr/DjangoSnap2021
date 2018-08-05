@@ -20,12 +20,13 @@ router.register(r'groups', views.GroupViewSet)
 router.register(r'evenement',views.EvenementViewset)
 router.register(r'epr',views.EvenementEPRViewset)
 router.register(r'env',views.EvenementENVViewset)
-router.register(r'spr',views.EvenementSPRViewset)
+#router.register(r'spr',views.EvenementSPRViewset)
+
 router.register(r'spropen',views.EvenementSPROpenViewset)
 router.register(r'spr/block',views.BlockViewSet)
 
 urlpatterns = [
-   
+    path('spr/',views.current_datetime),
     path('test',views.testsnap,name='snaptest'),    
     path('pageref',views.pageref),
      path('pagedon',views.pagedon),
