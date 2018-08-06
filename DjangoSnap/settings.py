@@ -25,7 +25,7 @@ SECRET_KEY = 'm*+du*&cs1d%sq@9dmk)tn%cgla-%c7l0dnrbj*(zo)v&972mi'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1','0.0.0.0','raspjml',
+ALLOWED_HOSTS = ['snap4gironde.local','localhost','127.0.0.1','0.0.0.0','raspjml',
                  'raspjml.local', '172.16.78.8']
 
 
