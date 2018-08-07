@@ -747,6 +747,7 @@ SnapSerializer.prototype.loadMediaModel = function (xmlNode) {
 
 SnapSerializer.prototype.loadObject = function (object, model) {
     // private
+    console.log('loadObject',model,Number(model.attributes['JMLid']))
     var blocks = model.require('blocks'),
         dispatches = model.childNamed('dispatches');
 
@@ -1098,6 +1099,7 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
             )) {
             /**
 	     * Modification JML (duff,  7 juil. 2018)
+	     * Recuperation ou affectation d'un JMLid
 	     **/
 
             /*return SpriteMorph.prototype.variableBlock(
@@ -1106,7 +1108,18 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
             var bv=SpriteMorph.prototype.variableBlock(
                         model.attributes['var']
                         );
-            bv.JMLid=Number(model.attributes['JMLid'])
+            if (Object.prototype.hasOwnProperty.call(
+        	model.attributes,
+        	'JMLid'
+            	)) {
+        	//console.log('JMLid present',model)
+        	bv.JMLid=Number(model.attributes['JMLid'])
+            } else {
+        	//console.log('XX pas JMLid',model)
+        	// ajout d'un id unique
+        	bv.JMLid=objectId(bv);  
+            }
+            
             return bv;
 	    /**
 	     * Fin Modification JML
@@ -1127,9 +1140,22 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
         */
         block = SpriteMorph.prototype.blockForSelector(model.attributes.s);
         /**
-	 * Modification JML (duff,  7 juil. 2018)
+	 * Modification JML (duff,  7 juil. 2018 et 8 aout)
+	 * Récupération du JMLid ou affectation
 	 **/
-	block.JMLid=Number(model.attributes.JMLid)
+        
+        if (Object.prototype.hasOwnProperty.call(
+        	model.attributes,
+        	'JMLid'
+            	)) {
+        	//console.log('BLOCK',model.attributes.s, ': JMLid present',model)
+        	block.JMLid=Number(model.attributes['JMLid'])
+            } else {
+        	//console.log('BLOCK',model.attributes.s,': XX pas JMLid',model)
+        	// ajout d'un id unique
+        	block.JMLid=objectId(block);  
+            }
+	
 	/**
 	 * Fin Modification JML
 	 **/
@@ -1212,6 +1238,7 @@ SnapSerializer.prototype.obsoleteBlock = function (isReporter) {
 SnapSerializer.prototype.loadInput = function (model, input, block, object) {
     // private
     var inp, val, myself = this;
+    console.log("loadinput",model,Number(model.attributes['JMLid']))
     if (isNil(input)) {
         return;
     }
@@ -1916,6 +1943,7 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
 	        this.comment ? this.comment.toXML(serializer) : ''
 	    );
 	    */
+    console.log('toBlockXMl',this,this.JMLid)
     return serializer.format(
 	        '<block s="@" JMLid="@">%%</block>',
 	        this.selector,this.JMLid,
@@ -2063,24 +2091,70 @@ ArgMorph.prototype.toXML = function () {
 };
 
 BooleanSlotMorph.prototype.toXML = function () {
-    return (typeof this.value === 'boolean') ?
+    /**
+     * Modification JML (duff,  7 août 2018)
+     **/
+    /*
+     * return (typeof this.value === 'boolean') ?
             '<l><bool>' + this.value + '</bool></l>'
                     : '<l/>';
+
+     */
+    return (typeof this.value === 'boolean') ?
+            '<l JMLid="'+this.JMLid+'"><bool>' + this.value + '</bool></l>'
+                    : '<l/>';
+
+    /**
+     * Fin Modification JML
+     **/
 
 };
 
 InputSlotMorph.prototype.toXML = function (serializer) {
     if (this.constant) {
+	/**
+	 * Modification JML (duff,  7 août 2018)
+	 **/
+/*
+ * 
         return serializer.format(
             '<l><option>$</option></l>',
             this.constant
         );
+
+ */
+
+        return serializer.format(
+            '<l JMLid="@"><option>$</option></l>',
+            this.JMLid,
+            this.constant
+        );
+	/**
+	 * Fin Modification JML
+	 **/
     }
-    return serializer.format('<l>$</l>', this.contents().text);
+    /**
+     * Modification JML (duff,  7 août 2018)
+     **/
+    //return serializer.format('<l>$</l>', this.contents().text);
+    return serializer.format('<l JMLid="@">$</l>', this.JMLid,this.contents().text);
+    /**
+     * Fin Modification JML
+     **/
+
+    
 };
 
 TemplateSlotMorph.prototype.toXML = function (serializer) {
-    return serializer.format('<l>$</l>', this.contents());
+    /**
+     * Modification JML (duff,  7 août 2018)
+     **/
+    //return serializer.format('<l>$</l>', this.contents());
+    return serializer.format('<l JMLid="@">$</l>', this.JMLid,this.contents());
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 CommandSlotMorph.prototype.toXML = function (serializer) {
