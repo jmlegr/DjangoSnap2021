@@ -1139,27 +1139,7 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
         }
         */
         block = SpriteMorph.prototype.blockForSelector(model.attributes.s);
-        /**
-	 * Modification JML (duff,  7 juil. 2018 et 8 aout)
-	 * Récupération du JMLid ou affectation
-	 **/
         
-        if (Object.prototype.hasOwnProperty.call(
-        	model.attributes,
-        	'JMLid'
-            	)) {
-        	//console.log('BLOCK',model.attributes.s, ': JMLid present',model)
-        	block.JMLid=Number(model.attributes['JMLid'])
-            } else {
-        	//console.log('BLOCK',model.attributes.s,': XX pas JMLid',model)
-        	// ajout d'un id unique
-        	block.JMLid=objectId(block);  
-            }
-	
-	/**
-	 * Fin Modification JML
-	 **/
-
         migration = SpriteMorph.prototype.blockMigrations[model.attributes.s];
         if (migration) {
             migrationOffset = migration.offset;
@@ -1221,6 +1201,25 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
         }
     }, this);
     block.cachedInputs = null;
+    /**
+     * Modification JML (duff,  8 août 2018)
+     **/
+    if (Object.prototype.hasOwnProperty.call(
+    	model.attributes,
+    	'JMLid'
+        	)) {
+    	//console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
+    	block.JMLid=Number(model.attributes['JMLid'])
+        } else {
+    	//console.log('BLOCK',model.attributes.s,model.tag,': XX pas JMLid',model)
+    	// ajout d'un id unique
+    	block.JMLid=objectId(block);  
+        }
+	
+    /**
+     * Fin Modification JML
+     **/
+
     return block;
 };
 
@@ -1238,7 +1237,7 @@ SnapSerializer.prototype.obsoleteBlock = function (isReporter) {
 SnapSerializer.prototype.loadInput = function (model, input, block, object) {
     // private
     var inp, val, myself = this;
-    console.log("loadinput",model,Number(model.attributes['JMLid']))
+    //console.log("loadinput",model,Number(model.attributes['JMLid']))
     if (isNil(input)) {
         return;
     }
