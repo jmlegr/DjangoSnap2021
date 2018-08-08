@@ -1944,8 +1944,8 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
 	    */
     console.log('toBlockXMl',this,this.JMLid)
     return serializer.format(
-	        '<block s="@" JMLid="@">%%</block>',
-	        this.selector,this.JMLid,
+	        '<block s="@" blockSpec="@" JMLid="@">%%</block>',
+	        this.selector, this.blockSpec,this.JMLid,
 	        serializer.store(this.inputs()),
 	        this.comment ? this.comment.toXML(serializer) : ''
 	    );
