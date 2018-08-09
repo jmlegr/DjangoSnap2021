@@ -33,6 +33,7 @@ class ProgrammeBase(models.Model):
     #Nom du programme de base
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
     nom=models.CharField(max_length=50,null=True,blank=True)
+    description = models.CharField(max_length=255, blank=True)
     file=models.FileField(upload_to=user_directory_path)
     creation=models.DateTimeField(auto_now_add=True)
     def __str__(self):

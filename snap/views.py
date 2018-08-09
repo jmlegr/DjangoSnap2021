@@ -983,7 +983,8 @@ def model_form_upload(request):
             if form.cleaned_data['base']:
                 #c'est un programme de base
                 instance=ProgrammeBase(nom=form.cleaned_data['nom'],
-                                       user=request.user,
+                                       description=form.cleaned_data['description'],
+                                       user=request.user,                                       
                                        file=form.cleaned_data['document'])                                
             else:
                 #c'est un document sauvegardé            

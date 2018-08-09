@@ -78,12 +78,12 @@
 		  
 		    // getCookie: https://docs.djangoproject.com/en/dev/ref/csrf/#acquiring-the-token-if-csrf-use-sessions-is-false
 		    form.append('csrfmiddlewaretoken',"{{ csrf_token }}");
-		    form.append('base',false);//base);	            
+		    form.append('base',base);	            
 		    form.append('nom',name);		    
 		    if (base) {
-			 form.append('description',name);			
+			 form.append('description',projectNotes);			
 		    } else {
-			 form.append('description',projectNotes);
+			 form.append('description',name);
 		    }
 		    var blob = new Blob([xml], { type: "text/xml"});
 		    form.append('document',blob,userName+"_"+name.replace(/\W+/g,"_")+".xml");
