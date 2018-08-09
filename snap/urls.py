@@ -25,7 +25,10 @@ router.register(r'spropen',views.EvenementSPROpenViewset)
 router.register(r'spr/block',views.BlockViewSet)
 
 urlpatterns = [
-   
+    path('prof',views.connection_prof,name='accueil_prof'),
+    path('choix_base',views.choix_base,name='choix_base'),
+    path('eleves_base',views.eleves_base),
+    path('eleve_base',views.eleve_base),
     path('test',views.testsnap,name='snaptest'),    
     path('pageref',views.pageref),
      path('pagedon',views.pagedon),

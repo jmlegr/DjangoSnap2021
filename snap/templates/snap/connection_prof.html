@@ -1,0 +1,7 @@
+{% extends "prof/base_site.html" %}
+{% load i18n static %}
+{% block content %}
+<h1>Bienvenue {{ request.user.username }}</h1>
+<h2 ><a href="{% url 'snaptest' %}" title="Cliquer pour charger Snap!">Lancer Snap!</a></h2>
+<h2 ><a href="{% url 'choix_base' %}" title="Cliquer choisir le prgramme de base des élèves">Choix du programme de base</a></h2>          
+{% endblock %}

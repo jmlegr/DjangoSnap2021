@@ -1,0 +1,50 @@
+choix des élèves
+{% with nb_eleves=eleves|length %}
+{{nb_eleves}}
+<table>
+{% for eleve in eleves %}
+{% if not forloop.counter|divisibleby:2 and forloop.counter <= nb_eleves %}
+<tr>
+{% else %}
+<th>--</th>
+{% endif %}
+    <th>
+        <div class="eleve" id="eleve_{{eleve.id}}" value={{eleve.id}}>{{eleve.user.username}}</div>
+    </th>
+    <th>
+    <select class="prg" id={{eleve.id}}>
+    {% for p in prgs %}
+        <option value={{p.id}} {% if eleve.prg == p %} selected {% endif %}>{{p.nom}} - {{p.description}}</option>
+    {% endfor %}    
+    </select>
+    </th>
+{% if forloop.counter|divisibleby:2 and forloop.counter <= nb_eleves %}
+ </tr>    
+{% endif %}
+{% endfor %}
+{% endwith %}
+</table>
+{% block messages %}
+<div id="messages">{% include 'snap/messages.html' %}</div>
+{%endblock%}
+<script type="text/javascript">
+ $(".prg").change(function() {
+     console.log('changed',this.id,this.value);
+     $.ajax({
+	       type: 'post',
+	       url: 'eleve_base',
+	       data: {
+	           'eleve_id': this.id,
+	           'prg_id' : this.value,
+	           'csrfmiddlewaretoken':'{{ csrf_token }}'
+	       },
+	       success: function(data) {
+	           $('#messages').html(data);
+	       },
+	       error: function(xhr, status, error) {
+	            // shit happens friends!
+	            console.log('error',status,error);
+	          }
+	        })    
+ });
+</script>

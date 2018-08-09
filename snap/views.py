@@ -32,11 +32,33 @@ from django.core.files.base import ContentFile
 
 import copy 
 from snap.objets import BlockSnap, CytoElements, ListeBlockSnap
+from django.contrib import messages
+from django.contrib.auth.views import logout
 
 def aff(r,message='JSON'):
     print(message)
     print(json.dumps(r,sort_keys=True,indent=3,))
 
+def connection_prof(request):
+    return render(request,'snap/connection_prof.html',{'has_permission':True})
+
+def choix_base(request):
+    classes=Classe.objects.all()
+    return render(request,'snap/choix_base.html',{'classes':classes})
+
+def eleves_base(request):
+    eleves=Eleve.objects.filter(classe=request.POST.get('id')).select_related('user','prg')
+    prgs=ProgrammeBase.objects.all()    
+    messages.add_message(request, messages.INFO, 'Classe changée' )
+    return render(request,'snap/eleves_base.html',{'eleves':eleves,'prgs':prgs})
+
+def eleve_base(request):
+    eleve=Eleve.objects.select_related('user').get(id=request.POST.get('eleve_id'))
+    prg=ProgrammeBase.objects.get(id=request.POST.get('prg_id'))
+    eleve.prg=prg
+    eleve.save()
+    messages.add_message(request, messages.INFO, 'Programme de base de l\'élève %s modifié' % eleve.user.username)
+    return render(request,'snap/messages.html')
 class UserViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
@@ -1035,15 +1057,19 @@ def return_files(request):
         return render(request,'file_user.html',{'files':fics});
     
 
+def logout_view(request):
+    logout(request)
+    return HttpResponseRedirect('/login')
+
 @login_required()
 def login_redirect(request):
     if request.user.is_authenticated:
         ugroups = request.user.groups.values_list('name', flat=True)
-        print('users',ugroups)
+        #print('users',ugroups)
         if request.user.is_superuser:
             return HttpResponseRedirect(reverse("admin:index"))
         elif "prof" in ugroups:
-            return HttpResponseRedirect(reverse("admin:index"))
+            return HttpResponseRedirect(reverse("accueil_prof"))
         elif "eleves" in ugroups:
             return HttpResponseRedirect(reverse("snaptest"))
 
