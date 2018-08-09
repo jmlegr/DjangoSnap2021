@@ -59,7 +59,7 @@ def eleve_base(request):
         #sélection vide
         prg=None
     else:
-        prg=ProgrammeBase.objects.get(prg_id)
+        prg=ProgrammeBase.objects.get(id=prg_id)
     eleve.prg=prg
     eleve.save()
     messages.add_message(request, messages.INFO, 'Programme de base de l\'élève %s modifié' % eleve.user.username)
