@@ -7,7 +7,7 @@ import datetime
 from django.contrib.auth.decorators import login_required
 import json
 from snap.models import InfoReceived, Document, Classe, Eleve, EvenementSPR
-from snap.forms import DocumentForm
+from snap.forms import DocumentForm, ExportXMLForm, ProgBaseForm
 
 from django.template.loader import render_to_string
 from django.core.files.storage import FileSystemStorage
@@ -952,7 +952,6 @@ def testsnap(request):
     return render(request,'snap/snap.html')
 
 
-
 def pageref(request):
     return render_to_response('refresh.html', {'value':'test'})
 def pagedon(request):
@@ -978,12 +977,24 @@ def simple_upload(request):
 
 def model_form_upload(request):
     if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
+        form=ExportXMLForm(request.POST, request.FILES)
+        #form = DocumentForm(request.POST, request.FILES)  
         if form.is_valid():
-            instance=form.save(commit=False)
-            instance.user=request.user
-            instance.save()
+            if form.cleaned_data['base']:
+                #c'est un programme de base
+                instance=ProgrammeBase(nom=form.cleaned_data['nom'],
+                                       user=request.user,
+                                       file=form.cleaned_data['document'])                                
+            else:
+                #c'est un document sauvegardé            
+                instance=Document(description=form.cleaned_data['description'],
+                              user=request.user,
+                              document=form.cleaned_data['document'])
+            instance.save()                
             return HttpResponse(json.dumps({'success': True,'id':instance.id}), content_type="application/json")
+        else:
+            print('form invalide',form)
+            print(form.errors)
     #else:
     #    form = DocumentForm()
     #return render(request, 'model_form_upload.html', {

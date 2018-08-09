@@ -3311,7 +3311,7 @@ IDE_Morph.prototype.projectMenu = function () {
             function () {
                 if (myself.projectName) {
                     myself.exportProjectToDjango(myself.projectName, shiftClicked);
-                } else {
+                } else {                    
                     myself.prompt('Export Project As...', function (name) {
                         myself.exportProjectToDjango(name, shiftClicked);
                     }, null, 'exportProject');
@@ -3320,7 +3320,19 @@ IDE_Morph.prototype.projectMenu = function () {
             'Sauvegarder une version du programme',
             shiftClicked ? new Color(100, 0, 0) : null
         );
-
+    if (userGroup=='prof') {
+	menu.addItem(
+		'Enregistrer comme programme de base',
+		function() {
+		    myself.promptWithDefault('Sauvegarder comme prog. de base',myself.projectName, function (name) {
+	                        myself.exportProjectToDjango(name, shiftClicked, base=true);
+	                    }, null, 'exportProjectasBase');	                
+	            },
+	            'Enregistrer comme programme de base\n avec les notes du projet',
+	            shiftClicked ? new Color(100, 0, 0) : null    
+		
+		);
+    }
     /**
      * Fin Modification JML
      **/
@@ -3878,6 +3890,7 @@ IDE_Morph.prototype.aboutSnap = function () {
     dlg.drawNew();
 };
 
+
 IDE_Morph.prototype.editProjectNotes = function () {
     var dialog = new DialogBoxMorph().withKey('projectNotes'),
         frame = new ScrollFrameMorph(),
@@ -4013,7 +4026,7 @@ IDE_Morph.prototype.rawSaveProject = function (name) {
 /**
  * Modification JML (duff,  31 déc. 2017)
  **/
-IDE_Morph.prototype.exportProjectToDjango = function (name, plain) {
+IDE_Morph.prototype.exportProjectToDjango = function (name, plain,base=false) {
     // Export project XML, saving a file to disk
     // newWindow requests displaying the project in a new tab.
     var menu, str, dataPrefix;
@@ -4022,9 +4035,10 @@ IDE_Morph.prototype.exportProjectToDjango = function (name, plain) {
         this.setProjectName(name);
         dataPrefix = 'data:text/' + plain ? 'plain,' : 'xml,';
         try {
+            //console.log('envoi',base,this.projectNotes)
             menu = this.showMessage('Sauvegarde en cours');
             str = this.serializer.serialize(this.stage);
-            UploadXML(str,name);            
+            UploadXML(str,name,this.projectNotes,base);            
             menu.destroy();
             this.showMessage('Sauvegardé!', 1);
         } catch (err) {
@@ -5993,7 +6007,23 @@ IDE_Morph.prototype.prompt = function (message, callback, choices, key) {
         choices
     );
 };
+/**
+ * Modification JML (duff,  8 août 2018)
+ **/
 
+IDE_Morph.prototype.promptWithDefault = function (message, defaultText,callback, choices, key) {
+    (new DialogBoxMorph(null, callback)).withKey(key).prompt(
+        message,
+        defaultText,
+        this.world(),
+        null,
+        choices
+    );
+};
+
+/**
+ * Fin Modification JML
+ **/
 // ProjectDialogMorph ////////////////////////////////////////////////////
 
 // ProjectDialogMorph inherits from DialogBoxMorph:
