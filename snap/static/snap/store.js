@@ -1942,7 +1942,7 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
 	        this.comment ? this.comment.toXML(serializer) : ''
 	    );
 	    */
-    console.log('toBlockXMl',this,this.JMLid)
+    //console.log('toBlockXMl',this,this.JMLid)
     return serializer.format(
 	        '<block s="@" blockSpec="@" JMLid="@">%%</block>',
 	        this.selector, this.blockSpec,this.JMLid,
