@@ -2614,15 +2614,18 @@ IDE_Morph.prototype.snapMenu = function () {
         );
     }
     /**
-     * Modification JML (duff,  6 janv. 2018)
-     **/
+     * Modification JML (duff,  9 août 2018)
+     **/    
 
-    menu.addLine();
-    menu.addItem(
-	        'Changer de mot de passe',
-	        function () {
-	            window.open(url_passwordchange, 'Snap4Gironde');
-	        });    
+    if (userGroup=='prof') {
+	menu.addLine();
+	    menu.addItem(
+		        'Changer les programmes de base',
+		        function () {
+		            window.open(url_base, 'Snap4Gironde');
+		        });
+    }
+        
     /**
      * Fin Modification JML
      **/
@@ -3328,7 +3331,7 @@ IDE_Morph.prototype.projectMenu = function () {
 	                        myself.exportProjectToDjango(name, shiftClicked, base=true);
 	                    }, null, 'exportProjectasBase');	                
 	            },
-	            'Enregistrer comme programme de base\n avec les notes du projet',
+	            'Enregistrer comme programme de base\n (avec les notes du projet)',
 	            shiftClicked ? new Color(100, 0, 0) : null    
 		
 		);
