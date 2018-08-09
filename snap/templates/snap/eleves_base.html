@@ -15,7 +15,7 @@ choix des élèves
     <select class="prg" id={{eleve.id}}>
     <option value=-1 selected>----</option>
     {% for p in prgs %}
-        <option value={{p.id}} {% if eleve.prg == p %} selected {% endif %}>{{p.nom}} - {{p.description}}</option>
+        <option value={{p.id}} title="{{p.description}}" {% if eleve.prg == p %} selected {% endif %}>{{p.nom}}</option>
     {% endfor %}    
     </select>
     </th>
