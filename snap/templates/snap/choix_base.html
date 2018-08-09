@@ -12,6 +12,7 @@
 
 <h1>Choisissez une classe:
 <select id="classe" name="classe">
+<option value="-1" selected>----</option>
 {% for classe in classes %}
 <option value={{classe.id}}><b>{{classe.nom}}</b></option>
 {% endfor %}
