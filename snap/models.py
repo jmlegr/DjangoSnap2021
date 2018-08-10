@@ -83,8 +83,8 @@ class EvenementENV(models.Model):
         ('PARAM','Clic Menu paramètres'),
         ('NEW','Nouveau programme vide'),
         ('LOBA','Chargement programme de Base'),
-        ('LOVER','Chargement d\'une version sauvegardée'),
-        ('IMPORT','Importation fichier local'),
+        ('LOVER','Chargement d\'une version sauvegardée'), # id dans detail 
+        ('IMPORT','Importation fichier local'), # normalement suivi d'un EPR  LOAD (pas encore) ou/et SPR OPEN
         ('EXPORT','Exportation fichier local'),        
         ('FULL','Plein écran'),
         ('APP','Ecran application'),
@@ -170,7 +170,7 @@ class EvenementEPR(SnapProcess):
     """
     EPR_CHOICES=(
         ('NEW','Nouveau programme vide'),
-        ('LOAD','Programme chargé'),
+        ('LOAD','Programme chargé'), # id dans detail si LOVER, nom du prg de base si LOBA
         ('SAVE','Programme sauvegardé'),
         ('START','Lancement'),
         ('STOP','Arrêt'), #arrêt manuel

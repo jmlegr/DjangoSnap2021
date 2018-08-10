@@ -3218,6 +3218,9 @@ IDE_Morph.prototype.projectMenu = function () {
             	        'Remplacer le projet actuel par le programme de base?',
             	        'Charger le programme',
             	        function () {
+            	            	//envoi de l'evemenent
+            	            	sendEvenement('ENV',{type:'LOBA'})
+            	            	//requete du fichier
             	        	$.ajax({
                                 type: "GET",
                                 url: "fichier",
@@ -3262,6 +3265,9 @@ IDE_Morph.prototype.projectMenu = function () {
     			    	"Charger":function () {
     			    		file_id=$("input[name=file]:checked" ).val();
     		            	if (file_id) {
+    		            	    	//envoi de l'evenement
+    		            	    	sendEvenement('ENV',{type:'LOVER',detail:file_id});
+    					//requete du fichier
     		            		$.ajax({
     		            			type: "GET",
     		            			url: "fichier/" + file_id,
@@ -3366,6 +3372,15 @@ IDE_Morph.prototype.projectMenu = function () {
                     document.body.removeChild(inp);
                     myself.filePicker = null;
                     world.hand.processDrop(inp.files);
+                    /**
+		     * Modification JML (duff,  10 août 2018)
+		     **/
+                    sendEvenement('ENV',{type:'IMPORT'});
+		    /**
+		     * Fin Modification JML
+		     **/
+
+                    
                 },
                 false
             );
@@ -3974,6 +3989,14 @@ IDE_Morph.prototype.newProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
+    /**
+     * Modification JML (duff,  10 août 2018)
+     **/
+    sendEvenement('EPR',{type:'NEW'})
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 IDE_Morph.prototype.save = function () {
@@ -4609,7 +4632,7 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
     /**
      * Modification JML (duff,  7 janv. 2018)
      **/
-
+    sendEvenement('EPR',{type:'LOAD'})
     this.initIds();    
     /**
      * Fin Modification JML
@@ -5269,7 +5292,19 @@ IDE_Morph.prototype.createNewProject = function () {
     this.confirm(
         'Replace the current project with a new one?',
         'New Project',
-        function () {myself.newProject(); }
+        /**
+	 * Modification JML (duff,  10 août 2018)
+	 **/
+        //function () {myself.newProject(); }
+        function () {
+            sendEvenement('ENV',{type:'NEW'});            
+            myself.newProject(); 
+            }
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
     );
 };
 
