@@ -1959,15 +1959,17 @@ BlockMorph.prototype.toXML = BlockMorph.prototype.toScriptXML = function (
 
     if (savePosition) {
         xml = serializer.format(
-            '<script x="@" y="@" JMLid="@">',
+            '<script x="@" y="@" JMLid="@" typemorph="@">',
             position.x / scale,
             position.y / scale,
-            block.parent.JMLid
+            block.parent?block.parent.JMLid:'',
+            block.parent?block.parent.constructor.name:''
         );
     } else {
         xml = serializer.format(
-        	'<script JMLid="@">',
-        	block.parent.JMLid
+        	'<script JMLid="@" typemorph="@">',
+        	block.parent?block.parent.JMLid:'',
+        	block.parent?block.parent.constructor.name:''
         );
     }
 
@@ -1997,8 +1999,8 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
 	    */
     //console.log('toBlockXMl',this,this.JMLid)
     return serializer.format(
-	        '<block s="@" blockSpec="@" JMLid="@">%%</block>',
-	        this.selector, this.blockSpec,this.JMLid,
+	        '<block s="@" blockSpec="@" JMLid="@" typemorph="@">%%</block>',
+	        this.selector, this.blockSpec,this.JMLid, this.constructor.name,
 	        serializer.store(this.inputs()),
 	        this.comment ? this.comment.toXML(serializer) : ''
 	    );
@@ -2020,8 +2022,8 @@ ReporterBlockMorph.prototype.toXML = function (serializer) {
     ) : this.toBlockXML(serializer);*/    
 
         return this.selector === 'reportGetVar' ? serializer.format(
-            '<block var="@" JMLid="@"/>',
-            this.blockSpec,this.JMLid,
+            '<block var="@" JMLid="@" typemorph="@"/>',
+            this.blockSpec,this.JMLid, this.constructor.name,
         ) : this.toBlockXML(serializer);
     /**
      * Fin Modification JML
@@ -2062,8 +2064,8 @@ CustomCommandBlockMorph.prototype.toBlockXML = function (serializer) {
 	     **/
 	    /*'<custom-block s="@"%>%%%</custom-block>',
 	        this.blockSpec,*/
-	    '<custom-block s="@" JMLid="@"%>%%%</custom-block>',
-	        this.blockSpec,this.JMLid,
+	    '<custom-block s="@" JMLid="@" typemorph="@"%>%%%</custom-block>',
+	        this.blockSpec,this.JMLid,this.constructor.name,
 	    /**
 	     * Fin Modification JML
 	     **/        
@@ -2153,7 +2155,7 @@ BooleanSlotMorph.prototype.toXML = function () {
 
      */
     return (typeof this.value === 'boolean') ?
-            '<l JMLid="'+this.JMLid+'"><bool>' + this.value + '</bool></l>'
+            '<l JMLid="'+this.JMLid+'" typemorph="'+this.constructor.name+'"><bool>' + this.value + '</bool></l>'
                     : '<l/>';
 
     /**
@@ -2177,8 +2179,8 @@ InputSlotMorph.prototype.toXML = function (serializer) {
  */
 
         return serializer.format(
-            '<l JMLid="@"><option>$</option></l>',
-            this.JMLid,
+            '<l JMLid="@" typemorph="@"><option>$</option></l>',
+            this.JMLid,this.constructor.name,
             this.constant
         );
 	/**
@@ -2189,7 +2191,9 @@ InputSlotMorph.prototype.toXML = function (serializer) {
      * Modification JML (duff,  7 août 2018)
      **/
     //return serializer.format('<l>$</l>', this.contents().text);
-    return serializer.format('<l JMLid="@">$</l>', this.JMLid,this.contents().text);
+    return serializer.format('<l JMLid="@" typemorph="@">$</l>', 
+	    this.JMLid,this.constructor.name,
+	    this.contents().text);
     /**
      * Fin Modification JML
      **/
@@ -2202,7 +2206,9 @@ TemplateSlotMorph.prototype.toXML = function (serializer) {
      * Modification JML (duff,  7 août 2018)
      **/
     //return serializer.format('<l>$</l>', this.contents());
-    return serializer.format('<l JMLid="@">$</l>', this.JMLid,this.contents());
+    return serializer.format('<l JMLid="@" typemorph="@">$</l>', 
+	    this.JMLid,this.constructor.name,
+	    this.contents());
     /**
      * Fin Modification JML
      **/
@@ -2237,8 +2243,8 @@ MultiArgMorph.prototype.toXML = function (serializer) {
     */
 
     return serializer.format(
-        '<list JMLid="@">%</list>',
-        this.JMLid,
+        '<list JMLid="@" typemorph="@">%</list>',
+        this.JMLid,this.constructor.name,
         serializer.store(this.inputs())
     );
     /**
