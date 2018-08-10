@@ -747,7 +747,7 @@ SnapSerializer.prototype.loadMediaModel = function (xmlNode) {
 
 SnapSerializer.prototype.loadObject = function (object, model) {
     // private
-    console.log('loadObject',model,Number(model.attributes['JMLid']))
+    //console.log('loadObject',model,Number(model.attributes['JMLid']))
     var blocks = model.require('blocks'),
         dispatches = model.childNamed('dispatches');
 
@@ -1112,10 +1112,10 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
         	model.attributes,
         	'JMLid'
             	)) {
-        	//console.log('JMLid present',model)
+        	console.log('JMLid present',model)
         	bv.JMLid=Number(model.attributes['JMLid'])
             } else {
-        	//console.log('XX pas JMLid',model)
+        	console.log('XX pas JMLid',model)
         	// ajout d'un id unique
         	bv.JMLid=objectId(bv);  
             }
@@ -1208,10 +1208,10 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
     	model.attributes,
     	'JMLid'
         	)) {
-    	//console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
+    	console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
     	block.JMLid=Number(model.attributes['JMLid'])
         } else {
-    	//console.log('BLOCK',model.attributes.s,model.tag,': XX pas JMLid',model)
+    	console.log('BLOCK',model.attributes.s,model.tag,': XX pas JMLid',model)
     	// ajout d'un id unique
     	block.JMLid=objectId(block);  
         }
@@ -1237,7 +1237,7 @@ SnapSerializer.prototype.obsoleteBlock = function (isReporter) {
 SnapSerializer.prototype.loadInput = function (model, input, block, object) {
     // private
     var inp, val, myself = this;
-    //console.log("loadinput",model,Number(model.attributes['JMLid']))
+    console.log("loadinput",model,Number(model.attributes['JMLid']))
     if (isNil(input)) {
         return;
     }
@@ -1278,6 +1278,25 @@ SnapSerializer.prototype.loadInput = function (model, input, block, object) {
             // be necessary, but apparently is after retina support
             // was added.
             input.setContents(this.loadValue(model));
+            /**
+	     * Modification JML (duff,  10 août 2018)
+	     **/
+            if (Object.prototype.hasOwnProperty.call(
+        	    	model.attributes,
+        	    	'JMLid'
+        	        	)) {
+        	    	console.log('INPUT',model.attributes.s, model.tag,': JMLid present',model)
+        	    	input.JMLid=Number(model.attributes['JMLid'])
+        	        } else {
+        	            //ça ne devrait plus arriver
+        	    	console.log('INPUT',model.attributes.s,model.tag,': XX pas JMLid',model)
+        	    	// ajout d'un id unique
+        	    	input.JMLid=objectId(input);  
+        	        }
+	    /**
+	     * Fin Modification JML
+	     **/
+
         }
     }
 };
@@ -1912,6 +1931,10 @@ BlockMorph.prototype.toXML = BlockMorph.prototype.toScriptXML = function (
     }
 
     // save my position to xml
+    /**
+     * Modification JML (duff,  10 août 2018)
+     **/
+    /*
     if (savePosition) {
         xml = serializer.format(
             '<script x="@" y="@">',
@@ -1921,6 +1944,25 @@ BlockMorph.prototype.toXML = BlockMorph.prototype.toScriptXML = function (
     } else {
         xml = '<script>';
     }
+    */
+
+    if (savePosition) {
+        xml = serializer.format(
+            '<script x="@" y="@" JMLid="@">',
+            position.x / scale,
+            position.y / scale,
+            block.parent.JMLid
+        );
+    } else {
+        xml = serializer.format(
+        	'<script JMLid="@">',
+        	block.parent.JMLid
+        );
+    }
+
+    /**
+     * Fin Modification JML
+     **/
 
     // recursively add my next blocks to xml
     do {
