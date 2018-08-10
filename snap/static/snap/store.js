@@ -747,7 +747,7 @@ SnapSerializer.prototype.loadMediaModel = function (xmlNode) {
 
 SnapSerializer.prototype.loadObject = function (object, model) {
     // private
-    console.log('loadObject',model,Number(model.attributes['JMLid']))
+    //console.log('loadObject',model,Number(model.attributes['JMLid']))
     var blocks = model.require('blocks'),
         dispatches = model.childNamed('dispatches');
 
@@ -1115,7 +1115,8 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
         	//console.log('JMLid present',model)
         	bv.JMLid=Number(model.attributes['JMLid'])
             } else {
-        	//console.log('XX pas JMLid',model)
+        	//ça ne devrait plus arriver
+        	console.log('XX pas JMLid',model)
         	// ajout d'un id unique
         	bv.JMLid=objectId(bv);  
             }
@@ -1211,7 +1212,8 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
     	//console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
     	block.JMLid=Number(model.attributes['JMLid'])
         } else {
-    	//console.log('BLOCK',model.attributes.s,model.tag,': XX pas JMLid',model)
+            //ça ne devrait plus arriver
+    	console.log('BLOCK',model.attributes.s,model.tag,': XX pas JMLid',model)
     	// ajout d'un id unique
     	block.JMLid=objectId(block);  
         }
@@ -1267,6 +1269,15 @@ SnapSerializer.prototype.loadInput = function (model, input, block, object) {
             );
         });
         input.fixLayout();
+        /**
+	 * Modification JML (duff,  10 août 2018)
+	 **/
+        input.JMLid=Number(model.attributes['JMLid'])
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
     } else if (model.tag === 'block' || model.tag === 'custom-block') {
         block.silentReplaceInput(input, this.loadBlock(model, true, object));
     } else if (model.tag === 'color') {
@@ -1278,6 +1289,25 @@ SnapSerializer.prototype.loadInput = function (model, input, block, object) {
             // be necessary, but apparently is after retina support
             // was added.
             input.setContents(this.loadValue(model));
+            /**
+	     * Modification JML (duff,  10 août 2018)
+	     **/
+            if (Object.prototype.hasOwnProperty.call(
+        	    	model.attributes,
+        	    	'JMLid'
+        	        	)) {
+        	    	//console.log('INPUT',model.attributes.s, model.tag,': JMLid present',model)
+        	    	input.JMLid=Number(model.attributes['JMLid'])
+        	        } else {
+        	            //ça ne devrait plus arriver
+        	    	console.log('INPUT',model.attributes.s,model.tag,': XX pas JMLid',model)
+        	    	// ajout d'un id unique
+        	    	input.JMLid=objectId(input);  
+        	        }
+	    /**
+	     * Fin Modification JML
+	     **/
+
         }
     }
 };
@@ -1912,6 +1942,10 @@ BlockMorph.prototype.toXML = BlockMorph.prototype.toScriptXML = function (
     }
 
     // save my position to xml
+    /**
+     * Modification JML (duff,  10 août 2018)
+     **/
+    /*
     if (savePosition) {
         xml = serializer.format(
             '<script x="@" y="@">',
@@ -1921,6 +1955,25 @@ BlockMorph.prototype.toXML = BlockMorph.prototype.toScriptXML = function (
     } else {
         xml = '<script>';
     }
+    */
+
+    if (savePosition) {
+        xml = serializer.format(
+            '<script x="@" y="@" JMLid="@">',
+            position.x / scale,
+            position.y / scale,
+            block.parent.JMLid
+        );
+    } else {
+        xml = serializer.format(
+        	'<script JMLid="@">',
+        	block.parent.JMLid
+        );
+    }
+
+    /**
+     * Fin Modification JML
+     **/
 
     // recursively add my next blocks to xml
     do {
@@ -2173,10 +2226,25 @@ CommandSlotMorph.prototype.toXML = function (serializer) {
 FunctionSlotMorph.prototype.toXML = CommandSlotMorph.prototype.toXML;
 
 MultiArgMorph.prototype.toXML = function (serializer) {
+    /**
+     * Modification JML (duff,  10 août 2018)
+     **/
+    /*
     return serializer.format(
         '<list>%</list>',
         serializer.store(this.inputs())
     );
+    */
+
+    return serializer.format(
+        '<list JMLid="@">%</list>',
+        this.JMLid,
+        serializer.store(this.inputs())
+    );
+    /**
+     * Fin Modification JML
+     **/
+
 };
 
 ArgLabelMorph.prototype.toXML = function (serializer) {
