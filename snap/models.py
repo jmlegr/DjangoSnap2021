@@ -130,7 +130,8 @@ class EvenementENV(models.Model):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
     class Meta:
-        ordering=('-evenement__creation',)
+        ordering=('-evenement__time',)
+        get_latest_by=['evenement__time',]
 
 class SnapProcess(models.Model):
     """
@@ -203,7 +204,8 @@ class EvenementEPR(SnapProcess):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
     class Meta:
-        ordering=('-evenement__creation',)
+        ordering=('-evenement__time',)
+        get_latest_by=['evenement__time',]
 
 class BlockInput(models.Model):
     """
@@ -284,7 +286,8 @@ class EvenementSPR(models.Model):
         return res
     
     class Meta:
-        ordering=('-evenement__creation',)
+        ordering=('-evenement__time',)
+        get_latest_by=['evenement__time',]
 
 class Block(models.Model):
     """
