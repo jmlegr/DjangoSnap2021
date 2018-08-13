@@ -1209,7 +1209,7 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
     	model.attributes,
     	'JMLid'
         	)) {
-    	console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
+    	//console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
     	block.JMLid=Number(model.attributes['JMLid'])
         } else {
             //ça ne devrait plus arriver
@@ -1239,7 +1239,7 @@ SnapSerializer.prototype.obsoleteBlock = function (isReporter) {
 SnapSerializer.prototype.loadInput = function (model, input, block, object) {
     // private
     var inp, val, myself = this;
-    console.log("loadinput",model.tag,Number(model.attributes['JMLid']))
+    //console.log("loadinput",model.tag,Number(model.attributes['JMLid']))
     if (isNil(input)) {
         return;
     }
