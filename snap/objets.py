@@ -12,7 +12,7 @@ import time as thetime
 from builtins import StopIteration, Exception
 from django.utils.datetime_safe import datetime
 
-def JMLID(self,block):
+def JMLID(block):
     """
     renvoie le JMLid, que block soit un blockSnap/Block/BlockInput, un dict ou une chaine/entier
     return string
@@ -866,7 +866,7 @@ class ListeBlockSnap:
         return j
     
     def addFromXML(self,item):
-        print('item',item.tag,item.items())
+        #print('item',item.tag,item.items())
         if item.tag=='block':
             block=BlockSnap(item.get('JMLid'),0,item.get('typemorph'))
             if 'var' in item.attrib:
@@ -931,16 +931,21 @@ class ListeBlockSnap:
             if jmlid=='':
                 #pas de jmlid, c'est un bloc de tete
                 jmlid='SCRIPT_%s' % datetime.now().timestamp()
-                block=BlockSnap(jmlid,0,item.get('typemorph'))
+                #si pas de typeMorph, c'est que ce n'est pas un script
+                #donc une variable ou opérateur etc
+                block=BlockSnap(jmlid,0,item.get('typemorph','NoScriptsMorph'))
                 self.addFirstBlock(block)
             else:
                 block=BlockSnap(jmlid,0,item.get('typemorph'))
+                self.addBlock(block)
             prevblock=None
             for b in item.findall('block'):
                 child=self.addFromXML(b)
                 if prevblock is not None:
-                    self.setNextBlock(prevblock,child)                
-                prevblock=child
+                    self.setNextBlock(prevblock,child)
+                else:
+                    block.addInput(child)                
+                prevblock=child                
                 block.addWrappedBlock(child)
                 #TODO: liste.addWrappedBlock(block,child)
             return block
