@@ -901,7 +901,6 @@ class ListeBlockSnap:
                     rang+=1
                 elif e not in ['%clockwise','%counterclockwise','%greenflag']:
                     #un seul input
-                    print('le e:',e)
                     inp=self.addFromXML(item.getchildren()[rang])
                     inp.rang=rang
                     block.addInput(inp);                
@@ -920,7 +919,6 @@ class ListeBlockSnap:
             block=BlockSnap(item.get('JMLid'),0,item.get('typemorph'))
             if len(item.getchildren())>0:
                 #si c'est une 'option'
-                print('item L',item.getchildren())
                 block.contenu=item.getchildren()[0].text
             else:
                 block.contenu=item.text
