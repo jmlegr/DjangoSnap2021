@@ -6983,9 +6983,14 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    inputs= new Array();
     	    t.forEach(function(input,i) {    	
     	    	//console.log('inupt'+input,i,t.indexOf(input));
-    	    	//console.log('->',input,input.contents?input.contents().text:'**',input.evaluate());  			
+    	    	//console.log('->',input,input.contents?input.contents().text:'**',input.evaluate());
+    		isColor=(input.constructor.name=="ColorSlotMorph")
     		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
-    		    contenu:input.contents?input.contents().text:null,
+    		    contenu:input.contents?input.contents().text:
+    				isColor?(input.color.r+","
+    					+input.color.g+','
+    					+input.color.b+","
+    					+input.color.a):null,
     		    rang:t.indexOf(input),
     		    isNumeric:input.isNumeric,
     		    isPredicate:input.isPredicate});
@@ -10533,6 +10538,7 @@ ColorSlotMorph.prototype.getUserColor = function () {
             this.fontSize * 16,
             this.fontSize * 10
         ));
+    
     world.add(pal);
     pal.setPosition(this.bottomLeft().add(new Point(0, this.edge)));
 
@@ -10554,6 +10560,22 @@ ColorSlotMorph.prototype.getUserColor = function () {
 
     hand.processMouseUp = function () {
         pal.destroy();
+        /**
+	 * Modification JML (duff,  13 août 2018)
+	 **/
+	if (myself.parent && myself.parent.JMLdroppedId) {
+	    //c'est une modification 
+	    var scripts = myself.parentThatIsA(ScriptsMorph);
+	    record={};
+	    record.lastDroppedBlock=myself.parentThatIsA(BlockMorph);
+	    record.action='valeur';
+	    record.detailAction=myself.JMLid;
+	    var donnee=new scripts.donnee(record);
+	}
+	/**
+	 * Fin Modification JML
+	 **/
+
         hand.processMouseMove = mouseMoveBak;
         hand.processMouseDown = mouseDownBak;
         hand.processMouseUp = mouseUpBak;
