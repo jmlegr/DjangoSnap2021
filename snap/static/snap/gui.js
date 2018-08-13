@@ -4538,14 +4538,19 @@ IDE_Morph.prototype.initIds = function() {
 	if (block.inputs && block.inputs()) {
 	    var inputs= new Array();
 	    var inputsBlock=new Array();
-	    block.inputs().forEach(function(input) {    				
-    		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
-    		    contenu:input.contents?input.contents().text:null,
+	    block.inputs().forEach(function(input) {
+		isColor=(input.constructor.name=="ColorSlotMorph") 
+		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
+    		    contenu:input.contents?input.contents().text:
+    				isColor?(input.color.r+','
+    					+input.color.g+','
+    					+input.color.b+','
+    					+input.color.a):null,
     		    rang:block.inputs().indexOf(input),
     		    isNumeric:input.isNumeric,
     		    isPredicate:input.isPredicate}
     		);
-    		if (input instanceof InputSlotMorph) {
+    		if (input instanceof InputSlotMorph || input instanceof ColorSlotMorph) {
     		    //console.log ("input normal");
     		} else {
     		    //console.log("input "+input.constructor.name,input.inputs()[0]);
