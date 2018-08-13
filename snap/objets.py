@@ -891,14 +891,6 @@ class ListeBlockSnap:
                     inp.rang=rang
                     block.addInput(inp);                
                     rang+=1                
-                elif e=='%clr':
-                    #c'est une couleur (voir pour créer un JMLid et modifs), ici on met un JMLid timestamp
-                    inp=BlockSnap('%s' % datetime.now().timestamp(),0,"color")
-                    inp.contenu=item.find('color').text                
-                    self.addBlock(inp)
-                    inp.rang=rang
-                    block.addInput(inp);                
-                    rang+=1
                 elif e not in ['%clockwise','%counterclockwise','%greenflag']:
                     #un seul input
                     inp=self.addFromXML(item.getchildren()[rang])
@@ -914,6 +906,7 @@ class ListeBlockSnap:
                 block_in=self.addFromXML(inp)
                 block_in.rang=rang
                 block.addInput(block_in)
+            self.addBlock(block)
             return block
         elif item.tag=='l':
             block=BlockSnap(item.get('JMLid'),0,item.get('typemorph'))
@@ -922,6 +915,11 @@ class ListeBlockSnap:
                 block.contenu=item.getchildren()[0].text
             else:
                 block.contenu=item.text
+            self.addBlock(block)
+            return block
+        elif item.tag=='color':
+            block=BlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            block.contenu=item.text
             self.addBlock(block)
             return block
         elif item.tag=='script':            

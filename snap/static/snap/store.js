@@ -1209,7 +1209,7 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter, object) {
     	model.attributes,
     	'JMLid'
         	)) {
-    	//console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
+    	console.log('BLOCK',model.attributes.s, model.tag,': JMLid present',model)
     	block.JMLid=Number(model.attributes['JMLid'])
         } else {
             //ça ne devrait plus arriver
@@ -1239,11 +1239,19 @@ SnapSerializer.prototype.obsoleteBlock = function (isReporter) {
 SnapSerializer.prototype.loadInput = function (model, input, block, object) {
     // private
     var inp, val, myself = this;
-    //console.log("loadinput",model,Number(model.attributes['JMLid']))
+    console.log("loadinput",model.tag,Number(model.attributes['JMLid']))
     if (isNil(input)) {
         return;
     }
     if (model.tag === 'script') {
+	/**
+	 * Modification JML (duff,  13 août 2018)
+	 **/
+	input.JMLid=Number(model.attributes['JMLid'])
+	/**
+	 * Fin Modification JML
+	 **/
+
         inp = this.loadScript(model, object);
         if (inp) {
             input.add(inp);
@@ -1282,6 +1290,14 @@ SnapSerializer.prototype.loadInput = function (model, input, block, object) {
         block.silentReplaceInput(input, this.loadBlock(model, true, object));
     } else if (model.tag === 'color') {
         input.setColor(this.loadColor(model.contents));
+        /**
+	 * Modification JML (duff,  13 août 2018)
+	 **/
+        input.JMLid=Number(model.attributes['JMLid'])
+	/**
+	 * Fin Modification JML
+	 **/
+
     } else {
         val = this.loadValue(model);
         if (!isNil(val) && !isNil(input) && input.setContents) {
@@ -2261,6 +2277,10 @@ ArgLabelMorph.prototype.toXML = function (serializer) {
 };
 
 ColorSlotMorph.prototype.toXML = function (serializer) {
+    /**
+     * Modification JML (duff,  13 août 2018)
+     **/
+    /*
     return serializer.format(
         '<color>$,$,$,$</color>',
         this.color.r,
@@ -2268,6 +2288,20 @@ ColorSlotMorph.prototype.toXML = function (serializer) {
         this.color.b,
         this.color.a
     );
+    */
+
+    return serializer.format(
+        '<color JMLid="@" typemorph="@">$,$,$,$</color>',
+        this.JMLid,this.constructor.name,
+        this.color.r,
+        this.color.g,
+        this.color.b,
+        this.color.a
+    );
+
+    /**
+     * Fin Modification JML
+     **/
 };
 
 // Values
