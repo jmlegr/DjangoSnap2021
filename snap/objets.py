@@ -10,22 +10,237 @@ import copy
 import re
 import time as thetime
 from builtins import StopIteration, Exception
+from django.utils.datetime_safe import datetime
 
+def JMLID(self,block):
+    """
+    renvoie le JMLid, que block soit un blockSnap/Block/BlockInput, un dict ou une chaine/entier
+    return string
+    """
+    if block is None:
+        return None        
+    if type(block)==dict:
+        JMLid=block['JMLid'] if 'JMLid' in block else None
+    elif type(block) in [BlockSnap,models.Block,models.BlockInput]:
+        JMLid=block.JMLid        
+    else:
+        #on a passé l'id            
+        JMLid=block
+    return '%s' % JMLid
 
 def aff(r,message='JSON'):
     print(message)
     print(json.dumps(r,sort_keys=True,indent=3,))
 
+class BlockSnap:
+    """
+    Objet Block pour un temps donné
+    le JMLid est forcé en string
+    """    
+    def __init__(self,JMLid,time,typeMorph,
+               blockSpec=None,
+               selector=None,
+               category=None,
+               action=None
+               ):
+        self.JMLid='%s' % JMLid    #JMLid du bloc, forcé en string
+        self.time=time  #temps (Snap) de création du bloc        
+        self.typeMorph=typeMorph
+        self.blockSpec=blockSpec #BlockSpec du bloc
+        self.selector=selector
+        self.category=category # toujours à null, à vérifier ou supprimer?
+        self.action=action #type d'action concernant ce block (type evenement+valeur)       
+        self.nextBlock=None      # block suivant (BlockSnap) s'il existe
+        self.prevBlock=None      # block précédent s'il existe
+        self.parentBlock=None    # block parent s'il existe (ie ce block est un input du parent
+        self.lastModifBlock=None      # block temporellement précédent si une modification a eu lieu
+        self.rang=None           # rang du block dans les inputs de son parent
+        self.conteneurBlock=None # block conteneur s'il existe (ie ce block est "wrapped"    
+        self.inputs=[]           # liste des blocks inputs
+        self.childs=[]           # liste des blocks enfants 
+        self.wraps=[]            # liste des blocks contenus
+        self.contenu=None        # contenu du block(ie la valeur pour un InputSlotMorph)
+        #print('BLOCK %s_%s: %s (%s) créé' % (self.JMLid,self.time,self.typeMorph,self.action))
+    
+    def getId(self):
+        return '%s_%s' % (self.JMLid,self.time)
+    @classmethod
+    def getJMLid(cls,block):
+        """ renvoi le JMLid (string) correspondant à au block ou à l'id passée"""
+        if type(block)==dict or type(block)==BlockSnap:
+            return JMLID(block)            
+        return block.split('_',1)[0]
+    
+    
+    
+    def copy(self,time,action='',deep=False):
+        """ renvoie une copie du BlockSnap,        
+        """
+        def modif(b):
+            b.time=time
+            b.action=action            
+            for i in b.inputs:
+                modif(i)
+                
+        
+        if deep:
+            #copie profonde, mais pas de rajout dans la liste!
+            newblock=copy.deepcopy(self)            
+        else:
+            newblock=copy.copy(self)
+        modif(newblock)
+                
+        return newblock
+            
+        
+    def setNextBlock(self,nextBlock):
+        """ définit le bloc nextBlock comme étant le suivant 
+        (et modifie le prevBlock de nextblock)
+        """
+        self.nextBlock=nextBlock
+        if nextBlock is not None:
+            nextBlock.prevBlock=self
+    def setPrevBlock(self,prevBlock):
+        """ définit le bloc prevBlock comme étant le précédent 
+        (et modifie le nextBlock de prevblock)
+        """
+        self.prevBlock=prevBlock
+        if prevBlock is not None:
+            prevBlock.nextBlock=self
+            
+    def addWrappedBlock(self,block):
+        """
+        ajoute le block comme étant contenu dans self
+        """
+        self.wraps.append(block)
+        block.conteneurBlock=self
+    
+    def setConteneur(self,block):    
+        """
+        définit le block comme étant le conteneur de self
+        """
+        block.addWrappedBlock(self)
+    def addInput(self,block):
+        """
+        ajoute le block comme étant un input de self
+        """
+        if block not in self.inputs:
+            self.inputs.append(block)
+        block.parentBlock=self
+    
+    def setParent(self,block):
+        """
+        définit block comme étant le parent de self (ie self est input de block)
+        """
+        if block is not None:
+            block.addInput(self)
+        else:
+            self.parentBlock=None
+    def replaceInput(self,block,rang=None,copy=False):
+        """
+        remplace l'input de rang rang par le block
+        """
+        if rang is None:
+            rang=block.rang
+        print('replace',self.inputs,' par ',block, 'rang ',rang)
+        
+        try:
+            inputChanged=next((i for i in self.inputs if i.rang==rang))            
+        except StopIteration as s:
+            print( s,block.toJson(),rang)
+            raise 
+        self.inputs.remove(inputChanged)
+        block.rang=rang
+        self.addInput(block)
+        
+    def toJson(self):                
+        j={}
+        j['id']=self.getId()
+        j['JMLid']=self.JMLid    #JMLid du bloc,
+        j['time']=self.time  #temps (Snap) de création du bloc
+        j['typeMorph']=self.typeMorph
+        j['blockSpec']=self.blockSpec #BlockSpec du bloc
+        j['selector']=self.selector
+        j['category']=self.category # toujours à null, à vérifier ou supprimer?       
+        j['rang']=self.rang
+        j['contenu']=self.contenu
+        """
+        j['nextBlock']=self.nextBlock.toJson() if self.nextBlock is not None else None
+        j['prevBlock']=self.prevBlock.toJson() if self.prevBlock is not None else None
+        j['parentBlock']=self.parentBlock.toJson() if self.parentBlock is not None else None
+        j['conteneurBlock']=self.conteneurBlock.toJson() if self.conteneurBlock is not None else None
+        """
+        j['nextBlock']=self.nextBlock.getId()   if self.nextBlock is not None else None
+        j['prevBlock']=self.prevBlock.getId() if self.prevBlock is not None else None
+        j['parentBlock']=self.parentBlock.getId() if self.parentBlock is not None else None
+        j['lastModifBlock']=self.lastModifBlock.getId() if self.lastModifBlock is not None else None
+        j['conteneurBlock']=self.conteneurBlock.getId() if self.conteneurBlock is not None else None
+        j['action']=self.action      
+        j['inputs']=[]           # liste des blocks inputs
+        j['name']=self.getNom()
+        for i in sorted(self.inputs,key=lambda inp: inp.rang):
+            j['inputs'].append(i.getId())            
+        return j
+        #self.childs=[]           # liste des blocks enfants 
+        #self.wraps=[]            # liste des blocks contenus
+        #self.contenu=None        # co
+        
+    def getNom(self):
+        if self.rang is not None:
+            rang=" (rang %s)" % self.rang
+        else:
+            rang=''
+        if self.contenu:
+            nom= "(c)%s" % self.contenu
+        elif self.blockSpec:
+            nom= "(s)%s" %self.blockSpec
+        else:
+            nom= "(t)%s" % self.typeMorph
+        return '%s%s' %(nom,rang)  
+    
+    def getValeur(self):
+        if self.contenu is not None:
+            nom= "%s" % self.contenu
+        elif self.blockSpec:
+            nom= "**%s**" %self.blockSpec
+        else:
+            nom= "(t)%s" % self.typeMorph
+        return '%s' %(nom)
+    
+    def aff(self,indent=0):
+        for i in self.__dict__:
+            print(' '*indent,'%s: %s' % (i,self.__dict__[i]))            
+        if self.inputs:
+            print(' '*indent,'INPUTS:')
+            for i in self.inputs:
+                i.aff(indent+2)
+                print(' '*indent,'---')
+        if self.nextBlock:
+            print(' '*indent,'NEXTBLOCK:',self.nextBlock.JMLid)
+            self.nextBlock.aff(indent)
+            
+    def __str__(self):
+        if self.rang is not None:
+            rang=" (rang %s)" % self.rang
+        else:
+            rang=''
+        return "%s_%s: %s%s (%s)" % (self.JMLid,self.time,self.getNom(),rang,self.action)
+    def __repr__(self):
+        return self.__str__()
+
 class ListeBlockSnap:
     """
     liste des blockSnap au fil du temps
     sous la forme {JMLid: [{block tempsx},{block temps y}....]}
+    Les JMLid sont des strings
     """
     def __init__(self):
         self.liste={}
         self.ticks=[0,] #liste des temps d'action
         self.firstBlocks=[] #premiers blocks des scripts
         self.links=[] #liens nextblocks, forme {source:id,target:id,type:string}
+        
+    
         
     def addTick(self,time):
         if time not in self.ticks:
@@ -107,13 +322,7 @@ class ListeBlockSnap:
     @classmethod
     def lastBlockFromListe(cls,liste,block,time,veryLast=False, exact=False):
         #print('liste',[i for i in liste])
-        if block is None:
-            return None        
-        if type(block)==dict or type(block)==BlockSnap:
-            JMLid=block.JMLid        
-        else:
-            #on a passé l'id            
-            JMLid=int(block)
+        JMLid=JMLID(block)
         if JMLid in liste:
             bs=[n for n in liste[JMLid] 
                     if (n.time==time if exact 
@@ -136,19 +345,31 @@ class ListeBlockSnap:
     
     def findBlock(self,block,liste):
         """
-        renvoie le block de la liste (ie de même JMLid)
+        renvoie le block de la liste donnée(ie de même JMLid),         
         """
+        JMLid=JMLID(block)
         try:
-            e=next(n for n in liste if n is not None and n.JMLid==block.JMLid)
+            e=next(n for n in liste if n is not None and n.JMLid==JMLid)
         except:
             return None
         return e
-    def findBlockByTime(self,JMLid,temps):
+    
+    def findBlocks(self,block):
+        """
+        renvoie la liste des blocks JMLid (ie les modifications au cours du temps
+        """
+        JMLid=JMLID(block)        
+        if JMLid in self.liste:
+            return self.liste[JMLid]
+        return []
+    
+    def findBlockByTime(self,block,temps):
         """
         renvoie le bloc correspondant à JMLid_temps
         """
+        JMLid=JMLID(block)
         try:
-            e=next(n for n in self.liste[JMLid] if n is not None and n.time==temps)
+            e=next(n for n in self.liste['%s' % JMLid] if n is not None and n.time==temps)
         except:
             return None
         return e
@@ -315,7 +536,8 @@ class ListeBlockSnap:
     def replaceJMLid(self,ancien,nouveau):
         #remplace toutes les occurences de JMLid=ancien par nouveau
         #et met à jour les liens
-        nouveau=int(nouveau)
+        ancien='%s' % ancien
+        nouveau='%s' % nouveau
         #on verifie si quelque chose a déjà été créé
         if not nouveau in self.liste: self.liste[nouveau]=[]
         for i in self.liste[ancien]:
@@ -326,17 +548,17 @@ class ListeBlockSnap:
         for i in self.links:
             source=i['source'].split('_')
             target=i['target'].split('_')
-            if int(source[0])==ancien:
+            if source[0]==ancien:
                 i['source']='%s_%s' %(nouveau,source[1])
-            if int(target[0])==ancien:
+            if target[0]==ancien:
                 i['target']='%s_%s' %(nouveau,target[1])
         pass        
     
     def changeJMLId(self,ancien,nouveau,time): 
         # change le JMLid du bloc Ancien au temps time
         # et met à jour liste et liens
-        ancien=int(ancien)
-        nouveau=int(nouveau)
+        ancien='%s' % ancien
+        nouveau='%s' % nouveau
         time=int(time)
         block=self.findBlockByTime(ancien,time)
         if block is not None:
@@ -355,12 +577,12 @@ class ListeBlockSnap:
     def snapAt(self,time):
         liste=None
         def afficheCommand(block,decal=0):            
-            """
+            """ (voir dans blocks.js)
         %br     - user-forced line break
     %s      - white rectangular type-in slot ("string-type")
     %txt    - white rectangular type-in slot ("text-type")
     %mlt    - white rectangular type-in slot ("multi-line-text-type")
-    %code   - white rectangular type-in slot, monospaced font
+    %code   - white rectangular type-in slot, monospaced font -> pour JS et codemapping
     %n      - white roundish type-in slot ("numerical")
     %dir    - white roundish type-in slot with drop-down for directions
     %inst   - white roundish type-in slot with drop-down for instruments
@@ -642,200 +864,86 @@ class ListeBlockSnap:
                 #j[JMLid].append(n.toJson())
                 j.append(n.toJson())
         return j
-class BlockSnap:
-    """
-    Objet Block
-    """    
-    def __init__(self,JMLid,time,typeMorph,
-               blockSpec=None,
-               selector=None,
-               category=None,
-               action=None
-               ):
-        self.JMLid=JMLid    #JMLid du bloc,
-        self.time=time  #temps (Snap) de création du bloc        
-        self.typeMorph=typeMorph
-        self.blockSpec=blockSpec #BlockSpec du bloc
-        self.selector=selector
-        self.category=category # toujours à null, à vérifier ou supprimer?
-        self.action=action #type d'action concernant ce block (type evenement+valeur)       
-        self.nextBlock=None      # block suivant (BlockSnap) s'il existe
-        self.prevBlock=None      # block précédent s'il existe
-        self.parentBlock=None    # block parent s'il existe (ie ce block est un input du parent
-        self.lastModifBlock=None      # block temporellement précédent si une modification a eu lieu
-        self.rang=None           # rang du block dans les inputs de son parent
-        self.conteneurBlock=None # block conteneur s'il existe (ie ce block est "wrapped"    
-        self.inputs=[]           # liste des blocks inputs
-        self.childs=[]           # liste des blocks enfants 
-        self.wraps=[]            # liste des blocks contenus
-        self.contenu=None        # contenu du block(ie la valeur pour un InputSlotMorph)
-        #print('BLOCK %s_%s: %s (%s) créé' % (self.JMLid,self.time,self.typeMorph,self.action))
     
-    def getId(self):
-        return '%s_%s' % (self.JMLid,self.time)
-    @classmethod
-    def getJMLid(cls,block):
-        """ renvoi le JMLid correspondant à au block ou à l'id passée"""
-        if type(block)=='dict':
-            return block.JMLid            
-        return int(block.split('_',1)[0])
-    
-    
-    
-    def copy(self,time,action='',deep=False):
-        """ renvoie une copie du BlockSnap,        
-        """
-        def modif(b):
-            b.time=time
-            b.action=action            
-            for i in b.inputs:
-                modif(i)
-                
-        
-        if deep:
-            #copie profonde, mais pas de rajout dans la liste!
-            newblock=copy.deepcopy(self)            
-        else:
-            newblock=copy.copy(self)
-        modif(newblock)
-                
-        return newblock
+    def addFromXML(self,item):
+        print('item',item.tag,item.items())
+        if item.tag=='block':
+            block=BlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            if 'var' in item.attrib:
+                block.contenu=item.get('var')
+                self.addBlock(block)
+                return block
             
-        
-    def setNextBlock(self,nextBlock):
-        """ définit le bloc nextBlock comme étant le suivant 
-        (et modifie le prevBlock de nextblock)
-        """
-        self.nextBlock=nextBlock
-        if nextBlock is not None:
-            nextBlock.prevBlock=self
-    def setPrevBlock(self,prevBlock):
-        """ définit le bloc prevBlock comme étant le précédent 
-        (et modifie le nextBlock de prevblock)
-        """
-        self.prevBlock=prevBlock
-        if prevBlock is not None:
-            prevBlock.nextBlock=self
-            
-    def addWrappedBlock(self,block):
-        """
-        ajoute le block comme étant contenu dans self
-        """
-        self.wraps.append(block)
-        block.conteneurBlock=self
-    
-    def setConteneur(self,block):    
-        """
-        définit le block comme étant le conteneur de self
-        """
-        block.addWrappedBlock(self)
-    def addInput(self,block):
-        """
-        ajoute le block comme étant un input de self
-        """
-        if block not in self.inputs:
-            self.inputs.append(block)
-        block.parentBlock=self
-    
-    def setParent(self,block):
-        """
-        définit block comme étant le parent de self (ie self est input de block)
-        """
-        if block is not None:
-            block.addInput(self)
-        else:
-            self.parentBlock=None
-    def replaceInput(self,block,rang=None,copy=False):
-        """
-        remplace l'input de rang rang par le block
-        """
-        if rang is None:
-            rang=block.rang
-        print('replace',self.inputs,' par ',block, 'rang ',rang)
-        
-        try:
-            inputChanged=next((i for i in self.inputs if i.rang==rang))            
-        except StopIteration as s:
-            print( s,block.toJson(),rang)
-            raise 
-        self.inputs.remove(inputChanged)
-        block.rang=rang
-        self.addInput(block)
-        
-    def toJson(self):                
-        j={}
-        j['id']=self.getId()
-        j['JMLid']=self.JMLid    #JMLid du bloc,
-        j['time']=self.time  #temps (Snap) de création du bloc
-        j['typeMorph']=self.typeMorph
-        j['blockSpec']=self.blockSpec #BlockSpec du bloc
-        j['selector']=self.selector
-        j['category']=self.category # toujours à null, à vérifier ou supprimer?       
-        j['rang']=self.rang
-        j['contenu']=self.contenu
-        """
-        j['nextBlock']=self.nextBlock.toJson() if self.nextBlock is not None else None
-        j['prevBlock']=self.prevBlock.toJson() if self.prevBlock is not None else None
-        j['parentBlock']=self.parentBlock.toJson() if self.parentBlock is not None else None
-        j['conteneurBlock']=self.conteneurBlock.toJson() if self.conteneurBlock is not None else None
-        """
-        j['nextBlock']=self.nextBlock.getId()   if self.nextBlock is not None else None
-        j['prevBlock']=self.prevBlock.getId() if self.prevBlock is not None else None
-        j['parentBlock']=self.parentBlock.getId() if self.parentBlock is not None else None
-        j['lastModifBlock']=self.lastModifBlock.getId() if self.lastModifBlock is not None else None
-        j['conteneurBlock']=self.conteneurBlock.getId() if self.conteneurBlock is not None else None
-        j['action']=self.action      
-        j['inputs']=[]           # liste des blocks inputs
-        j['name']=self.getNom()
-        for i in sorted(self.inputs,key=lambda inp: inp.rang):
-            j['inputs'].append(i.getId())            
-        return j
-        #self.childs=[]           # liste des blocks enfants 
-        #self.wraps=[]            # liste des blocks contenus
-        #self.contenu=None        # co
-        
-    def getNom(self):
-        if self.rang is not None:
-            rang=" (rang %s)" % self.rang
-        else:
-            rang=''
-        if self.contenu:
-            nom= "(c)%s" % self.contenu
-        elif self.blockSpec:
-            nom= "(s)%s" %self.blockSpec
-        else:
-            nom= "(t)%s" % self.typeMorph
-        return '%s%s' %(nom,rang)  
-    
-    def getValeur(self):
-        if self.contenu is not None:
-            nom= "%s" % self.contenu
-        elif self.blockSpec:
-            nom= "**%s**" %self.blockSpec
-        else:
-            nom= "(t)%s" % self.typeMorph
-        return '%s' %(nom)
-    
-    def aff(self,indent=0):
-        for i in self.__dict__:
-            print(' '*indent,'%s: %s' % (i,self.__dict__[i]))            
-        if self.inputs:
-            print(' '*indent,'INPUTS:')
-            for i in self.inputs:
-                i.aff(indent+2)
-                print(' '*indent,'---')
-        if self.nextBlock:
-            print(' '*indent,'NEXTBLOCK:',self.nextBlock.JMLid)
-            self.nextBlock.aff(indent)
-            
-    def __str__(self):
-        if self.rang is not None:
-            rang=" (rang %s)" % self.rang
-        else:
-            rang=''
-        return "%s_%s: %s%s (%s)" % (self.JMLid,self.time,self.getNom(),rang,self.action)
-    def __repr__(self):
-        return self.__str__()
+            #c'est un ['CommandBlockMorph', 'HatBlockMorph','ReporterBlockMorph'] avec blockSpec
+            block.blockSpec=item.get('blockSpec')
+            params=re.findall(r'(%\w+)',block.blockSpec)
+            rang=0
+            for e in params:
+                if e in ['%inputs','%words','%exp','%scriptvars','%parms']:
+                    #on a ttend un multiArgMorph
+                    inp=self.addFromXML(item.getchildren()[rang])
+                    inp.rang=rang
+                    block.addInput(inp);                
+                    rang+=1
+                elif e in ['%c','%cs','%cl']:
+                    #on attend un Cslotmorph(commandes)
+                    inp=self.addFromXML(item.getchildren()[rang])
+                    inp.rang=rang
+                    block.addInput(inp);                
+                    rang+=1                
+                elif e=='%clr':
+                    #c'est une couleur (voir pour créer un JMLid et modifs), ici on met un JMLid timestamp
+                    inp=BlockSnap('%s' % datetime.now().timestamp(),0,"color")
+                    inp.contenu=item.find('color').text                
+                    self.addBlock(inp)
+                    inp.rang=rang
+                    block.addInput(inp);                
+                    rang+=1
+                elif e not in ['%clockwise','%counterclockwise','%greenflag']:
+                    #un seul input
+                    print('le e:',e)
+                    inp=self.addFromXML(item.getchildren()[rang])
+                    inp.rang=rang
+                    block.addInput(inp);                
+                    rang+=1
+            self.addBlock(block)
+            return block   
+        elif item.tag=='list':
+            block=BlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            # récupération des inputs
+            for rang,inp in enumerate(item.getchildren()):
+                block_in=self.addFromXML(inp)
+                block_in.rang=rang
+                block.addInput(block_in)
+            return block
+        elif item.tag=='l':
+            block=BlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            if len(item.getchildren())>0:
+                #si c'est une 'option'
+                print('item L',item.getchildren())
+                block.contenu=item.getchildren()[0].text
+            else:
+                block.contenu=item.text
+            self.addBlock(block)
+            return block
+        elif item.tag=='script':            
+            jmlid=item.get('JMLid','')
+            if jmlid=='':
+                #pas de jmlid, c'est un bloc de tete
+                jmlid='SCRIPT_%s' % datetime.now().timestamp()
+                block=BlockSnap(jmlid,0,item.get('typemorph'))
+                self.addFirstBlock(block)
+            else:
+                block=BlockSnap(jmlid,0,item.get('typemorph'))
+            prevblock=None
+            for b in item.findall('block'):
+                child=self.addFromXML(b)
+                if prevblock is not None:
+                    self.setNextBlock(prevblock,child)                
+                prevblock=child
+                block.addWrappedBlock(child)
+                #TODO: liste.addWrappedBlock(block,child)
+            return block
 
 class CytoNode:
     """
