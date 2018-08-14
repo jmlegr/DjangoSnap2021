@@ -35,6 +35,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('snap/',include('snap.urls')),
     path('login/',snap.views.login_redirect),
+    path('logout/',snap.views.logout_view,name='logout'),
     path(r'',auth_views.LoginView.as_view()),
          #RedirectView.as_view(url='/accounts/login/')),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

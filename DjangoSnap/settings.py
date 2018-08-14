@@ -25,7 +25,7 @@ SECRET_KEY = 'm*+du*&cs1d%sq@9dmk)tn%cgla-%c7l0dnrbj*(zo)v&972mi'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1','0.0.0.0','raspjml',
+ALLOWED_HOSTS = ['snap4gironde.local','localhost','127.0.0.1','0.0.0.0','raspjml',
                  'raspjml.local', '172.16.78.8']
 
 
@@ -61,7 +61,10 @@ INSTALLED_APPS = [
     
     'snap.apps.SnapConfig', 
     'rest_framework',
+    'silk',
 ]
+SILKY_PYTHON_PROFILER = True
+SILKY_PYTHON_PROFILER_BINARY = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -71,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'silk.middleware.SilkyMiddleware',
 ]
 
 ROOT_URLCONF = 'DjangoSnap.urls'
@@ -99,8 +103,16 @@ WSGI_APPLICATION = 'DjangoSnap.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        #'ENGINE': 'django.db.backends.sqlite3',
+        #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+         #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'sierpinski_db',
+        'USER': 'truc',
+        'PASSWORD': 'test',
+        'HOST': 'localhost',
+        'PORT': '',
+
     }
 }
 

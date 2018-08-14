@@ -33,6 +33,7 @@ class ProgrammeBase(models.Model):
     #Nom du programme de base
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
     nom=models.CharField(max_length=50,null=True,blank=True)
+    description = models.CharField(max_length=255, blank=True)
     file=models.FileField(upload_to=user_directory_path)
     creation=models.DateTimeField(auto_now_add=True)
     def __str__(self):
@@ -82,8 +83,8 @@ class EvenementENV(models.Model):
         ('PARAM','Clic Menu paramètres'),
         ('NEW','Nouveau programme vide'),
         ('LOBA','Chargement programme de Base'),
-        ('LOVER','Chargement d\'une version sauvegardée'),
-        ('IMPORT','Importation fichier local'),
+        ('LOVER','Chargement d\'une version sauvegardée'), # id dans detail 
+        ('IMPORT','Importation fichier local'), # normalement suivi d'un EPR  LOAD (pas encore) ou/et SPR OPEN
         ('EXPORT','Exportation fichier local'),        
         ('FULL','Plein écran'),
         ('APP','Ecran application'),
@@ -129,7 +130,8 @@ class EvenementENV(models.Model):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
     class Meta:
-        ordering=('-evenement__creation',)
+        ordering=('-evenement__time',)
+        get_latest_by=['evenement__time',]
 
 class SnapProcess(models.Model):
     """
@@ -169,7 +171,7 @@ class EvenementEPR(SnapProcess):
     """
     EPR_CHOICES=(
         ('NEW','Nouveau programme vide'),
-        ('LOAD','Programme chargé'),
+        ('LOAD','Programme chargé'), # id dans detail si LOVER, nom du prg de base si LOBA
         ('SAVE','Programme sauvegardé'),
         ('START','Lancement'),
         ('STOP','Arrêt'), #arrêt manuel
@@ -202,7 +204,8 @@ class EvenementEPR(SnapProcess):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
     
     class Meta:
-        ordering=('-evenement__creation',)
+        ordering=('-evenement__time',)
+        get_latest_by=['evenement__time',]
 
 class BlockInput(models.Model):
     """
@@ -243,10 +246,10 @@ class EvenementSPR(models.Model):
         ('RENVAT','renommage variable, juste le template'), #nouveau nom dans detail, ancien dans location
         ('RENVATL','renommage variable locale, juste le template'), #nouveau nom dans detail, ancien dans location
         ('RENVATB','renommage variable de bloc, juste le template'), #nouveau nom dans detail, ancien dans location
-        ('VAL','Changement d\'une valeur'), # on renvois le blockmorph, id de l'entrée dans detailAction 
+        ('VAL','Changement d\'une valeur'), # on renvois le blockmorph, id de l'entrée dans detail, rang dans location
         ('+IN','Ajout d\'une entrée'),
         ('-IN','Suppression d\'une entrée'),
-        ('NEWVAL','Création et insertion d\'une entrée'), #création + remplacement d'une entrée existante (id remplacée dans détailAction
+        ('NEWVAL','Création et insertion d\'une entrée'), #création + remplacement d'une entrée existante (id remplacée dans détailAction, rang dans location
         ('DROPVAL','Déplacement et insertion d\'une entrée'), #déplacement + remplacement d'une entrée existante (id remplacée dans détailAction
         ('ERR','Erreur'), #erreur détectée, précision dans détail
         ('OPEN','Ouverture de Scripts'),
@@ -283,7 +286,8 @@ class EvenementSPR(models.Model):
         return res
     
     class Meta:
-        ordering=('-evenement__creation',)
+        ordering=('-evenement__time',)
+        get_latest_by=['evenement__time',]
 
 class Block(models.Model):
     """

@@ -13,9 +13,11 @@
 		  var userName="{{ request.user.username }}";
 		  var userGroup="{{request.user.groups.all.0.name}}"
 		  var csrf_token="{{ csrf_token }}";
+		  var url_passwordchange="{% url 'password_change' %}"
+		  var url_base="{% url 'accueil_prof' %}"
 		  var newdate=new Date();
 		  var date_debut=newdate;
-		  console.info("csrf"+csrf_token,"grup",userGroup);
+		  //console.info("csrf"+csrf_token,"grup",userGroup);
 		//Test envoi
 		function sendAjaxData(data) {
                 var XHR = new XMLHttpRequest();
@@ -73,14 +75,21 @@
 		</script>
 		<script type="text/javascript">
 		//ajout JML
-		var UploadXML = function(xml,name) {
+		var UploadXML = function(xml,name,projectNotes='',base=false) {
 		    var form = new FormData();
 		  
 		    // getCookie: https://docs.djangoproject.com/en/dev/ref/csrf/#acquiring-the-token-if-csrf-use-sessions-is-false
 		    form.append('csrfmiddlewaretoken',"{{ csrf_token }}");
-		    form.append('description',name);
+		    form.append('base',base);	            
+		    form.append('nom',name);		    
+		    if (base) {
+			 form.append('description',projectNotes);			
+		    } else {
+			 form.append('description',name);
+		    }
 		    var blob = new Blob([xml], { type: "text/xml"});
 		    form.append('document',blob,userName+"_"+name.replace(/\W+/g,"_")+".xml");
+		    
 		    $.ajax({
 		        url: 'up',
 		        type: 'POST',
@@ -142,6 +151,7 @@
             cache: false,
             contentType: 'application/json',
             dataType: 'json',
+	    timeout: 180000,
             //processData: true,
             beforeSend: function() {
                 console.log('Uploading...',json);
@@ -171,7 +181,7 @@
         }
         	    
             
-        var url_passwordchange="{% url 'password_change' %}"
+        
 		//fin ajout JML
 		</script>
 		<script type="text/javascript" src="{% static "snap/safe-json-stringify.js" %}"></script>

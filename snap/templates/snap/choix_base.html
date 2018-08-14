@@ -1,0 +1,42 @@
+{% extends "prof/base_site.html" %}
+{% load i18n static %}
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'snaptest' %}" title="Cliquer pour charger Snap!">{{ site_header|default:_('Snap4Gironde Professeur') }}: Choix du programme de base</a></h1>
+
+
+{% endblock %}
+{% block content %}
+<script src="{% static 'snap/js/jquery-3.2.1.min.js' %}"></script>
+
+
+<h1>Choisissez une classe:
+<select id="classe" name="classe">
+<option value="-1" selected>----</option>
+{% for classe in classes %}
+<option value={{classe.id}}><b>{{classe.nom}}</b></option>
+{% endfor %}
+</select>
+</h1>
+<div id="eleves">{% include 'snap/eleves_base.html' %}</div>
+
+<script  type="text/javascript">
+$('#classe').change(function() {
+    console.log('changed',this.value);
+    $.ajax({
+	   type: 'post',
+	   url: 'eleves_base',
+	   data: {
+	       'id': this.value,
+	       'csrfmiddlewaretoken':'{{ csrf_token }}'
+	   },
+	   success: function(data) {
+	       $('#eleves').html(data);
+	   },
+	   error: function(xhr, status, error) {
+	        // shit happens friends!
+	        console.log('error',status,error);
+	      }
+	    })    
+    });
+</script>
+{% endblock %}
