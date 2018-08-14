@@ -11036,14 +11036,19 @@ MultiArgMorph.prototype.removeInput = function () {
         /**
          * Modification JML (duff,  2 janv. 2018)
          **/
-        //console.log('REMOVE'+oldPart,oldPart);
-        //console.log('de'+this,this);
-        var scripts = this.parentThatIsA(ScriptsMorph);
-        var record={};
-        record.lastDroppedBlock=this;
-        record.action='-in';
-        record.detailAction=oldPart.JMLid;
-        var donnee=new scripts.donnee(record);	
+        console.log('REMOVE'+oldPart,oldPart);
+        console.log('de'+this,this);
+        scripts = this.parentThatIsA(ScriptsMorph);
+        if (scripts) {
+            //si on a pas de script c'est un remove lors du chargement XML
+            //(provient de model.tag=='list')
+            var record={};
+            record.lastDroppedBlock=this;
+            record.action='-in';
+            record.detailAction=oldPart.JMLid;
+            var donnee=new scripts.donnee(record);
+        }
+        	
         /**
          * Fin Modification JML
          **/
