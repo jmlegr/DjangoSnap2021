@@ -6933,6 +6933,20 @@ ScriptsMorph.prototype.donnee = function(record) {
 		       data['location']=childs.indexOf(child); //index de l'input remplacé
 		       break;
 		   }
+		   case '+in': {
+		       data['type']='+IN';
+		       data['detail']=record.detailAction;
+		       childs=record.lastDroppedBlock.inputs()
+		       child=childs.filter(function(d) {return d.JMLid==record.detailAction})[0]
+		       data['location']=childs.indexOf(child); //index de l'input ajouté
+		       break;
+		   }
+		   case '-in': {
+		       data['type']='-IN';
+		       data['detail']=record.detailAction;
+		       data['location']=record.lastDroppedBlock.inputs().length; //index de l'input supprimé
+		       break;
+		   }
 		   default: 
 		       data['type']='AUTRE';
 		       data['detail']=record.detailAction;
@@ -6978,13 +6992,14 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    }
     	    //console.log('parent'+record.lastDroppedBlock.parent,record.lastDroppedBlock.parent,(record.lastDroppedBlock.parent instanceof BlockMorph));    	
     	    // récupération des entrées
-    	    t=record.lastDroppedBlock.inputs();
+    	    var t=record.lastDroppedBlock.inputs();
     	    //console.log('inputs'+t,t);
-    	    inputs= new Array();
+    	    var inputs= new Array();
+    	    var inputsBlock=new Array();
     	    t.forEach(function(input,i) {    	
     	    	//console.log('inupt'+input,i,t.indexOf(input));
     	    	//console.log('->',input,input.contents?input.contents().text:'**',input.evaluate());
-    		isColor=(input.constructor.name=="ColorSlotMorph")
+    		var isColor=(input.constructor.name=="ColorSlotMorph")
     		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
     		    contenu:input.contents?input.contents().text:
     				isColor?(input.color.r+","
@@ -6993,10 +7008,38 @@ ScriptsMorph.prototype.donnee = function(record) {
     					+input.color.a):null,
     		    rang:t.indexOf(input),
     		    isNumeric:input.isNumeric,
-    		    isPredicate:input.isPredicate});
-    		}
-    	    );
+    		    isPredicate:input.isPredicate
+    		    });  	    		    	    	
+    	    	if (record.action=='creation' && input.constructor.name=='MultiArgMorph') {
+    	    	    //c'est une création de multimorph, on rajoute les inputs dans scripts
+    	    	    var script={
+	    			JMLid:input.JMLid, 
+	    			typeMorph:input.constructor.name,
+	    			selector:input.selector,
+	    			blockSpec:input.blockSpec,
+	    			category:input.category
+	    			}
+    	    	    var scriptInputs=new Array()
+    	    	    input.inputs().forEach(function (inp,i) {
+    	    		isColor=(inp.constructor.name=="ColorSlotMorph") 
+    	    		scriptInputs.push({JMLid:inp.JMLid,typeMorph:inp.constructor.name,
+    	    		    contenu:inp.contents?inp.contents().text:
+    				isColor?(inp.color.r+','
+    					+inp.color.g+','
+    					+inp.color.b+','
+    					+inp.color.a):null,
+    			   rang:input.inputs().indexOf(inp),
+    			   isNumeric:inp.isNumeric,
+    			   isPredicate:inp.isPredicate
+    			   });    	    		
+    		    });
+    	    	    if (scriptInputs) script['inputs']=scriptInputs
+    	    	    data['script']=[script]
+    	    	}
+    	    	
+	    });
     	    if (inputs) data['inputs']=inputs;
+    	    
     	    //this.lastDroppedBlock.inputs=inputs;  
     	    console.log('data',data)
     	    sendEvenement('SPR',data);
@@ -8611,7 +8654,9 @@ InputSlotMorph.prototype.setContents = function (aStringOrFloat) {
 	//console.log('8451INPUT setcontent',this,cnts,dta);
 	var scripts = this.parentThatIsA(ScriptsMorph);
 	record={};
-	record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+	//modif 18/08
+	//record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+	record.lastDroppedBlock=this.parent;
 	record.action='valeur';
 	record.detailAction=this.JMLid;
 	var donnee=new scripts.donnee(record);
@@ -9197,7 +9242,9 @@ InputSlotMorph.prototype.reactToEdit = function () {
     	        //scripts.dropRecord.action = 'valeur';
     	        //scripts.dropRecord.detailAction={originale:orig,nouvelle:val};
     	     	record={};
-    	     	record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+    	     	//modif 13/08
+    	     	//record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+    	     	record.lastDroppedBlock=this.parent;
     	     	record.action='valeur';
     	     	record.detailAction=this.JMLid;
     	        //var donnee=new scripts.donnee(scripts.dropRecord);
@@ -10957,8 +11004,17 @@ MultiArgMorph.prototype.addInput = function (contents) {
      * Modification JML (duff,  2 janv. 2018)
      **/
 
-    //if (newPart.parent.parent && newPart.parent.parent.JMLdroppedId) console.log('DRAX NEW',newPart.constructor.name,newPart);
-    //else console.log('DRWX PAR',newPart.parent);
+    if (newPart.parent.parent && newPart.parent.parent.JMLdroppedId) {
+	//on ajoute une nouvelle entrée
+	//console.log('DRAX NEW',newPart.constructor.name,newPart.parent);
+	var scripts = this.parentThatIsA(ScriptsMorph);
+	var record={};
+	record.lastDroppedBlock=newPart.parent;
+	record.action='+in';
+	record.detailAction=newPart.JMLid;
+	var donnee=new scripts.donnee(record);		    
+    }
+    
     /**
      * Fin Modification JML
      **/
@@ -10967,8 +11023,9 @@ MultiArgMorph.prototype.addInput = function (contents) {
 
 MultiArgMorph.prototype.removeInput = function () {
     var oldPart, scripts;
+    
     if (this.children.length > 1) {
-        oldPart = this.children[this.children.length - 2];
+	oldPart = this.children[this.children.length - 2];
         this.removeChild(oldPart);
         if (oldPart instanceof BlockMorph) {
             scripts = this.parentThatIsA(ScriptsMorph);
@@ -10976,17 +11033,24 @@ MultiArgMorph.prototype.removeInput = function () {
                 scripts.add(oldPart);
             }
         }
-    }
-    /**
-     * Modification JML (duff,  2 janv. 2018)
-     **/
-    console.log('REMOVE'+oldPart,oldPart);
-    console.log('de'+this,this);
-    /**
-     * Fin Modification JML
-     **/
+        /**
+         * Modification JML (duff,  2 janv. 2018)
+         **/
+        //console.log('REMOVE'+oldPart,oldPart);
+        //console.log('de'+this,this);
+        var scripts = this.parentThatIsA(ScriptsMorph);
+        var record={};
+        record.lastDroppedBlock=this;
+        record.action='-in';
+        record.detailAction=oldPart.JMLid;
+        var donnee=new scripts.donnee(record);	
+        /**
+         * Fin Modification JML
+         **/
 
-    this.fixLayout();
+
+    }
+        this.fixLayout();
 };
 
 // MultiArgMorph events:

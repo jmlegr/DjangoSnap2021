@@ -246,10 +246,10 @@ class EvenementSPR(models.Model):
         ('RENVAT','renommage variable, juste le template'), #nouveau nom dans detail, ancien dans location
         ('RENVATL','renommage variable locale, juste le template'), #nouveau nom dans detail, ancien dans location
         ('RENVATB','renommage variable de bloc, juste le template'), #nouveau nom dans detail, ancien dans location
-        ('VAL','Changement d\'une valeur'), # on renvois le blockmorph, id de l'entrée dans detailAction 
+        ('VAL','Changement d\'une valeur'), # on renvois le blockmorph, id de l'entrée dans detail, rang dans location
         ('+IN','Ajout d\'une entrée'),
         ('-IN','Suppression d\'une entrée'),
-        ('NEWVAL','Création et insertion d\'une entrée'), #création + remplacement d'une entrée existante (id remplacée dans détailAction
+        ('NEWVAL','Création et insertion d\'une entrée'), #création + remplacement d'une entrée existante (id remplacée dans détailAction, rang dans location
         ('DROPVAL','Déplacement et insertion d\'une entrée'), #déplacement + remplacement d'une entrée existante (id remplacée dans détailAction
         ('ERR','Erreur'), #erreur détectée, précision dans détail
         ('OPEN','Ouverture de Scripts'),
