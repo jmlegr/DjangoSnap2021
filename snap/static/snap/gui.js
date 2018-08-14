@@ -4323,13 +4323,15 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
 		var inputs= new Array();
 		var inputsBlock=new Array();
 		block.inputs().forEach(function(input) {
-		    isColor=(input.constructor.name=="ColorSlotMorph") 
+		    var isColor=(input.constructor.name=="ColorSlotMorph") 
+		    var isBoolean=(input.constructor.name=="BooleanSlotMorph")
 		    inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
 			contenu:input.contents?input.contents().text:
 			    isColor?(input.color.r+','
 				    +input.color.g+','
 				    +input.color.b+','
-				    +input.color.a):null,
+				    +input.color.a):
+			    isBoolean?''+input.value:null,
 				    rang:block.inputs().indexOf(input),
 				    isNumeric:input.isNumeric,
 				    isPredicate:input.isPredicate}

@@ -7000,12 +7000,14 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    	//console.log('inupt'+input,i,t.indexOf(input));
     	    	//console.log('->',input,input.contents?input.contents().text:'**',input.evaluate());
     		var isColor=(input.constructor.name=="ColorSlotMorph")
+    		var isBoolean=(input.constructor.name=='BooleanSlotMorph')
     		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
     		    contenu:input.contents?input.contents().text:
     				isColor?(input.color.r+","
     					+input.color.g+','
     					+input.color.b+","
-    					+input.color.a):null,
+    					+input.color.a):
+    				isBoolean?''+input.value:null,
     		    rang:t.indexOf(input),
     		    isNumeric:input.isNumeric,
     		    isPredicate:input.isPredicate
@@ -9871,7 +9873,16 @@ BooleanSlotMorph.prototype.toggleValue = function () {
     /**
      * Modification JML (duff,  2 janv. 2018)
      **/
-    console.log("(9646)switch boolean ",this,this.value);
+    //console.log("(9646)switch boolean ",this,this.value);
+    if (this.parent && this.parent.JMLdroppedId) {
+	    //c'est une modification 
+	    var scripts = this.parentThatIsA(ScriptsMorph);
+	    record={};
+	    record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+	    record.action='valeur';
+	    record.detailAction=this.JMLid;
+	    var donnee=new scripts.donnee(record);
+    }
     /**
      * Fin Modification JML
      **/
