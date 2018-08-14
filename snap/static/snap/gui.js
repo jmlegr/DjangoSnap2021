@@ -3104,7 +3104,7 @@ IDE_Morph.prototype.projectMenu = function () {
 			}
 		    },
 		    close: function() {
-			console.log('closed');
+			//console.log('closed');
 		    }
 
 		});
@@ -4359,8 +4359,6 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
 	    }
 	} else {
 	    // on ne revoie pas de scripts (ie lors d'un chargement
-	    // TODO: mettre une valeur de version sur l'xml pour autodétecter la
-	    // nécessité de l'envoi
 	    if (block.inputs && block.inputs()) {
 		var inputs= new Array();
 		block.inputs().forEach(function(input) {
@@ -4377,7 +4375,6 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
     // lors d'un chargement, recontruit la structure des blocs (en fixant le
     // JMLdroppedId)
     // puis envoi
-    console.log(this.project,this.isJML)
     scriptsObj = this.currentSprite.scripts.children
     scripts=[]
     // console.log('chrgé',scriptsObj);

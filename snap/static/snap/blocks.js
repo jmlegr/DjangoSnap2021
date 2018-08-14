@@ -6678,7 +6678,7 @@ ScriptsMorph.prototype.addComment = function () {
  **/
 //ScriptsMorph.prototype.undrop = function () {
 ScriptsMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
-    console.log('unrop:',origine,key,clic);
+    //console.log('unrop:',origine,key,clic);
 /**
  * Fin Modification JML
  **/
@@ -7041,7 +7041,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    if (inputs) data['inputs']=inputs;
     	    
     	    //this.lastDroppedBlock.inputs=inputs;  
-    	    console.log('data',data)
+    	    //console.log('data',data)
     	    sendEvenement('SPR',data);
     	    //sendJsonData(this);
 	}
@@ -11036,8 +11036,8 @@ MultiArgMorph.prototype.removeInput = function () {
         /**
          * Modification JML (duff,  2 janv. 2018)
          **/
-        console.log('REMOVE'+oldPart,oldPart);
-        console.log('de'+this,this);
+        //console.log('REMOVE'+oldPart,oldPart);
+        //console.log('de'+this,this);
         scripts = this.parentThatIsA(ScriptsMorph);
         if (scripts) {
             //si on a pas de script c'est un remove lors du chargement XML
