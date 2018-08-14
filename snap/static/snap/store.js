@@ -349,6 +349,19 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     }
 
     /* Project Info */
+    /**
+     * Modification JML (duff,  14 août 2018)
+     **/
+    //le fichier a-t-il été exporté par notre version?
+    if (model.project.attributes.JML) {
+	this.isJML=true
+	this.JMLVersion=model.project.attributes.JML
+    } else {
+	this.isJML=false
+    }
+    /**
+     * Fin Modification JML
+     **/
 
     this.objects = {};
     project.name = model.project.attributes.name;
@@ -1691,8 +1704,20 @@ StageMorph.prototype.toXML = function (serializer) {
     }
 
     this.removeAllClones();
+    /**
+     * Modification JML (duff,  14 août 2018)
+     **/
+    /*
     return serializer.format(
-        '<project name="@" app="@" version="@">' +
+	        '<project name="@" app="@" version="@">' +
+    */
+    return serializer.format(
+	        '<project name="@" app="@" version="@" JML="1">' +
+    /**
+     * Fin Modification JML
+     **/
+
+    
             '<notes>$</notes>' +
             '<thumbnail>$</thumbnail>' +
             '<stage name="@" width="@" height="@" ' +
