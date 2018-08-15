@@ -63,8 +63,10 @@ class EvenementSerializer(serializers.ModelSerializer):
     def get_type(self,obj):
         return obj.get_type_display()
     """
-    def create(self, validated_data):        
-        evt = Evenement.objects.create(user=self.context['request'].user,**validated_data)
+    def create(self, validated_data):   
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **validated_data)
         return evt
         
 class EvenementEPRSerializer(serializers.ModelSerializer):
@@ -77,7 +79,9 @@ class EvenementEPRSerializer(serializers.ModelSerializer):
     def create(self, validated_data):       
         evt_data=validated_data.pop('evenement')
         evt_data['type']='EPR'
-        evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **evt_data)
         epr=EvenementEPR.objects.create(evenement=evt,**validated_data)        
         return epr
 
@@ -91,7 +95,9 @@ class EvenementENVSerializer(serializers.ModelSerializer):
     def create(self, validated_data):    
         evt_data=validated_data.pop('evenement')
         evt_data['type']='ENV'
-        evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **evt_data)
         env=EvenementENV.objects.create(evenement=evt,**validated_data)
         return env
 
@@ -221,7 +227,9 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
     def create(self, validated_data):       
         evt_data=validated_data.pop('evenement')
         evt_data['type']='SPR'
-        evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **evt_data)
         inputs_data=validated_data.pop('inputs',[])
         scripts_data=validated_data.pop('scripts',[])
         env=EvenementSPR.objects.create(evenement=evt,**validated_data)        

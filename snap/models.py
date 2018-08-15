@@ -53,6 +53,7 @@ class Evenement(models.Model):
         (AUTRE,'Autre évènement'),
         )
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
+    session_key=models.CharField(max_length=40,null=True)
     programme=models.ForeignKey(ProgrammeBase,null=True, on_delete=models.CASCADE) #programme de base chargé
     type=models.CharField(max_length=3,choices=TYPE_EVENEMENT_CHOICES, default=AUTRE) #type d'évènement
     time=models.IntegerField() #Temps (local à Snap) de l'évènement
