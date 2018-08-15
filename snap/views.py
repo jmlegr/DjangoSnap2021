@@ -1971,8 +1971,51 @@ def testblock(request,id=277):
                                  for a in actions]
                      })
     
-             
-
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def listeblock(request,id=None):   
+    debut=EvenementENV.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
+    #evenements de cette partie:
+    evs=Evenement.objects.filter(creation__gte=debut.evenement.creation).select_related('user').order_by('numero')
+    #actions correspondantes:
+    actions=EvenementSPR.objects.filter(evenement__in=evs)\
+                .select_related('evenement','evenement__user')\
+                .order_by('evenement__numero')
+                
+    listeBlocks=objets.ListeBlockSnap()  
+    
+    for spr in actions:
+        theTime=spr.evenement.time
+        listeBlocks.addTick(theTime)        
+        action='SPR_%s' % spr.type
+        print('----')
+        spr.aff(niv=3)
+        newNode=BlockSnap(spr.blockId, 
+                                  theTime,
+                                  spr.typeMorph,
+                                  spr.blockSpec,
+                                  spr.selector,
+                                  spr.category,
+                                  action=action
+                                  )
+        listeBlocks.addBlock(newNode)
+        #traitement NEW: il faut inclure les inputs,
+        #si un input est un multiarg, il faut aller chercher dans les scripts
+        if spr.type=='NEW':
+            for c in spr.inputs.all():
+                inputNode,created=listeBlocks.addFromBlock(c,theTime,action=action)
+                newNode.addInput(inputNode) 
+                
+        
+      
+    return Response({
+                     "scripts":listeBlocks.firstBlocks,
+                     "data":listeBlocks.toJson(),
+                     "ticks":listeBlocks.ticks,
+                     'links':listeBlocks.links,
+                     'etapes':{},#etapes,
+                     'actions':[a.toD3() for a in actions]
+                     })
 import base64
 def testAjax(request):
     image_b64 = request.POST.get('image') # This is your base64 string image

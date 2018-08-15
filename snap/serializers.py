@@ -224,7 +224,7 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
         fields='__all__'
         #read_only_fields=('evenement',)
     
-    def create(self, validated_data):       
+    def create(self, validated_data):     
         evt_data=validated_data.pop('evenement')
         evt_data['type']='SPR'
         evt = Evenement.objects.create(user=self.context['request'].user,
@@ -232,6 +232,7 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
                                        **evt_data)
         inputs_data=validated_data.pop('inputs',[])
         scripts_data=validated_data.pop('scripts',[])
+        
         env=EvenementSPR.objects.create(evenement=evt,**validated_data)        
         for input_data in inputs_data:
             inp=BlockInput.objects.create(**input_data)
