@@ -6999,6 +6999,8 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    t.forEach(function(input,i) {    	
     	    	//console.log('inupt'+input,i,t.indexOf(input));
     	    	//console.log('->',input,input.contents?input.contents().text:'**',input.evaluate());
+
+		    //console.log('eval',input.getContent())
     		var isColor=(input.constructor.name=="ColorSlotMorph")
     		var isBoolean=(input.constructor.name=='BooleanSlotMorph')
     		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
@@ -7493,6 +7495,16 @@ ArgMorph.prototype.objectIcon = function () {
 ArgMorph.prototype.isEmptySlot = function () {
     return this.type !== null;
 };
+/**
+ * Modification JML (duff,  14 août 2018)
+ **/
+ArgMorph.prototype.getContent=function() {
+    if (this.evaluate) return ''+this.evaluate()
+    return 'Evaluation impossible'
+}
+/**
+ * Fin Modification JML
+ **/
 
 // CommandSlotMorph ////////////////////////////////////////////////////
 
