@@ -7038,7 +7038,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     			   });    	    		
     		    });
     	    	    if (scriptInputs) script['inputs']=scriptInputs
-    	    	    data['script']=[script]
+    	    	    data['scripts']=[script]
     	    	}
     	    	
 	    });
