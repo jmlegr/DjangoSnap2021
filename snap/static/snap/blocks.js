@@ -7016,6 +7016,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     		    });  	    		    	    	
     	    	if (record.action=='creation' && input.constructor.name=='MultiArgMorph') {
     	    	    //c'est une création de multimorph, on rajoute les inputs dans scripts
+    	    	    //TODO voir pour les cas de custom blocks avec 2 multiargs? ou trop rare et pas nécessaire?
     	    	    var script={
 	    			JMLid:input.JMLid, 
 	    			typeMorph:input.constructor.name,
@@ -7038,7 +7039,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     			   });    	    		
     		    });
     	    	    if (scriptInputs) script['inputs']=scriptInputs
-    	    	    data['script']=[script]
+    	    	    data['scripts']=[script]
     	    	}
     	    	
 	    });

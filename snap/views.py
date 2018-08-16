@@ -1974,6 +1974,29 @@ def testblock(request,id=277):
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
 def listeblock(request,id=None):   
+    def listecreateInputs(node,spr,time,action,rang=None,lastId=None):
+        """
+        crée et insère la liste des entrée de node
+        si l'une delle à le même rang que rang, on positionne un flag (changed)
+        dans ce cas, on marque un lien sur le dernier bloc modifié (de JMLid lastId)
+        """
+        for i,c in enumerate(spr.inputs.all()):
+                inputNode,created=listeBlocks.addFromBlock(c,time, action=action)
+                if rang and '%s' % c.rang== '%s' % rang: 
+                    inputNode.change="changed"
+                    inputNode.lastModifBlock=listeBlocks.lastBlock(lastId, time)
+                    inputNode.parentBlock=inputNode.lastModifBlock.parentBlock
+                    print('inp',inputNode,lastId)
+                if inputNode.lastModifBlock:
+                    listeBlocks.addLink(inputNode.lastModifBlock, inputNode, 'changed')
+                node.addInput(inputNode)                
+                #si un input est un multiarg, il faut aller chercher dans les scripts         
+                if c.typeMorph=='MultiArgMorph':
+                    for j in spr.scripts.all()[i].inputs.all():
+                        inp,created=listeBlocks.addFromBlock(j,theTime,action=action)
+                        inputNode.addInput(inp)
+        return node
+    
     debut=EvenementENV.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
     #evenements de cette partie:
     evs=Evenement.objects.filter(creation__gte=debut.evenement.creation).select_related('user').order_by('numero')
@@ -2000,12 +2023,40 @@ def listeblock(request,id=None):
                                   )
         listeBlocks.addBlock(newNode)
         #traitement NEW: il faut inclure les inputs,
-        #si un input est un multiarg, il faut aller chercher dans les scripts
         if spr.type=='NEW':
-            for c in spr.inputs.all():
-                inputNode,created=listeBlocks.addFromBlock(c,theTime,action=action)
-                newNode.addInput(inputNode) 
-                
+            newNode=listecreateInputs(newNode, spr, theTime,action)                
+            #c'est tout ce qui nous intéresse pour suivre les entrées
+        elif spr.type=='VAL':
+            #c'est une modification de la valeur (directe) d'un inputSlotMorph
+            newNode=listecreateInputs(newNode, spr, theTime,action,
+                                      rang=spr.location,
+                                      lastId=spr.detail)                                        
+        elif spr.type=='DROPVAL' or spr.type=='NEWVAL':                    
+            """
+            c'est un reporter existant(DROP) ou nouveau(NEW) déplacé dans un inputSlotMorph                    
+            """
+            inputA=listeBlocks.lastBlock(spr.detail,theTime) #cible remplacée   
+            if spr.type=='NEWVAL':
+                #on ajoute dans la liste, avec les inputs (comme "NEW")
+                inputB=listecreateInputs(newNode, spr, theTime,action)
+            else: # donc DROPVAL
+                inputB=listeBlocks.lastBlock(spr.blockId,theTime) # block(s) déplacé, seulement inputs
+            inputB.rang=inputA.rang               
+            inputB.change='added'                
+            #onrecopie le parent et on modifie l'input
+            parentA=(inputA.parentBlock).copy(theTime,action)
+            parentA.replaceInput(inputB)
+            parentA.change='input substituted'
+            listeBlocks.addBlock(parentA)
+            #on crée une copie de l'input remplacé
+            newInputA=inputA.copy(theTime,action)
+            newInputA.rang=None
+            newInputA.change="replaced"
+            listeBlocks.addBlock(newInputA)
+            listeBlocks.addLink(inputA,inputB,'substituted')
+            listeBlocks.addLink(inputA,newInputA,'replaced')            
+        else:
+            print(spr.type, 'non traité')
         
       
     return Response({

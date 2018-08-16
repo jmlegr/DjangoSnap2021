@@ -60,6 +60,15 @@ class BlockSnap:
         self.childs=[]           # liste des blocks enfants 
         self.wraps=[]            # liste des blocks contenus
         self.contenu=None        # contenu du block(ie la valeur pour un InputSlotMorph)
+        """
+        type du changement: 
+            changed pour une valeur changée
+            added pour un bloc qui en remplace un autre
+            deleted pour un bloc supprimé
+            ...
+        """        
+        self.change=None
+            
         #print('BLOCK %s_%s: %s (%s) créé' % (self.JMLid,self.time,self.typeMorph,self.action))
     
     def getId(self):
@@ -73,8 +82,9 @@ class BlockSnap:
     
     
     
-    def copy(self,time,action='',deep=False):
+    def copy(self,time,action='',deep=False, attrs=[]):
         """ renvoie une copie du BlockSnap,        
+            is attrs est fourni,seuls ces attributs seront en copie indépendante
         """
         def modif(b):
             b.time=time
@@ -85,10 +95,21 @@ class BlockSnap:
         
         if deep:
             #copie profonde, mais pas de rajout dans la liste!
-            newblock=copy.deepcopy(self)            
+            newblock=copy.deepcopy(self)                
+            modif(newblock)            
+        elif attrs:            
+            newblock=copy.copy(self)
+            newblock.time=time
+            newblock.action=action 
+            for attr in attrs:
+                if type(self.__getattribute__(attr))==BlockSnap:
+                    newblock.__setattribute__(attr,self.__getattribute__(attr).copy(time,action))
+                if type(self.__getattribute__(attr))==list:
+                    newblock.__setattribute__(attr,[i.copy(time,action) for i in self.__getattribute__(attr)])
         else:
             newblock=copy.copy(self)
-        modif(newblock)
+            newblock.time=time
+            newblock.action=action 
                 
         return newblock
             
@@ -179,7 +200,9 @@ class BlockSnap:
         j['inputs']=[]           # liste des blocks inputs
         j['name']=self.getNom()
         for i in sorted(self.inputs,key=lambda inp: inp.rang):
-            j['inputs'].append(i.getId())            
+            j['inputs'].append(i.getId())        
+        j['change']=self.change          
+        
         return j
         #self.childs=[]           # liste des blocks enfants 
         #self.wraps=[]            # liste des blocks contenus
@@ -288,13 +311,22 @@ class ListeBlockSnap:
                 print('FEXIST')
             else:
                 self.liste[block.JMLid].append(block)
-    def addLink(self,sourceId,targetId,typeLien='changed'):
+    def addLink(self,source,target,typeLien='changed'):
         """ ajout d'un lien entre les ids (et pas JMLid)
          typeLien: changed sit le block a été modifié
                    replaced si le block a été remplacé par un autre
                    moved si le bloc a été déplacé
                    removed si le bloc a été enlevé (?)
         """     
+        
+        if type(source)==BlockSnap: 
+            sourceId=source.getId()            
+        else:
+            sourceId='%s' % source
+        if type(target)==BlockSnap: 
+            targetId=target.getId()
+        else:
+            targetId='%s' % target
         self.links.append({'source':sourceId,
                            'target':targetId,
                            'type':typeLien})
@@ -857,10 +889,10 @@ class ListeBlockSnap:
         
     def toJson(self):
         """ renvoie sous la forme [{BlockSnap},{}]"""
-        j=[]
+        j=[]        
         for JMLid in self.liste:
             #j[JMLid]=[]
-            for n in self.liste[JMLid]:
+            for n in sorted(self.liste[JMLid],key=lambda n: n.time):
                 #j[JMLid].append(n.toJson())
                 j.append(n.toJson())
         return j
