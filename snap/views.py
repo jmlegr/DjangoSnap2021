@@ -2052,7 +2052,12 @@ def listeblock(request,id=None):
             newInputA=inputA.copy(theTime,action)
             newInputA.rang=None
             newInputA.change="replaced"
-            listeBlocks.addBlock(newInputA)
+            if newInputA.typeMorph=='ReporterBlockMorph':
+                #si c'est un reporter, il devient script indépendant
+                listeBlocks.addFirstBlock(newInputA)
+            else:
+                #sinon il disparait
+                listeBlocks.addBlock(newInputA)
             listeBlocks.addLink(inputA,inputB,'substituted')
             listeBlocks.addLink(inputA,newInputA,'replaced')            
         else:
