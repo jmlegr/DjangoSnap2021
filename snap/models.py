@@ -264,8 +264,8 @@ class EvenementSPR(models.Model):
     #Informations sur le block    
     blockId=models.IntegerField(null=True) #JMLid du block en cause
     typeMorph=models.CharField(max_length=30,null=True,blank=True) #type du block
-    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block
-    blockSpec=models.CharField(max_length=50,null=True,blank=True) #blockSpec du block
+    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block 
+    blockSpec=models.CharField(max_length=50,null=True,blank=True) #blockSpec du block ou valeur
     category=models.CharField(max_length=30,null=True,blank=True) #categorie du block
     parentId=models.IntegerField(null=True) #JMLid du block parent (ou lieu d'insertion)
     nextBlockId=models.IntegerField(null=True) #JMLid du block suivant

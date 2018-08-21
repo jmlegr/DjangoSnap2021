@@ -5,7 +5,7 @@ Created on 4 déc. 2017
 '''
 from django.urls import path
 
-from . import views
+from . import views, reconstitution
 from rest_framework.routers import DefaultRouter
 from django.conf.urls import include, url
 from django.contrib import admin
@@ -51,7 +51,8 @@ urlpatterns = [
     path('cyto2',views.cyto3),
     path('tb',views.testblock),
     path('tb/<str:id>/',views.testblock),    
-    path('toliste',views.listeblock),
+    #path('toliste',views.listeblock),
+    path('toliste',reconstitution.listeblock),
     path('toliste/<str:id>/',views.listeblock),
     path('d33',TemplateView.as_view(template_name='index.html')),
     path('d3',TemplateView.as_view(template_name='representation.html')),
