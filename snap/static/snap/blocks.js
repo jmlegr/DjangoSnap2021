@@ -440,8 +440,8 @@ SyntaxElementMorph.prototype.replaceInput = function (oldArg, newArg) {
      * Modification JML (duff,  4 janv. 2018)
      **/
 
-    console.info('replacemetn'+oldArg+'par'+newArg);
-    console.info('replacemetn',oldArg,newArg);
+    //console.info('replacemetn'+oldArg+'par'+newArg);
+    //console.info('replacemetn',oldArg,newArg);
     //if (oldArg instanceof InputSlotMorph) console.log('childre:'+oldArg.children[0]);
     //if (oldArg instanceof ReporterBlockMorph) console.log('childrep',oldArg.parent.id);
     
@@ -527,6 +527,28 @@ SyntaxElementMorph.prototype.silentReplaceInput = function (oldArg, newArg) {
     }
     replacement.parent = this;
     this.children[i] = replacement;
+/**
+ * Modification JML (duff,  16 août 2018)
+ **/
+    //console.log('replacementsilent')
+    //console.log(oldArg,' par ',replacement,' dans ',this)
+    this.parentThatIsA(ScriptsMorph).replacedInput={'old':oldArg,
+			'new':newArg,
+			'in':this}
+    var scripts = this.parentThatIsA(ScriptsMorph);
+	record={};
+	//modif 18/08
+	//record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+	record.lastDroppedBlock=newArg;
+	record.lastReplacedInput=oldArg;
+	record.lastDropTarget=this;
+	record.action='replacedSilent';
+	record.detailAction=newArg.JMLid;	 
+	var donnee=new scripts.donnee(record);
+    
+/**
+ * Fin Modification JML
+ **/
 
     if (replacement instanceof MultiArgMorph
             || replacement instanceof ArgLabelMorph
@@ -6915,7 +6937,7 @@ ScriptsMorph.prototype.donnee = function(record) {
 	
 	//if (record.lastDroppedBlock) console.info('top',record.lastDroppedBlock.topBlock());
 	if (record.lastDroppedBlock) {
-	    
+	    //console.log('s:',this,record)
 	    if (record.lastDroppedBlock.JMLfrom=='DropBlock') {
 		//c'est un drop dans la palette, donc une suppression
 		record.action='delete'
@@ -6947,6 +6969,10 @@ ScriptsMorph.prototype.donnee = function(record) {
 		       data['location']=record.lastDroppedBlock.inputs().length; //index de l'input supprimé
 		       break;
 		   }
+		   case 'replacedSilent': {
+		       data['type']='NEW';
+		       break;
+		   }
 		   default: 
 		       data['type']='AUTRE';
 		       data['detail']=record.detailAction;
@@ -6963,7 +6989,14 @@ ScriptsMorph.prototype.donnee = function(record) {
 	    data['typeMorph']=record.lastDroppedBlock.constructor.name
 	    data['blockId']=record.lastDroppedBlock.JMLid;
 	    data['selector']=record.lastDroppedBlock.selector;
-	    data['blockSpec']=record.lastDroppedBlock.blockSpec;
+	    if (record.lastDroppedBlock.blockSpec) {
+		data['blockSpec']=record.lastDroppedBlock.blockSpec;
+	    } else {
+		data['blockSpec']=record.lastDroppedBlock.getContent?
+					record.lastDroppedBlock.getContent():
+					    null
+	    }
+	    
 	    data['category']=record.lastDroppedBlock.category  ;
 	    if (record.lastDroppedBlock.parent) { 
 		p=record.lastDroppedBlock.parent.parentThatIsA(BlockMorph);
@@ -6996,9 +7029,13 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    //console.log('inputs'+t,t);
     	    var inputs= new Array();
     	    var inputsBlock=new Array();
-    	    t.forEach(function(input,i) {    	
-    	    	//console.log('inupt'+input,i,t.indexOf(input));
-    	    	//console.log('->',input,input.contents?input.contents().text:'**',input.evaluate());
+    	    t.forEach(function(input,i) {
+    		if (!input.JMLdroppedId) {   
+    		    //c'est un input non encore rendu unique (une copie)
+    		    input.JMLid=objectId(input);
+    		    input.JMLdroppedId=objectId(input);
+    		}    	    	
+    		//console.log('->',input,input.contents?('<<'+input.contents().text+'>>'):'**',input.evaluate());
 
 		    //console.log('eval',input.getContent())
     		var isColor=(input.constructor.name=="ColorSlotMorph")
@@ -7016,6 +7053,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     		    });  	    		    	    	
     	    	if (record.action=='creation' && input.constructor.name=='MultiArgMorph') {
     	    	    //c'est une création de multimorph, on rajoute les inputs dans scripts
+    	    	    //TODO voir pour les cas de custom blocks avec 2 multiargs? ou trop rare et pas nécessaire?
     	    	    var script={
 	    			JMLid:input.JMLid, 
 	    			typeMorph:input.constructor.name,
@@ -7025,6 +7063,11 @@ ScriptsMorph.prototype.donnee = function(record) {
 	    			}
     	    	    var scriptInputs=new Array()
     	    	    input.inputs().forEach(function (inp,i) {
+    	    		if (!inp.JMLdroppedId) {   
+    	    		    //	c'est un input non encore rendu unique (une copie)
+    	    		    inp.JMLid=objectId(inp);
+    	    		    inp.JMLdroppedId=objectId(inp);
+    	    		}    	    
     	    		isColor=(inp.constructor.name=="ColorSlotMorph") 
     	    		scriptInputs.push({JMLid:inp.JMLid,typeMorph:inp.constructor.name,
     	    		    contenu:inp.contents?inp.contents().text:
@@ -7498,7 +7541,8 @@ ArgMorph.prototype.isEmptySlot = function () {
 /**
  * Modification JML (duff,  14 août 2018)
  **/
-ArgMorph.prototype.getContent=function() {
+ArgMorph.prototype.JMLgetContent=function() {
+    if (this.contents && this.contents()) return ''+this.contents().text
     if (this.evaluate) return ''+this.evaluate()
     return 'Evaluation impossible'
 }
