@@ -440,8 +440,8 @@ SyntaxElementMorph.prototype.replaceInput = function (oldArg, newArg) {
      * Modification JML (duff,  4 janv. 2018)
      **/
 
-    console.info('replacemetn'+oldArg+'par'+newArg);
-    console.info('replacemetn',oldArg,newArg);
+    //console.info('replacemetn'+oldArg+'par'+newArg);
+    //console.info('replacemetn',oldArg,newArg);
     //if (oldArg instanceof InputSlotMorph) console.log('childre:'+oldArg.children[0]);
     //if (oldArg instanceof ReporterBlockMorph) console.log('childrep',oldArg.parent.id);
     
@@ -7035,7 +7035,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     		    input.JMLid=objectId(input);
     		    input.JMLdroppedId=objectId(input);
     		}    	    	
-    		console.log('->',input,input.contents?('<<'+input.contents().text+'>>'):'**',input.evaluate());
+    		//console.log('->',input,input.contents?('<<'+input.contents().text+'>>'):'**',input.evaluate());
 
 		    //console.log('eval',input.getContent())
     		var isColor=(input.constructor.name=="ColorSlotMorph")
