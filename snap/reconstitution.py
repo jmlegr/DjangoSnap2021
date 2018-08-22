@@ -3,14 +3,35 @@ Created on 20 août 2018
 
 @author: duff
 '''
-from snap import models
+from snap import models, serializers
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
-from snap.models import EvenementENV, Evenement, EvenementSPR, EvenementEPR
+from snap.models import EvenementENV, Evenement, EvenementSPR, EvenementEPR,\
+    SnapSnapShot
 import copy
 import re 
 from django.shortcuts import render
 from rest_framework.response import Response
+from django.contrib.auth.models import User
+from django.db.models.aggregates import Min
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def listesnaps(request,session_key=None):
+    """renvoi les derniers snapshots
+    """
+    if session_key is None:
+        u=User.objects.get(username='e1')
+        sessions=Evenement.objects.filter(user=u).values('session_key')\
+                    .order_by('session_key')\
+                    .annotate(debut=Min('creation'))\
+                    .order_by('-debut')
+        session_key=sessions[0]['session_key']
+    #snaps=SnapSnapShot.objects.filter(evenement__session_key=session_key)
+    snaps=SnapSnapShot.objects.filter(evenement__user=u).select_related('evenement__user')
+    #return Response(serializers.SnapSnapShotSerializer(snaps,many=True).data)
+    return render(request,"snapshots.html",
+                  {"data":serializers.SnapSnapShotSerializer(snaps,many=True).data})
 
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
@@ -54,7 +75,8 @@ def listeblock(request,id=None):
         return newNode
     
     debuts=EvenementEPR.objects.filter(type='NEW').select_related('evenement','evenement__user').order_by('evenement__creation') 
-    debut=EvenementENV.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
+    #debut=EvenementENV.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
+    debut=EvenementEPR.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
     #evenements de cette partie:
     evs=Evenement.objects.filter(creation__gte=debut.evenement.creation).select_related('user').order_by('numero')
     #actions correspondantes:
@@ -64,165 +86,191 @@ def listeblock(request,id=None):
                 
     listeBlocks=SimpleListeBlockSnap()  
     
-    for spr in actions:
-        theTime=spr.evenement.time                    
-        action='SPR_%s' % spr.type
+    #for spr in actions:
+    for evt in evs:
+        theTime=evt.time
         print('---- temps=',theTime)
-        spr.aff(niv=3)
-        
-        if spr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
-            #si on a créé un inp directement, la valeur est dans blockspec
-            contenu=spr.blockSpec
-            isSlot=True
-        else:
-            isSlot=False
-            contenu=None
-            #on ne prend pas en compte l'evènement de remplacement silencieux (qui précède un drop)
-            
-        
-        #traitement NEW: il faut inclure les inputs,
-        if spr.type=='NEW':
-            newNode=createNew(spr)
-            listeBlocks.addTick(theTime)
-        elif spr.type=='VAL':
-            #c'est une modification de la valeur (directe) d'un inputSlotMorph
-            #on cherche l'input modifié (par le rang ou par le detail)
-            inputBlock=spr.inputs.get(JMLid=spr.detail)
-            inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)                      
-            inputNode.changeValue(inputBlock.contenu)
-            inputNode.action='VAL'
-            listeBlocks.append(inputNode)
-            listeBlocks.addTick(theTime)
-            #on pourrait faire un lien avec l'ancienne valeur
-        elif spr.type=='NEWVAL':
-            """
-            c'est un reporter nouveau(NEW) déplacé dans un inputSlotMorph de l'element targetId,
-            ou un nouveau inputSlot dans le cas d'un remplacement silencieux (isSlot=True)                    
-            """
-            if isSlot:
-                #c'est un remplacement silencieux
-                # blockid est le nouvel input, detail l'input remplacé, parentId le block parent
-                #on récupère le parent
-                parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
-                listeBlocks.append(parentNode)
-                newInput=listeBlocks.addSimpleBlock(thetime=theTime,
+        if evt.type=='ENV':
+            env=evt.environnement.all()[0]
+            action='ENV_%s' % env.type
+            if env.type=='DUPLIC':
+                """
+                c'est une duplication, on crée et ajoute les copies
+                les duplication sont sous la forme 'id1_init'-'id1_nouvelle';'id2_init'-'id2_nouvelle'; etc...
+                """
+                #on construit la liste des remplacements
+                listeEquiv=env.detail[:-1].split(';')
+                listeReplace={}
+                for e in listeEquiv:
+                    c=e.split('-')
+                    listeReplace[c[0]]=c[1]                
+                for b in listeReplace:
+                    newBlock,copiedBlock=listeBlocks.lastNode(b,theTime).duplic(listeReplace,theTime,action)                    
+                    listeBlocks.append(copiedBlock)
+                    listeBlocks.append(newBlock)
+                    if newBlock.parentBlockId is None:
+                        listeBlocks.setFirstBlock(newBlock)
+                    
+                listeBlocks.addTick(theTime)
+        if evt.type=='SPR':
+            spr=evt.evenementspr.all()[0]      
+            action='SPR_%s' % spr.type
+            spr.aff(niv=3)        
+            if spr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                #si on a créé un inp directement, la valeur est dans blockspec
+                contenu=spr.blockSpec
+                isSlot=True
+            else:
+                isSlot=False
+                contenu=None
+                #on ne prend pas en compte l'evènement de remplacement silencieux (qui précède un drop)
+
+            #traitement NEW: il faut inclure les inputs,
+            if spr.type=='NEW':
+                newNode=createNew(spr)
+                listeBlocks.addTick(theTime)
+            elif spr.type=='VAL':
+                #c'est une modification de la valeur (directe) d'un inputSlotMorph
+                #on cherche l'input modifié (par le rang ou par le detail)
+                inputBlock=spr.inputs.get(JMLid=spr.detail)
+                inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)                      
+                inputNode.changeValue(inputBlock.contenu)
+                inputNode.action='VAL'
+                listeBlocks.append(inputNode)
+                listeBlocks.addTick(theTime)
+                #on pourrait faire un lien avec l'ancienne valeur
+            elif spr.type=='NEWVAL':
+                """
+                c'est un reporter nouveau(NEW) déplacé dans un inputSlotMorph de l'element targetId,
+                ou un nouveau inputSlot dans le cas d'un remplacement silencieux (isSlot=True)                    
+                """
+                if isSlot:
+                    #c'est un remplacement silencieux
+                    # blockid est le nouvel input, detail l'input remplacé, parentId le block parent
+                    #on récupère le parent
+                    parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
+                    listeBlocks.append(parentNode)
+                    newInput=listeBlocks.addSimpleBlock(thetime=theTime,
                                                     JMLid=spr.blockId,
                                                     typeMorph=spr.typeMorph,
                                                     action=action,
                                                     value=spr.blockSpec                                                    
                                                     )
-                newInput.change='added'
-                #on récupère et modifie l'input modifié
-                oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
-                oldInput.change='replaced-silent'
-                oldInput.parentBlockId=None
-                oldInput.action='DROPPED'
-                if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
-                    listeBlocks.liste.append(oldInput)
+                    newInput.change='added'
+                    #on récupère et modifie l'input modifié
+                    oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    oldInput.change='replaced-silent'
+                    oldInput.parentBlockId=None
+                    oldInput.action='DROPPED'
+                    if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                        listeBlocks.liste.append(oldInput)
+                    else:
+                        listeBlocks.liste.append(oldInput)
+                        listeBlocks.setFirstBlock(oldInput)
+                    #on ajuste le parent                
+                    parentNode.addInput(block=newInput,rang=oldInput.rang)
+                    listeBlocks.addTick(theTime)                
                 else:
-                    listeBlocks.liste.append(oldInput)
-                    listeBlocks.setFirstBlock(oldInput)
-                #on ajuste le parent                
-                parentNode.addInput(block=newInput,rang=oldInput.rang)
-                listeBlocks.addTick(theTime)                
-            else:
-                #on récupère le parent
+                    #on récupère le parent
+                    parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
+                    listeBlocks.append(parentNode)
+                    #on crée le nouveau block (et ajout dans la liste)
+                    newInputNode=createNew(spr)
+                    newInputNode.change='added'
+                    #on récupère et modifie l'input modifié
+                    oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    oldInput.change='replaced'
+                    oldInput.parentBlockId=None
+                    if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                        listeBlocks.liste.append(oldInput)
+                    else:
+                        listeBlocks.liste.append(oldInput)
+                        listeBlocks.setFirstBlock(oldInput)
+                    #on change l'input
+                    parentNode.addInput(newInputNode)
+                    listeBlocks.addTick(theTime)             
+           
+            elif spr.type=='DROPVAL':
+                """
+                c'est un reporter existant déplacé
+                """
+                #on récupère le parent                
                 parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
-                listeBlocks.append(parentNode)
-                #on crée le nouveau block (et ajout dans la liste)
-                newInputNode=createNew(spr)
+                listeBlocks.append(parentNode)                
+                #on récupère le nouvel input
+                newInputNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
                 newInputNode.change='added'
+                listeBlocks.append(newInputNode)
                 #on récupère et modifie l'input modifié
                 oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
                 oldInput.change='replaced'
                 oldInput.parentBlockId=None
+                oldInput.action="DROPPED"
                 if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
-                    listeBlocks.liste.append(oldInput)
+                    listeBlocks.append(oldInput)
                 else:
                     listeBlocks.liste.append(oldInput)
                     listeBlocks.setFirstBlock(oldInput)
                 #on change l'input
-                parentNode.addInput(newInputNode)
-                listeBlocks.addTick(theTime)             
-           
-        elif spr.type=='DROPVAL':
-            """
-            c'est un reporter existant déplacé
-            """
-            #on récupère le parent                
-            parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
-            listeBlocks.append(parentNode)                
-            #on récupère le nouvel input
-            newInputNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
-            newInputNode.change='added'
-            listeBlocks.append(newInputNode)
-            #on récupère et modifie l'input modifié
-            oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
-            oldInput.change='replaced'
-            oldInput.parentBlockId=None
-            oldInput.action="DROPPED"
-            if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
-                listeBlocks.append(oldInput)
-            else:
-                listeBlocks.liste.append(oldInput)
-                listeBlocks.setFirstBlock(oldInput)
-            #on change l'input
-            parentNode.addInput(block=newInputNode,rang=oldInput.rang)
-            listeBlocks.addTick(theTime)
-        elif spr.type=='DROP' and spr.typeMorph=='ReporterBlockMorph':
-            """
-            c'est un reporter déplacé, éventuellement suite à un remplacement silencieux
-            seules les modification de valeurs nous intéressent ici
-            si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
-            sinon c'est un simple déplacement
-            """
-            print('DROP déjà traité',spr)                
-        elif spr.type=='DEL':
-            """
-            on supprime un bloc et ses descendants
-            """
-            newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
-            newNode.change='deleted'
-            #newNode.parentBlockId='deleted'        
-            listeBlocks.append(newNode)
-            listeBlocks.addTick(theTime)
-        elif spr.type=='+IN':
-            """
-            c'est une nouvelle entrée d'un multiarg
-            """
-            newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
-            inp=spr.inputs.get(JMLid=spr.detail)
-            newInput=listeBlocks.addSimpleBlock(JMLid=inp.JMLid,
+                parentNode.addInput(block=newInputNode,rang=oldInput.rang)
+                listeBlocks.addTick(theTime)
+            
+            elif spr.type=='DROP' and spr.typeMorph=='ReporterBlockMorph':
+                """
+                c'est un reporter déplacé, éventuellement suite à un remplacement silencieux
+                seules les modification de valeurs nous intéressent ici
+                si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
+                sinon c'est un simple déplacement
+                """
+                print('DROP déjà traité',spr)
+                                
+            elif spr.type=='DEL':
+                """
+                on supprime un bloc et ses descendants
+                """
+                newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                newNode.change='deleted'
+                #newNode.parentBlockId='deleted'        
+                listeBlocks.append(newNode)
+                listeBlocks.addTick(theTime)
+                
+            elif spr.type=='+IN':
+                """
+                c'est une nouvelle entrée d'un multiarg
+                """
+                newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                inp=spr.inputs.get(JMLid=spr.detail)
+                newInput=listeBlocks.addSimpleBlock(JMLid=inp.JMLid,
                                   thetime=theTime,
                                   typeMorph=inp.typeMorph,
                                   action=action,
                                   value=inp.contenu,
                                   rang=inp.rang
                                   )            
-            newInput.change='added'
-            newNode.addInput(newInput)
-            listeBlocks.append(newNode)
-            listeBlocks.addTick(theTime)
-        elif spr.type=='-IN':
-            """
-            suppression du dernier input d'un multiarg
-            """
-            newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
-            inputNodeId=newNode.inputs[spr.location] 
-            #normalement inputNode=spr.detail
-            assert inputNodeId==spr.detail
-            del newNode.inputs[spr.location]
-            oldInput=listeBlocks.lastNode(inputNodeId,theTime).copy(theTime,action)
-            oldInput.change='replaced'
-            oldInput.action='DROPPED'
-            oldInput.parentBlockId=None
-            if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
-                listeBlocks.liste.append(oldInput)
-            else:
-                listeBlocks.liste.append(oldInput)
-                listeBlocks.setFirstBlock(oldInput)
-            listeBlocks.append(newNode)
-            listeBlocks.addTick(theTime)
+                newInput.change='added'
+                newNode.addInput(newInput)
+                listeBlocks.append(newNode)
+                listeBlocks.addTick(theTime)
+            elif spr.type=='-IN':
+                """
+                suppression du dernier input d'un multiarg
+                """
+                newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                inputNodeId=newNode.inputs[spr.location] 
+                #normalement inputNode=spr.detail
+                assert inputNodeId==spr.detail
+                del newNode.inputs[spr.location]
+                oldInput=listeBlocks.lastNode(inputNodeId,theTime).copy(theTime,action)
+                oldInput.change='replaced'
+                oldInput.action='DROPPED'
+                oldInput.parentBlockId=None
+                if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                    listeBlocks.liste.append(oldInput)
+                else:
+                    listeBlocks.liste.append(oldInput)
+                    listeBlocks.setFirstBlock(oldInput)
+                listeBlocks.append(newNode)
+                listeBlocks.addTick(theTime)
             
             
             
@@ -393,6 +441,31 @@ class SimpleBlockSnap:
             cp.inputs[i]=self.inputs[i]
         return cp
     
+    def duplic(self,liste,thetime,action):
+        """ 
+        duplique le block et remplace les différentes ids suivant la liste{id_depart:id_nouvelle}
+        renvoie la version modifiée et la version copiée
+        """
+        
+        def replace(init):
+            return liste[init] if init in liste else None
+        
+        print('trateiemt,n',liste,self.JMLid)
+        assert self.JMLid in liste
+        blockOrig=self.copy(thetime,action)
+        block=self.copy(thetime,action)
+        block.JMLid=replace(block.JMLid)
+        block.nextBlockId=replace(block.nextBlockId)
+        block.prevBlockId=replace(block.prevBlockId)
+        block.parentBlockId=replace(block.parentBlockId)
+        block.lastModifBlockId=None
+        block.conteneurBlockId=replace(block.conteneurBlockId)
+        for i in block.inputs:
+            block.inputs[i]=replace(block.inputs[i])
+        block.change='copyfrom'
+        blockOrig.change='copyto'
+        return block,blockOrig
+    
 class SimpleListeBlockSnap:
     """
     liste des simpleblockSnap au fil du temps    
@@ -479,7 +552,8 @@ class SimpleListeBlockSnap:
             change=None                  
             if elt[1:] in ['c','cs','cl']: #c'est une commande
                 #on ne prend que les valeurs, donc lào on ne traite pas, c'est une erreur    
-                raise ValueError("Une commande a été rencontrée alors qu'on s'attend à un input",inputNode)                        
+                #raise ValueError("Une commande a été rencontrée alors qu'on s'attend à un input",inputNode)
+                return '(commandes)',None                      
             else:
                 #repl[e]=en.contenu
                 if len(inputNode.inputs)>0:

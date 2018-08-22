@@ -257,7 +257,7 @@ class EvenementSPR(models.Model):
         ('OPEN','Ouverture de Scripts'),
         ('AUTRE','(Non identifié'),
         )
-    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
+    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementspr')
     type=models.CharField(max_length=7,choices=SPR_CHOICES, default='AUTRE') #type d'évènement    
     detail=models.TextField(null=True,blank=True)
     location=models.CharField(max_length=30,null=True,blank=True)
