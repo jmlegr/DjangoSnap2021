@@ -54,6 +54,8 @@ urlpatterns = [
     #path('toliste',views.listeblock),
     path('toliste',reconstitution.listeblock),
     path('toliste/<str:id>/',views.listeblock),
+    path('snps',reconstitution.listesnaps),
+    path('snps/<str:id>/',reconstitution.listesnaps),
     path('d33',TemplateView.as_view(template_name='index.html')),
     path('d3',TemplateView.as_view(template_name='representation.html')),
      path('c2',TemplateView.as_view(template_name='testcyto2.html')),

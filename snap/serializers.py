@@ -2,8 +2,9 @@ from django.contrib.auth.models import User, Group
 from rest_framework import serializers, reverse
 from snap.models import ProgrammeBase, Evenement,  EvenementEPR,\
     EvenementENV,Classe , EvenementSPR, BlockInput, \
-    Block, Eleve, Classe
+    Block, Eleve, Classe, SnapSnapShot
 from django.core.serializers import _serializers
+from snap import models
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -253,3 +254,10 @@ class EvenementSPROpenSerializer(serializers.ModelSerializer):
         model=EvenementSPR
         fields=['id','evenement','type','scripts',]
         #read_only_fields=('evenement',)
+        
+class SnapSnapShotSerializer(serializers.ModelSerializer):
+    evenement=EvenementSerializer(required=False)    
+    image=serializers.ImageField()
+    class Meta:
+        model=SnapSnapShot
+        fields=['id','evenement','image',]
