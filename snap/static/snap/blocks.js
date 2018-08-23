@@ -530,12 +530,14 @@ SyntaxElementMorph.prototype.silentReplaceInput = function (oldArg, newArg) {
 /**
  * Modification JML (duff,  16 août 2018)
  **/
-    //console.log('replacementsilent')
-    //console.log(oldArg,' par ',replacement,' dans ',this)
-    this.parentThatIsA(ScriptsMorph).replacedInput={'old':oldArg,
+    console.log('replacementsilent')
+    console.log(oldArg,' par ',replacement,' dans ',this)
+    console.log('OULA,',this.parentThatIsA(ScriptsMorph))
+    if (this.parentThatIsA(ScriptsMorph)) {
+       this.parentThatIsA(ScriptsMorph).replacedInput={'old':oldArg,
 			'new':newArg,
 			'in':this}
-    var scripts = this.parentThatIsA(ScriptsMorph);
+       var scripts = this.parentThatIsA(ScriptsMorph);
 	record={};
 	//modif 18/08
 	//record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
@@ -545,6 +547,7 @@ SyntaxElementMorph.prototype.silentReplaceInput = function (oldArg, newArg) {
 	record.action='replacedSilent';
 	record.detailAction=newArg.JMLid;	 
 	var donnee=new scripts.donnee(record);
+    }
     
 /**
  * Fin Modification JML

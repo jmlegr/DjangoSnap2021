@@ -7,6 +7,7 @@ import os
 from django.core.files.storage import default_storage
 from django.db.models import FileField
 from snap.objets import BlockSnap
+from django.db.models.fields import related
 
 
     
@@ -186,7 +187,7 @@ class EvenementEPR(SnapProcess):
         ('SNP','Snapshot'), #id de l'image dans detail
         ('AUTRE','(Non identifié)'),
         )
-    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
+    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementepr')
     type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement    
     detail=models.CharField(max_length=100,null=True,blank=True)
     processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"

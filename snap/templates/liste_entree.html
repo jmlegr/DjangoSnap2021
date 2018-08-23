@@ -70,19 +70,29 @@ span.SPR_DEL {
 
 
 </style>
+<h1>{{infos.user}}</h1>
+<h2>Suivi des paramètres</h2>
+<h3 title="{{infos.tooltip}}">{{infos.type}}</h3>
+<p>le {{infos.date}}</p>
+
 <table align="left">
-<tr><td>Temps</td></tr>
+<tr><td>Temps</td>
+{% for c in commandes.0.snap %}
+<td>block {{c.JMLid}}</td>
+{%endfor%}
+</tr>
 {% for c in commandes %}
 <tr>
-<td style="font-size:70%">({{c.temps}})</td>
+<td style="font-size:70%">({{c.temps}}){{c.epr.type}}
+{% if c.epr.type == 'SNP'%}
+<img src="{{c.epr.snp.image}}" border="2" width="100" height="100"/>
+{%endif%}
+</td>
 {% for j in c.snap %}
 <!--    <td><span class={{j.action}}>{{j.action}}-{{j.change}}-{{j.JMLid}}</span></td>
  -->
-{% if forloop.parentloop.first %}
- <td>block {{j.JMLid}}</td>
-{% else %}
+
 <td class="u {{j.change | default:'nochange'}}"><span class={{j.action | default:"passe"}}>{{ j.commande | safe }}</span></td>
-{%endif%}
 {% endfor %}
 </tr>
 {% endfor %}

@@ -7,13 +7,16 @@ from snap import models, serializers
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.renderers import JSONRenderer
 from snap.models import EvenementENV, Evenement, EvenementSPR, EvenementEPR,\
-    SnapSnapShot
+    SnapSnapShot, ProgrammeBase, Document
 import copy
 import re 
 from django.shortcuts import render
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Min
+from django.utils.datetime_safe import datetime
+from lxml import etree
+
 
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
@@ -74,22 +77,61 @@ def listeblock(request,id=None):
                     newInput.addInput(inputMulti)
         return newNode
     
-    debuts=EvenementEPR.objects.filter(type='NEW').select_related('evenement','evenement__user').order_by('evenement__creation') 
-    #debut=EvenementENV.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
-    debut=EvenementEPR.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
+    #liste les derniers débuts de tous les élèves
+    infos={}
+    eprInfos={}
+    debuts=EvenementEPR.objects.filter(type__in=['NEW','LOAD']).select_related('evenement','evenement__user').order_by('-evenement__creation')
+    debut=debuts[0]
+    user=debut.evenement.user
+    infos['user']=user.username
+    infos['date']=debut.evenement.creation
+    asession=debut.evenement.session_key
+    #on recupere soit un type 'LOBA', 'LOVER','NEW' ou 'LANCE'
+    evt=EvenementENV.objects.filter(evenement__session_key=asession,evenement__creation__lt=debut.evenement.creation).latest('evenement__creation')
+    if evt.type in ['NEW','LANCE']:
+        #c'est un nouveau programme vide
+        listeBlocks=SimpleListeBlockSnap()
+        infos['type']="Nouveau programme vide"
+    elif evt.type in ['LOBA','LOVER']:
+        #c'est un chargement de fichier
+        #TODO: traiter import
+        if evt.type=='LOBA':
+            p=ProgrammeBase.objects.get(eleve__user=debut.evenement.user)
+            f=p.file
+            infos['type']='Programme de base: %s' %p.nom
+            infos['tooltip']=p.description
+        else:
+            p=Document.objects.get(id=evt.detail)
+            f=p.document
+            infos['type']='Programme sauvegardé: %s' % p.description
+            infos['tooltip']=p.uploaded_at
+        #on reconstruit a partir du xml
+        tree=etree.parse(f.path)
+        root=tree.getroot()
+        scripts=root.find('stage/sprites/sprite/scripts').findall('script')
+        listeBlocks=SimpleListeBlockSnap()  
+        for s in scripts:
+            listeBlocks.addFromXML(s)
+        #on suit tous les blocs non contenus
+        for b in listeBlocks.liste:
+            if b.parentBlockId==None and len(b.inputs)>0:
+                listeBlocks.setFirstBlock(b)
+    
     #evenements de cette partie:
     evs=Evenement.objects.filter(creation__gte=debut.evenement.creation).select_related('user').order_by('numero')
-    #actions correspondantes:
-    actions=EvenementSPR.objects.filter(evenement__in=evs)\
-                .select_related('evenement','evenement__user')\
-                .order_by('evenement__numero')
-                
-    listeBlocks=SimpleListeBlockSnap()  
     
-    #for spr in actions:
+    #on traite les évènements
     for evt in evs:
         theTime=evt.time
         print('---- temps=',theTime)
+        if evt.type=='EPR':
+            epr=evt.evenementepr.all()[0]
+            if epr.type in ['START','STOP','REPR','SNP']:
+                eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}
+                if epr.type=='SNP':
+                    snp=SnapSnapShot.objects.get(id=epr.detail)
+                    eprInfos['%s' % theTime]['snp']=serializers.SnapSnapShotSerializer(snp).data
+                listeBlocks.addTick(theTime)
         if evt.type=='ENV':
             env=evt.environnement.all()[0]
             action='ENV_%s' % env.type
@@ -279,6 +321,7 @@ def listeblock(request,id=None):
     for temps in listeBlocks.ticks:
         print('*********************')
         res=[]
+        
         print('temps ',temps)
         for i in listeBlocks.firstBlocks:
             print('  traitement ',i)
@@ -299,7 +342,7 @@ def listeblock(request,id=None):
                 if resultat['change'] is not None:
                     resultat['change']='change '+resultat['change']
                 res.append(resultat)
-        commandes.append({'temps':temps,'snap':res})
+        commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
     """
     return Response({"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
@@ -317,6 +360,7 @@ def listeblock(request,id=None):
                      #'links':listeBlocks.links,
                      'etapes':{},#etapes,
                      #'actions':[a.toD3() for a in actions]
+                     "infos":infos,
                      })
                             
 """
@@ -368,6 +412,7 @@ class SimpleBlockSnap:
         self.rang=rang           # rang du block dans les inputs de son parent
         self.conteneurBlockId=None # id block conteneur s'il existe (ie ce block est "wrapped"    
         self.inputs={}           # liste des id blocks inputs , sous la forme {rang:inputid}
+        self.wrapped={}         # liste des ids des blocks commandes contenus, sous la forme {rang:commandid}
         self.contenu=None        # contenu du block(ie la valeur pour un InputSlotMorph)
         """
         type du changement: 
@@ -414,7 +459,8 @@ class SimpleBlockSnap:
     def addInput(self,block=None,JMLid=None,rang=None):
         """ 
         met l'id du block en input et met le chanmps parent du block à jour
-        (si block est donné)        
+        (si block est donné)
+        renvoie le JMLid de l'input remplacée         
         """
         
         if block is not None:
@@ -429,6 +475,23 @@ class SimpleBlockSnap:
         anc=self.inputs['%s' % rang] if rang in self.inputs else None        
         self.inputs['%s' %rang]=inputNodeId
         return anc
+    def addWrapped(self,block=None,JMLid=None,rang=None):
+        """
+        met l'id du block en input et met le chanmps conteneur du block à jour
+        (si block est donné)
+        """
+        if block is not None:
+            wrappedNodeId=block.JMLid
+            block.conteneurBlockId=self.JMLid
+            if rang is not None:
+                block.rang=rang
+            else:
+                rang=block.rang
+        else:
+            wrappedNodeId=JMLid        
+        anc=self.wrapped['%s' % rang] if rang in self.wrapped else None        
+        self.wrapped['%s' %rang]=wrappedNodeId
+        return anc
     
     def copy(self,thetime,action):
         """ renvoie une copie complète en chabngeant time et action"""
@@ -439,6 +502,9 @@ class SimpleBlockSnap:
         cp.inputs={}
         for i in self.inputs:
             cp.inputs[i]=self.inputs[i]
+        cp.wrapped={}
+        for i in self.wrapped:
+            cp.wrapped[i]=self.wrapped[i]
         return cp
     
     def duplic(self,liste,thetime,action):
@@ -462,9 +528,53 @@ class SimpleBlockSnap:
         block.conteneurBlockId=replace(block.conteneurBlockId)
         for i in block.inputs:
             block.inputs[i]=replace(block.inputs[i])
+        for i in block.wrapped:
+            block.wrapped[i]=replace(block.wrapped[i])
         block.change='copyfrom'
         blockOrig.change='copyto'
         return block,blockOrig
+                
+    def setNextBlock(self,block):
+        """
+        fixe le nextblock ,
+        et ajuste le prevBlock de block
+        """
+        if block is not None:
+            self.nextBlockId=block.JMLid
+            block.prevBlockId=self.JMLid
+        else:
+            self.nextBlockId=None            
+        return block
+    
+    def setPrevBlock(self,block):
+        """
+        fixe le prevBlock ,
+        et ajuste le nextblock de block
+        """
+        if block is not None:
+            self.prevBlockId=block.JMLid
+            block.nextBlockId=self.JMLid
+        else:
+            self.prevBlockId=None
+        return block
+    
+    def getNom(self):
+        if self.rang is not None:
+            rang=" (rang %s)" % self.rang
+        else:
+            rang=''
+        if self.contenu:
+            nom= "(c)%s" % self.contenu
+        elif self.blockSpec:
+            nom= "(s)%s" %self.blockSpec
+        else:
+            nom= "(t)%s" % self.typeMorph
+        return '%s%s' %(nom,rang)
+      
+    def __str__(self):        
+        return "%s_%s: %s (%s,%s)" % (self.JMLid,self.time,self.getNom(),self.action,self.change)
+    def __repr__(self):
+        return self.__str__()
     
 class SimpleListeBlockSnap:
     """
@@ -518,6 +628,27 @@ class SimpleListeBlockSnap:
     def setFirstBlock(self,block):
         if block.JMLid not in self.firstBlocks:
             self.firstBlocks.append(block.JMLid)
+        
+    def setNextBlock(self,source,destination,type='nextblock'):
+        """
+        (re)définit le nextBlock de source sur destination
+        et met à jour les liens
+        """
+        source.setNextBlock(destination)
+        if destination is not None:
+            self.links.append({'source':source.getId(),
+                           'target':destination.getId(),
+                           'type':type})
+    def setPrevBlock(self,source,destination,type='nextblock'):
+        """
+        (re)définit le prevBlock de source sur destination
+        et met à jour les liens
+        """
+        if destination is not None:
+            destination.setNextBlock(source)    
+            self.links.append({'source':destination.getId(),
+                           'target':source.getId(),
+                           'type':type})
         
     def lastNode(self,JMLid,thetime,veryLast=False):
         """
@@ -630,3 +761,95 @@ class SimpleListeBlockSnap:
         resultat={'JMLid':block.JMLid,'time':thetime,'commande':nom,'action':block.action if block.time==thetime else '','change':block.change}
         #print('nom',nom,' résultat de niom',resultat)
         return resultat,nom,change
+    
+    def addFromXML(self,item,withScript=False):
+        """
+        rajoute (avec récursion) les blocks issus d'un fichier XML
+        les place au temps 0
+        Si withScript, on ajoute un block Script par script 
+        """
+        #print('item',item.tag,item.items())
+        if item.tag=='block':
+            block=SimpleBlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            if 'var' in item.attrib:
+                block.contenu=item.get('var')
+                block.blockSpec=item.get('var')
+                self.append(block)
+                return block
+            
+            #c'est un ['CommandBlockMorph', 'HatBlockMorph','ReporterBlockMorph'] avec blockSpec
+            block.blockSpec=item.get('blockSpec')
+            params=re.findall(r'(%\w+)',block.blockSpec)
+            rang=0
+            for e in params:
+                if e in ['%inputs','%words','%exp','%scriptvars','%parms']:
+                    #on a ttend un multiArgMorph
+                    inp=self.addFromXML(item.getchildren()[rang])
+                    inp.rang=rang
+                    block.addInput(inp);                
+                    rang+=1
+                elif e in ['%c','%cs','%cl']:
+                    #on attend un Cslotmorph(commandes)
+                    inp=self.addFromXML(item.getchildren()[rang])
+                    inp.rang=rang
+                    block.addInput(inp);                
+                    rang+=1                
+                elif e not in ['%clockwise','%counterclockwise','%greenflag']:
+                    #un seul input
+                    inp=self.addFromXML(item.getchildren()[rang])
+                    inp.rang=rang
+                    block.addInput(inp);                
+                    rang+=1
+            self.append(block)
+            return block   
+        elif item.tag=='list':
+            block=SimpleBlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            # récupération des inputs
+            for rang,inp in enumerate(item.getchildren()):
+                block_in=self.addFromXML(inp)
+                block_in.rang=rang
+                block.addInput(block_in)
+            self.append(block)
+            return block
+        elif item.tag=='l':
+            block=SimpleBlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            if len(item.getchildren())>0:
+                #si c'est une 'option'
+                block.contenu=item.getchildren()[0].text
+            else:
+                block.contenu=item.text
+            self.append(block)
+            return block
+        elif item.tag=='color':
+            block=SimpleBlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            block.contenu=item.text
+            self.append(block)
+            return block
+        elif item.tag=='script':            
+            jmlid=item.get('JMLid','')
+            if jmlid=='':
+                #pas de jmlid, c'est un bloc de tete
+                jmlid='SCRIPT_%s' % datetime.now().timestamp()
+                #si pas de typeMorph, c'est que ce n'est pas un script
+                #donc une variable ou opérateur etc
+                block=SimpleBlockSnap(jmlid,0,item.get('typemorph','NoScriptsMorph'))
+                block.blockSpec="Script_%s" % item.getparent().index(item)
+                self.append(block)
+                if withScript:
+                    self.setFirstBlock(block)
+            else:
+                block=SimpleBlockSnap(jmlid,0,item.get('typemorph'))
+                self.append(block)
+            #on ajoute les blocks comme étant contenus
+            prevblock=None
+            rang=0
+            for b in item.findall('block'):
+                child=self.addFromXML(b)
+                if prevblock is not None:
+                    self.setNextBlock(prevblock,child)
+                block.addWrapped(block=child,rang=rang)                
+                prevblock=child                
+                rang+=1
+                #block.addWrappedBlock(child)
+                #TODO: liste.addWrappedBlock(block,child)
+            return block
