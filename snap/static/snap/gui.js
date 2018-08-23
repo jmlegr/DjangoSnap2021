@@ -4306,9 +4306,12 @@ IDE_Morph.prototype.openProjectString = function (str) {
  */
 IDE_Morph.prototype.initIds = function(sendScripts=true) {
     recurs=function(block) {
-
+	if (isNaN(block.JMLid)) {
+	    console.log('NAN Trouvé sur',block.constructor.name)
+	    block.JMLid=objectId(block)
+	}
 	block.JMLdroppedId=block.JMLid
-	// console.log('>',block.JMLid,block,block.inputs(),block.nextBlock?block.nextBlock():'--');
+	//console.log('>',block.JMLid,block,block.inputs?block.inputs():'pasinputs',block.nextBlock?block.nextBlock():'--',block.constructor.name);
 	var script={}
 	if (sendScripts) {
 	    script={
@@ -4382,10 +4385,8 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
     // console.log('chrgé',scriptsObj);
     for (i=0;i<scriptsObj.length;i++) {
 	var s=scriptsObj[i];
-	// console.log('block',s.JMLid,' next:
-	// ',s.nextBlock()?s.nextBlock().JMLid:'--');
-	// console.log(d+'Structure de '+this.constructor.name+",
-	// ("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
+	 //console.log('block',s.JMLid,' next:',s.nextBlock()?s.nextBlock().JMLid:'--');
+	 //console.log('Structure de '+this.constructor.name+",("+this.JMLid+","+this.JMLdroppedId+")-"+this.selector);
 	if (sendScripts) scripts.push(recurs(s))
 	else recurs(s)
     }
