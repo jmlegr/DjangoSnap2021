@@ -1,11 +1,8 @@
 {% load static %}
-{% load thumbnail %}
+
 
 {% for c in data %}
  <p>id: {{c.id}} <img src="{{c.image}}" border="5" width="50" height="50"/></p>
 
-<p>id: {{c.id}}
-{% thumbnail c.image 50x50  as im %}
-    <img src="{{ im }}" width="50" height="50"/>{{ c.image}}
-</p>
+
 {% endfor %}
