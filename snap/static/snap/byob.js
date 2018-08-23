@@ -819,7 +819,7 @@ CustomCommandBlockMorph.prototype.edit = function () {
         //editor.popUp();
         //Morph.prototype.trackChanges = true;
         //editor.changed();
-        if (userGroup=="prof") {
+        if (userCanEditCustomCommand) {
             Morph.prototype.trackChanges = false;
             editor = new BlockEditorMorph(def, rcvr);
             editor.popUp();
