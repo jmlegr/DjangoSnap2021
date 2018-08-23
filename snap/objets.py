@@ -60,6 +60,15 @@ class BlockSnap:
         self.childs=[]           # liste des blocks enfants 
         self.wraps=[]            # liste des blocks contenus
         self.contenu=None        # contenu du block(ie la valeur pour un InputSlotMorph)
+        """
+        type du changement: 
+            changed pour une valeur changée
+            added pour un bloc qui en remplace un autre
+            deleted pour un bloc supprimé
+            ...
+        """        
+        self.change=None
+            
         #print('BLOCK %s_%s: %s (%s) créé' % (self.JMLid,self.time,self.typeMorph,self.action))
     
     def getId(self):
@@ -73,8 +82,9 @@ class BlockSnap:
     
     
     
-    def copy(self,time,action='',deep=False):
+    def copy(self,time,action='',deep=False, attrs=[]):
         """ renvoie une copie du BlockSnap,        
+            is attrs est fourni,seuls ces attributs seront en copie indépendante
         """
         def modif(b):
             b.time=time
@@ -85,11 +95,22 @@ class BlockSnap:
         
         if deep:
             #copie profonde, mais pas de rajout dans la liste!
-            newblock=copy.deepcopy(self)            
+            newblock=copy.deepcopy(self)                
+            modif(newblock)            
+        elif attrs:            
+            newblock=copy.copy(self)
+            newblock.time=time
+            newblock.action=action 
+            for attr in attrs:
+                if type(self.__getattribute__(attr))==BlockSnap:
+                    newblock.__setattr__(attr,self.__getattribute__(attr).copy(time,action))
+                if type(self.__getattribute__(attr))==list:
+                    newblock.__setattr__(attr,[i.copy(time,action) for i in self.__getattribute__(attr)])
         else:
             newblock=copy.copy(self)
-        modif(newblock)
-                
+            newblock.time=time
+            newblock.action=action 
+        newblock.change=None
         return newblock
             
         
@@ -136,6 +157,30 @@ class BlockSnap:
             block.addInput(self)
         else:
             self.parentBlock=None
+    
+    def getInput(self,rang=None,JMLid=None):
+        """ 
+        renvoie l'input de rang/JMLid donné
+        ou None si aucun
+        """
+        try:
+            inp=next(n for n in self.inputs 
+                     if n is not None and n.JMLid=='%s' %JMLid or n.rang=='%s' % rang)
+        except StopIteration:
+            return None
+        return inp
+    
+    def changeInput(self,rang=None,JMLid=None,newVal=None):
+        """
+        cherche l'input de rang/JMLid donné et change sa valeur
+        exception si non existant
+        """
+        inp=next(n for n in self.inputs 
+                 if n is not None and n.JMLid=='%s' % JMLid or n.rang=='%s' % rang)
+        inp.contenu=newVal    
+        inp.change='changed'    
+        return inp 
+    
     def replaceInput(self,block,rang=None,copy=False):
         """
         remplace l'input de rang rang par le block
@@ -145,7 +190,7 @@ class BlockSnap:
         print('replace',self.inputs,' par ',block, 'rang ',rang)
         
         try:
-            inputChanged=next((i for i in self.inputs if i.rang==rang))            
+            inputChanged=next((i for i in self.inputs if '%s' % i.rang=='%s' % rang))            
         except StopIteration as s:
             print( s,block.toJson(),rang)
             raise 
@@ -179,7 +224,9 @@ class BlockSnap:
         j['inputs']=[]           # liste des blocks inputs
         j['name']=self.getNom()
         for i in sorted(self.inputs,key=lambda inp: inp.rang):
-            j['inputs'].append(i.getId())            
+            j['inputs'].append(i.getId())        
+        j['change']=self.change          
+        
         return j
         #self.childs=[]           # liste des blocks enfants 
         #self.wraps=[]            # liste des blocks contenus
@@ -198,11 +245,14 @@ class BlockSnap:
             nom= "(t)%s" % self.typeMorph
         return '%s%s' %(nom,rang)  
     
-    def getValeur(self):
+    def getValeur(self,toHtml=False):
         if self.contenu is not None:
             nom= "%s" % self.contenu
         elif self.blockSpec:
-            nom= "**%s**" %self.blockSpec
+            if toHtml:
+                nom="<em>%s</em>" % self.blockSpec
+            else:
+                nom= "<%s>" %self.blockSpec
         else:
             nom= "(t)%s" % self.typeMorph
         return '%s' %(nom)
@@ -224,7 +274,7 @@ class BlockSnap:
             rang=" (rang %s)" % self.rang
         else:
             rang=''
-        return "%s_%s: %s%s (%s)" % (self.JMLid,self.time,self.getNom(),rang,self.action)
+        return "%s_%s: %s%s (%s,%s)" % (self.JMLid,self.time,self.getNom(),rang,self.action,self.change)
     def __repr__(self):
         return self.__str__()
 
@@ -274,6 +324,7 @@ class ListeBlockSnap:
     def addBlock(self,block):
         """
         ajoute un blockSnap à la liste, s'il n'y est pas déjà
+        si il y est on le remplace
         """
         if block.JMLid not in self.liste:
             self.liste[block.JMLid]=[]
@@ -286,15 +337,24 @@ class ListeBlockSnap:
                 print(b[0].toJson())
                 print(block.toJson())
                 print('FEXIST')
-            else:
-                self.liste[block.JMLid].append(block)
-    def addLink(self,sourceId,targetId,typeLien='changed'):
+                self.liste[block.JMLid].remove(b[0])
+            self.liste[block.JMLid].append(block)
+    def addLink(self,source,target,typeLien='changed'):
         """ ajout d'un lien entre les ids (et pas JMLid)
          typeLien: changed sit le block a été modifié
                    replaced si le block a été remplacé par un autre
                    moved si le bloc a été déplacé
                    removed si le bloc a été enlevé (?)
         """     
+        
+        if type(source)==BlockSnap: 
+            sourceId=source.getId()            
+        else:
+            sourceId='%s' % source
+        if type(target)==BlockSnap: 
+            targetId=target.getId()
+        else:
+            targetId='%s' % target
         self.links.append({'source':sourceId,
                            'target':targetId,
                            'type':typeLien})
@@ -343,6 +403,7 @@ class ListeBlockSnap:
             liste.append(self.lastBlock(jmlid, time, veryLast))
         return liste
     
+
     def findBlock(self,block,liste):
         """
         renvoie le block de la liste donnée(ie de même JMLid),         
@@ -574,7 +635,7 @@ class ListeBlockSnap:
                  
         return block
                     
-    def snapAt(self,time):
+    def snapAt(self,atime,toHtml=False):
         liste=None
         def afficheCommand(block,decal=0):            
             """ (voir dans blocks.js)
@@ -633,10 +694,16 @@ class ListeBlockSnap:
     %parms       - for an expandable list of formal parameters
     %ringparms   - the same for use inside Rings
     """
+            trad={'%clockwise':'à droite',
+                  '%counterclockwise':'à gauche',
+                  '%greenflag':'drapeau'}
             def traiteElement(e,i,resultat):
                 try:
-                    en=next(inp for inp in block.inputs if inp.rang==i)
-                    en=self.findBlock(en, liste)
+                    inp=next(inp for inp in block.inputs if inp.rang==i)
+                    en=self.findBlock(inp, liste)
+                    print('BLOCK',block.getId(),'(%s)' % [i.getId() for i in block.inputs])
+                    print('    INP',inp.getId(),inp.rang,' Val:%s' % inp.contenu)
+                    print('    EN ',en.getId(),en.rang,' Val:%s' % en.contenu)
                     
                     if e[1:] in ['c','cs','cl']: #c'est une commande    
                         s=self.findBlock(en.inputs[0],liste)
@@ -649,13 +716,26 @@ class ListeBlockSnap:
                             repl='['+repl+']'
                             resultat+=res
                         else:
-                            repl=en.getValeur()
+                            repl=en.getValeur(toHtml=toHtml)                            
                             #repl=en.contenu
-                    
+                        if en.change is not None and en.time==atime:
+                            if toHtml:
+                                repl='*<b>%s</b>*' % repl
+                            else:
+                                repl='*%s*' % repl
+                        #normalement ce qui suit n'est pas exécuté,
+                        #on a supprimé le 'tick' de levenement replacedSilent
+                        if en.change=='replacedSilent' and en.time==atime:
+                            print('faut pas le prendre')
+                            repl=repl+'PASPRENDRE'
+                            replacedSilent=True
                 except StopIteration:
-                    #print('EXCEPTION',ex)
                     repl=e
-                    #print(e,'??')
+                    print(e,'??')
+                if toHtml:
+                    if en and en.time==atime and en.change is not None:                    
+                    #    return '(%s,%s)%s' % (en.action,en.change,repl)
+                        return '(%s)%s' %(en.change,repl)                
                 return repl
             
             resultat=[]
@@ -665,7 +745,9 @@ class ListeBlockSnap:
             repl={}
             i=0 #rang du %truc traité
             for e in txt:
-                if e[1:]!="words":
+                if e in trad.keys():
+                    nom=nom.replace(e,'%s' %trad[e],1)
+                elif e[1:]!="words":
                     repl=traiteElement(e,i,resultat)
                     nom=nom.replace(e,'%s' %repl,1)                    
                 else:
@@ -680,7 +762,7 @@ class ListeBlockSnap:
                             repl='['+repl+']'
                             resultat+=res                            
                         else:
-                            repl=inputMulti.getValeur()
+                            repl=inputMulti.getValeur(toHtml=toHtml)
                         words+="|"+repl+"|"                       
                     nom=nom.replace(e,'%s' % words,1)
                 i+=1               
@@ -703,6 +785,7 @@ class ListeBlockSnap:
                      }
                 resultat.append(elt)       
                 res,elt['commande']=afficheCommand(e,decal)
+                elt['action']=e.action if e.time==atime else ''
                 #print(decal,"-",block.JMLid,"***resultat",resultat)
                 resultat+=res
                 #print(decal,"-",block.JMLid,"+++resultat",resultat)
@@ -723,11 +806,14 @@ class ListeBlockSnap:
             leur conteneur ?
             le nom complet de la commande avec remplacement des %truc
         """
-            
-        print("temps ",time)
+        print('')
+        print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+        print("temps ",atime)
         resultat={}
-        #on récupère la liste des blocks au temps time
-        liste=self.lastListe(time, veryLast=True)
+        #on récupère la liste des blocks au temps atime
+        liste=self.lastListe(atime, veryLast=True)        
+        print('liste',liste)
+        print('firsts',self.firstBlocks)
         #on commence par le début...
         for d in self.firstBlocks:
             resultat[d]=[]
@@ -737,12 +823,12 @@ class ListeBlockSnap:
                 #print("avant traite",e,e.prevBlock,e.parentBlock,e.nextBlock)
                 #si ce n'est plus un bloc de tête, on ne le traite pas
                 if e.prevBlock is None and e.parentBlock is None                :
-                    print("on traite ",e,e.parentBlock)
+                    print("on traite ",e,e.parentBlock,e.change)                    
                     if e.action=="SPR_DEL": 
                         #on ne le traite pas, il est supprimé
                         pass
                     else:
-                        resultat[d]+=parcours(liste,e,0)
+                        resultat[d]+=parcours(liste,e,0)                        
                 if e.prevBlock is None and e.parentBlock is not None:
                     print("pas traité",e,e.parentBlock)
             except Exception as ex:
@@ -815,18 +901,20 @@ class ListeBlockSnap:
                 bs=newblock.inputs[0]
                 while bs is not None:
                     newblock.addWrappedBlock(bs)
-                    bs=bs.nextBlock               
+                    bs=bs.nextBlock              
         elif type(block)==BlockSnap:            
             #c'est un BlockSnap inclus dans le SPR ou autre  
             #newblock=copy.deepcopy(block)
             #newblock=block.copy(time,action,deep=True)
-            newblock=self.copyLastBlock(block, time, action, deep=True, withInputs=True)
+            #newblock=self.copyLastBlock(block, time, action, deep=True, withInputs=True)
+            newblock=self.lastBlock(block, time).copy(time,action,attrs=['inputs'])
+            create.append(newblock)
+            self.addBlock(newblock)
             parcours(newblock)
             #newblock.time=time       
             #newblock.action=action
             #create.append(newblock)
             #self.addBlock(newblock)
-            
         elif block is None:
             newblock=None
         else:
@@ -857,10 +945,10 @@ class ListeBlockSnap:
         
     def toJson(self):
         """ renvoie sous la forme [{BlockSnap},{}]"""
-        j=[]
+        j=[]        
         for JMLid in self.liste:
             #j[JMLid]=[]
-            for n in self.liste[JMLid]:
+            for n in sorted(self.liste[JMLid],key=lambda n: n.time):
                 #j[JMLid].append(n.toJson())
                 j.append(n.toJson())
         return j

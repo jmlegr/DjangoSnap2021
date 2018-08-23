@@ -6,6 +6,8 @@ from django.db.models import signals
 import os
 from django.core.files.storage import default_storage
 from django.db.models import FileField
+from snap.objets import BlockSnap
+from django.db.models.fields import related
 
 
     
@@ -53,6 +55,7 @@ class Evenement(models.Model):
         (AUTRE,'Autre évènement'),
         )
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
+    session_key=models.CharField(max_length=40,null=True)
     programme=models.ForeignKey(ProgrammeBase,null=True, on_delete=models.CASCADE) #programme de base chargé
     type=models.CharField(max_length=3,choices=TYPE_EVENEMENT_CHOICES, default=AUTRE) #type d'évènement
     time=models.IntegerField() #Temps (local à Snap) de l'évènement
@@ -184,7 +187,7 @@ class EvenementEPR(SnapProcess):
         ('SNP','Snapshot'), #id de l'image dans detail
         ('AUTRE','(Non identifié)'),
         )
-    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
+    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementepr')
     type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement    
     detail=models.CharField(max_length=100,null=True,blank=True)
     processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
@@ -255,15 +258,15 @@ class EvenementSPR(models.Model):
         ('OPEN','Ouverture de Scripts'),
         ('AUTRE','(Non identifié'),
         )
-    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE)
+    evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementspr')
     type=models.CharField(max_length=7,choices=SPR_CHOICES, default='AUTRE') #type d'évènement    
     detail=models.TextField(null=True,blank=True)
     location=models.CharField(max_length=30,null=True,blank=True)
     #Informations sur le block    
     blockId=models.IntegerField(null=True) #JMLid du block en cause
     typeMorph=models.CharField(max_length=30,null=True,blank=True) #type du block
-    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block
-    blockSpec=models.CharField(max_length=50,null=True,blank=True) #blockSpec du block
+    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block 
+    blockSpec=models.CharField(max_length=50,null=True,blank=True) #blockSpec du block ou valeur
     category=models.CharField(max_length=30,null=True,blank=True) #categorie du block
     parentId=models.IntegerField(null=True) #JMLid du block parent (ou lieu d'insertion)
     nextBlockId=models.IntegerField(null=True) #JMLid du block suivant
@@ -274,6 +277,31 @@ class EvenementSPR(models.Model):
     def __str__(self):
         return '(%s) %s (%s) %s' % (self.evenement,self.get_type_display(),self.blockId,self.detail if self.detail else '')
     
+    def toBlockSnap(self,time,action):
+        """
+        crée un BlockSnap de base (sans les inputs/nextblocks etc
+        """
+        return BlockSnap(JMLid=self.blockId,
+                         time=time,
+                         typeMorph=self.typeMorph,
+                         blockSpec=self.blockSpec,
+                         selector=self.selector,
+                         action=action)
+    def addToListeBlockSnap(self,liste,time,action):
+        """
+        crée et ajoute (récursivement) les BlockSnap dans la liste
+        """
+        b=self.blockSnap(time, action)
+        liste.addBlock(b)
+        for i in self.inputs.all():
+            bi=BlockSnap(JMLid=i.JMLid,time=time,typeMorph=i.typeMorph,action=action)
+            bi.rang=i.rang
+            bi.contenu=i.contenu
+            b.addInput(bi)
+            liste.addBlock(bi)
+        return b
+    
+            
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
@@ -284,7 +312,17 @@ class EvenementSPR(models.Model):
         res['type_display']=self.get_type_display()
         res['detail']=self.detail
         return res
-    
+    def aff(self,niv=0):
+        print('type:%s blockId:%s spec:%s morph:%s detail:%s' 
+              % (self.type,self.blockId,self.blockSpec,self.typeMorph,self.detail))
+        if niv>0:
+            print('    loc:%s parentId:%s next:%s child:%s target:%s'
+                    % (self.location,self.parentId,self.nextBlockId,self.childId,self.targetId))
+        if niv>1:
+            print('    inputs',[i for i in self.inputs.all()])
+        if niv>2:
+            print('    scripts:',[(s, [si for si in s.inputs.all()]) for s in self.scripts.all()])
+        
     class Meta:
         ordering=('-evenement__time',)
         get_latest_by=['evenement__time',]

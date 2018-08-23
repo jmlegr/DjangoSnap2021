@@ -976,7 +976,7 @@ def current_datetime(request):
 
 @login_required(login_url='/accounts/login/')
 def testsnap(request):
-    return render(request,'snap/snap.html')
+    return render(request,'snap/snap.html',context={'canEditCustomCommand':True})
 
 
 def pageref(request):
@@ -1971,8 +1971,187 @@ def testblock(request,id=277):
                                  for a in actions]
                      })
     
-             
-
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def listeblock(request,id=None):   
+    def listecreateInputs(node,spr,time,action,rang=None,lastId=None):
+        """
+        crée et insère la liste des entrée de node
+        si l'une delle à le même rang que rang, on positionne un flag (changed)
+        dans ce cas, on marque un lien sur le dernier bloc modifié (de JMLid lastId)
+        """        
+        for i,c in enumerate(spr.inputs.all()):
+                inputNode,created=listeBlocks.addFromBlock(c,time, action=action)
+                if rang and '%s' % c.rang== '%s' % rang: 
+                    inputNode.change="changed"
+                    inputNode.lastModifBlock=listeBlocks.lastBlock(lastId, time)
+                    #inputNode.parentBlock=inputNode.lastModifBlock.parentBlock                    
+                if inputNode.lastModifBlock:
+                    listeBlocks.addLink(inputNode.lastModifBlock, inputNode, 'changed')
+                node.addInput(inputNode)                
+                #si un input est un multiarg, il faut aller chercher dans les scripts         
+                if c.typeMorph=='MultiArgMorph':
+                    for j in spr.scripts.all()[i].inputs.all():
+                        inp,created=listeBlocks.addFromBlock(j,theTime,action=action)
+                        inputNode.addInput(inp)
+        return node
+    
+    debut=EvenementENV.objects.filter(type='NEW').select_related('evenement','evenement__user').latest('evenement__creation')
+    #evenements de cette partie:
+    evs=Evenement.objects.filter(creation__gte=debut.evenement.creation).select_related('user').order_by('numero')
+    #actions correspondantes:
+    actions=EvenementSPR.objects.filter(evenement__in=evs)\
+                .select_related('evenement','evenement__user')\
+                .order_by('evenement__numero')
+                
+    listeBlocks=objets.ListeBlockSnap()  
+    
+    for spr in actions:
+        theTime=spr.evenement.time
+        if spr.type!='NEWVAL' or spr.typeMorph!='InputSlotMorph':
+            #on ne prend pas en compte l'evènement de remplacement silencieux (qui précède un drop)
+            listeBlocks.addTick(theTime)        
+        action='SPR_%s' % spr.type
+        print('----')
+        spr.aff(niv=3)
+        newNode=BlockSnap(spr.blockId, 
+                                  theTime,
+                                  spr.typeMorph,
+                                  spr.blockSpec,
+                                  spr.selector,
+                                  spr.category,
+                                  action=action
+                                  )
+        if spr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+            #si on a créé un input directement, la valeur est dans blockspec
+            newNode.contenu=spr.blockSpec
+            isSlot=True
+        else:
+            isSlot=False
+        
+        #traitement NEW: il faut inclure les inputs,
+        if spr.type=='NEW':
+            newNode=listecreateInputs(newNode, spr, theTime,action)  
+            listeBlocks.addBlock(newNode) 
+            listeBlocks.setFirstBlock(newNode)             
+            #c'est tout ce qui nous intéresse pour suivre les entrées
+        elif spr.type=='VAL':
+            #c'est une modification de la valeur (directe) d'un inputSlotMorph
+            #on cherche l'input modifié (par le rang ou par le detail
+            inputNode=next(e for e in spr.inputs.all()
+                           if '%s' % e.JMLid=='%s' % spr.detail and '%s' % e.rang=='%s' % spr.location)
+            #on cré un nouveau block parent par copie et on change la valeur           
+            n=listeBlocks.lastBlock(spr.blockId,theTime)
+            newNode=n.copy(theTime,action,attrs=['inputs'])
+            #newNode,created=listeBlocks.addFromBlock(n,theTime,action)            
+            newNode.changeInput(JMLid=spr.detail, newVal=inputNode.contenu)            
+            listeBlocks.addBlock(newNode)                       
+            #on ajoute les inputs en s'assurant qu'ils sont bien les derniers valides          
+            for inp in newNode.inputs:
+                if (inp.rang!=inputNode.rang):
+                    inp=listeBlocks.lastBlock(inp.JMLid,theTime)
+                listeBlocks.addBlock(inp)
+                   
+        elif spr.type=='DROPVAL' or spr.type=='NEWVAL':                    
+            """
+            c'est un reporter existant(DROP) ou nouveau(NEW) déplacé dans un inputSlotMorph                    
+            """           
+            inputA=listeBlocks.lastBlock(spr.detail,theTime) #cible remplacée   
+            if spr.type=='NEWVAL':
+                #on ajoute dans la liste, avec les inputs (comme "NEW")
+                inputB=listecreateInputs(newNode, spr, theTime,action)
+                listeBlocks.addBlock(inputB)
+            else: # donc DROPVAL
+                lb=listeBlocks.lastBlock(spr.blockId,theTime)
+                inputB=lb.copy(theTime,action,attrs=['inputs'])
+                listeBlocks.addBlock(inputB)
+                #inputB,created=listeBlocks.addFromBlock(lb,theTime,action)         
+                #on ajoute les inputs
+                for inp in inputB.inputs:
+                    #inp=listeBlocks.lastBlock(inp.JMLid,theTime).copy(theTime,action)
+                    listeBlocks.addBlock(inp)
+            #onrecopie le parent, y compris inputs, et on modifie l'input
+            if isSlot:
+                parentA=listeBlocks.lastBlock(spr.parentId,theTime).copy(theTime,action,attrs=['inputs'])
+                #parentA=listeBlocks.lastBlock(spr.parentId,theTime)
+                rang=next(i.rang for i in parentA.inputs if i.JMLid==inputA.JMLid)
+                inputA.rang=rang
+                inputB.rang=inputA.rang
+                inputB.change='replacedSilent'
+            else:
+                parentA=listeBlocks.lastBlock(inputA.parentBlock,theTime).copy(theTime,action,attrs=['inputs'])
+                #parentA=listeBlocks.lastBlock(inputA.parentBlock,theTime)
+                inputB.rang=inputA.rang               
+                inputB.change='added'    
+            listeBlocks.addBlock(parentA)
+            for inp in parentA.inputs:
+                if (inp.rang!=inputB.rang):
+                    inp=listeBlocks.lastBlock(inp.JMLid,theTime)
+                listeBlocks.addBlock(inp)
+            #newParent,created=listeBlocks.addFromBlock(parentA,theTime,action)
+            parentA.replaceInput(inputB)
+            #parentA.change='input substituted'+' %s' % inputB.change if inputB.change else ''
+            listeBlocks.addBlock(parentA)
+            #on crée une copie de l'input remplacé
+            newInputA=inputA.copy(theTime,action,attrs=['inputs'])
+            #newInputA,created=listeBlocks.addFromBlock(inputA,theTime,action)
+            newInputA.rang=None
+            newInputA.change="replaced"
+            if newInputA.typeMorph=='ReporterBlockMorph':
+                #si c'est un reporter, il devient script indépendant
+                listeBlocks.addFirstBlock(newInputA)
+                #listeBlocks.setFirstBlock(newInputA)
+                #for inp in newInputA.inputs:
+                #    inp=listeBlocks.lastBlock(inp.JMLid,theTime).copy(theTime,action)
+                #    listeBlocks.addBlock(inp)
+            else:
+                #sinon il disparait
+                listeBlocks.addBlock(newInputA)
+            listeBlocks.addLink(inputA,inputB,'substituted')
+            listeBlocks.addLink(inputA,newInputA,'replaced')
+        elif spr.type=='DROP' and spr.typeMorph=='ReporterBlockMorph':
+            """
+            on ne s'intéresse qu'au cas des reporter
+            les commandes ne nous servant pas (pour l'instant, voir plus tard les fonctions)
+            pour le suivi des paramètres
+            Si c'est juste un drop, c'est donc que ce block se retrouve seul
+            """
+            #newNode=listecreateInputs(newNode, spr, theTime, 'DROP')
+            prevNode=listeBlocks.lastBlock(spr.blockId, theTime)
+            newNode=prevNode.copy(theTime,'DROP',attrs=['inputs'])
+            #newNode,created=listeBlocks.addFromBlock(prevNode,theTime,action)
+            newNode.change='moved'            
+            newNode.setParent(None)
+            listeBlocks.addFirstBlock(newNode)
+            #listeBlocks.setFirstBlock(newNode)
+            listeBlocks.addLink(prevNode,newNode,'moved')
+        else:
+            print(spr.type, 'non traité')
+    r=[]
+    for i in listeBlocks.ticks:        
+        r.append({'temps':i,
+                  'snap':listeBlocks.snapAt(i,toHtml=True)
+                  })
+    print('----------------------------------------------------')
+    print(r)
+    #return Response(r)
+    
+    return render(request,'liste_entree.html',{"commandes":r,
+                     "scripts":listeBlocks.firstBlocks,
+                     "data":listeBlocks.toJson(),
+                     "ticks":listeBlocks.ticks,
+                     'links':listeBlocks.links,
+                     'etapes':{},#etapes,
+                     'actions':[a.toD3() for a in actions]
+                     })
+    return Response({"commandes":r,
+                     "scripts":listeBlocks.firstBlocks,
+                     "data":listeBlocks.toJson(),
+                     "ticks":listeBlocks.ticks,
+                     'links':listeBlocks.links,
+                     'etapes':{},#etapes,
+                     'actions':[a.toD3() for a in actions]
+                     })
 import base64
 def testAjax(request):
     image_b64 = request.POST.get('image') # This is your base64 string image

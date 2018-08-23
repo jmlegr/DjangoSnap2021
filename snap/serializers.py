@@ -2,8 +2,9 @@ from django.contrib.auth.models import User, Group
 from rest_framework import serializers, reverse
 from snap.models import ProgrammeBase, Evenement,  EvenementEPR,\
     EvenementENV,Classe , EvenementSPR, BlockInput, \
-    Block, Eleve, Classe
+    Block, Eleve, Classe, SnapSnapShot
 from django.core.serializers import _serializers
+from snap import models
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -63,8 +64,10 @@ class EvenementSerializer(serializers.ModelSerializer):
     def get_type(self,obj):
         return obj.get_type_display()
     """
-    def create(self, validated_data):        
-        evt = Evenement.objects.create(user=self.context['request'].user,**validated_data)
+    def create(self, validated_data):   
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **validated_data)
         return evt
         
 class EvenementEPRSerializer(serializers.ModelSerializer):
@@ -77,7 +80,9 @@ class EvenementEPRSerializer(serializers.ModelSerializer):
     def create(self, validated_data):       
         evt_data=validated_data.pop('evenement')
         evt_data['type']='EPR'
-        evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **evt_data)
         epr=EvenementEPR.objects.create(evenement=evt,**validated_data)        
         return epr
 
@@ -91,7 +96,9 @@ class EvenementENVSerializer(serializers.ModelSerializer):
     def create(self, validated_data):    
         evt_data=validated_data.pop('evenement')
         evt_data['type']='ENV'
-        evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **evt_data)
         env=EvenementENV.objects.create(evenement=evt,**validated_data)
         return env
 
@@ -218,12 +225,15 @@ class EvenementSPRSerializer(serializers.ModelSerializer):
         fields='__all__'
         #read_only_fields=('evenement',)
     
-    def create(self, validated_data):       
+    def create(self, validated_data):     
         evt_data=validated_data.pop('evenement')
         evt_data['type']='SPR'
-        evt = Evenement.objects.create(user=self.context['request'].user,**evt_data)
+        evt = Evenement.objects.create(user=self.context['request'].user,
+                                       session_key=self.context['request'].session.session_key,
+                                       **evt_data)
         inputs_data=validated_data.pop('inputs',[])
         scripts_data=validated_data.pop('scripts',[])
+        
         env=EvenementSPR.objects.create(evenement=evt,**validated_data)        
         for input_data in inputs_data:
             inp=BlockInput.objects.create(**input_data)
@@ -244,3 +254,10 @@ class EvenementSPROpenSerializer(serializers.ModelSerializer):
         model=EvenementSPR
         fields=['id','evenement','type','scripts',]
         #read_only_fields=('evenement',)
+        
+class SnapSnapShotSerializer(serializers.ModelSerializer):
+    evenement=EvenementSerializer(required=False)    
+    image=serializers.ImageField()
+    class Meta:
+        model=SnapSnapShot
+        fields=['id','evenement','image',]
