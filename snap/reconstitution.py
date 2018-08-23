@@ -88,9 +88,9 @@ def listeblock(request,id=None):
     asession=debut.evenement.session_key
     #on recupere soit un type 'LOBA', 'LOVER','NEW' ou 'LANCE'
     evt=EvenementENV.objects.filter(evenement__session_key=asession,evenement__creation__lt=debut.evenement.creation).latest('evenement__creation')
+    listeBlocks=SimpleListeBlockSnap()
     if evt.type in ['NEW','LANCE']:
-        #c'est un nouveau programme vide
-        listeBlocks=SimpleListeBlockSnap()
+        #c'est un nouveau programme vide        
         infos['type']="Nouveau programme vide"
     elif evt.type in ['LOBA','LOVER']:
         #c'est un chargement de fichier
