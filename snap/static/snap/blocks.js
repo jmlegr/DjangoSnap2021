@@ -530,9 +530,9 @@ SyntaxElementMorph.prototype.silentReplaceInput = function (oldArg, newArg) {
 /**
  * Modification JML (duff,  16 août 2018)
  **/
-    console.log('replacementsilent')
-    console.log(oldArg,' par ',replacement,' dans ',this)
-    console.log('OULA,',this.parentThatIsA(ScriptsMorph))
+    //console.log('replacementsilent')
+    //console.log(oldArg,' par ',replacement,' dans ',this)
+    
     if (this.parentThatIsA(ScriptsMorph)) {
        this.parentThatIsA(ScriptsMorph).replacedInput={'old':oldArg,
 			'new':newArg,
