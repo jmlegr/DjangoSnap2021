@@ -114,7 +114,7 @@ class EvenementEPRViewset(viewsets.ModelViewSet):
         epr=serializer.save()
         if epr.type=='SNP':
             img=self.snapShot(epr.evenement,data.get('image64'),data.get('detail',''))
-            epr.detail='%s' % img.id
+            #epr.detail='%s' % img.id            
             epr.save()        
         return epr
     

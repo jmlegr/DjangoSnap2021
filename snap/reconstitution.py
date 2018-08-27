@@ -32,9 +32,13 @@ def listesnaps(request,session_key=None):
         session_key=sessions[0]['session_key']
     #snaps=SnapSnapShot.objects.filter(evenement__session_key=session_key)
     snaps=SnapSnapShot.objects.filter(evenement__user=u).select_related('evenement__user')
+    evts=[s.evenement.evenementepr.all()[0] for s in snaps]
     #return Response(serializers.SnapSnapShotSerializer(snaps,many=True).data)
-    return render(request,"snapshots.html",
-                  {"data":serializers.SnapSnapShotSerializer(snaps,many=True).data})
+    #return render(request,"snapshots.html",
+    return Response(
+                  {"data":serializers.SnapSnapShotSerializer(snaps,many=True).data,
+                  'evts':serializers.EvenementEPRSerializer(evts,many=True).data
+                  })
 
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
@@ -126,12 +130,13 @@ def listeblock(request,id=None):
         print('---- temps=',theTime)
         if evt.type=='EPR':
             epr=evt.evenementepr.all()[0]
-            if epr.type in ['START','STOP','REPR','SNP']:
-                eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}
+            if epr.type in ['START','STOP','REPR','SNP','PAUSE']:                
+                eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}                    
                 if epr.type=='SNP':
-                    snp=SnapSnapShot.objects.get(id=epr.detail)
+                    #snp=SnapSnapShot.objects.get(id=epr.detail)
+                    snp=evt.image.all()[0]
                     eprInfos['%s' % theTime]['snp']=serializers.SnapSnapShotSerializer(snp).data
-                listeBlocks.addTick(theTime)
+                    listeBlocks.addTick(theTime)
         if evt.type=='ENV':
             env=evt.environnement.all()[0]
             action='ENV_%s' % env.type

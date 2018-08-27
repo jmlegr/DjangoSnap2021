@@ -84,9 +84,10 @@ span.SPR_DEL {
 {% for c in commandes %}
 <tr>
 <td style="font-size:70%">({{c.temps}}){{c.epr.type}}
-{% if c.epr.type == 'SNP'%}
+{% if c.epr.type == 'SNP'%}{{c.epr.detail}} 
 <img src="{{c.epr.snp.image}}" border="2" width="100" height="100"/>
-{%endif%}
+</td>
+{% else %}
 </td>
 {% for j in c.snap %}
 <!--    <td><span class={{j.action}}>{{j.action}}-{{j.change}}-{{j.JMLid}}</span></td>
@@ -94,6 +95,7 @@ span.SPR_DEL {
 
 <td class="u {{j.change | default:'nochange'}}"><span class={{j.action | default:"passe"}}>{{ j.commande | safe }}</span></td>
 {% endfor %}
+{%endif%}
 </tr>
 {% endfor %}
 </table>

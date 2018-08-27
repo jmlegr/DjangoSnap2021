@@ -2171,7 +2171,8 @@ IDE_Morph.prototype.togglePauseResume = function () {
      */    
     evt=this.stage.threads.isPaused()?'REPR':'PAUSE';
     sendEvenement(type='ENV',data={type:evt,detail:'button'});
-
+    var ide = this.parentThatIsA(IDE_Morph);
+    ide.uploadCanvas(ide.stage.fullImageClassic(),evt);
     /**
      * Fin Modification JML
      */
@@ -2196,7 +2197,7 @@ IDE_Morph.prototype.stopAllScripts = function () {
      */
     sendEvenement(type='ENV',data={type:'STOP',detail:'button',valueChar:'all'});
     var ide = this.parentThatIsA(IDE_Morph);
-    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
+    //ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
 
     /**
      * Fin Modification JML

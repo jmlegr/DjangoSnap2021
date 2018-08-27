@@ -768,9 +768,11 @@ Process.prototype.resume = function () {
     /**
      * Modification JML (duff,  31 déc. 2017)
      **/
-    sendEvenement('EPR',{type:'REPR',receiver:this.receiver.name,
-	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+    if (this.isPaused) {
+	sendEvenement('EPR',{type:'REPR',receiver:this.receiver.name,
+    topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
 	});
+    }
     /**
      * Fin Modification JML
      **/
