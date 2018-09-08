@@ -11,7 +11,7 @@ import re
 import time as thetime
 from builtins import StopIteration, Exception
 from django.utils.datetime_safe import datetime
-from snap.models import Classe, Eleve
+
 from django.contrib.auth.models import User
 
 def JMLID(block):
@@ -1186,10 +1186,10 @@ def initClasses(niveaux=[6,5,4,3],classes=7,groupes=15):
     """
     for niveau in niveaux:
         for c in range(0,classes):
-            classe,created=Classe.objects.get_or_create(nom='%s%s' % (niveau,c+1))
+            classe,created=models.Classe.objects.get_or_create(nom='%s%s' % (niveau,c+1))
             for el in range(0,groupes):
                 login='%s_%s' % (classe.nom,chr(ord('a')+el))
                 user,created=User.objects.get_or_create(username=login,password=login)
-                eleve,created=Eleve.objects.get_or_create(user=user,classe=classe)
+                eleve,created=models.Eleve.objects.get_or_create(user=user,classe=classe)
     
         
