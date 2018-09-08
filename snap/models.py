@@ -19,9 +19,9 @@ class Classe(models.Model):
     
 class Eleve(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    classe =models.ForeignKey(Classe,on_delete=models.CASCADE)
+    classe =models.ForeignKey(Classe,null=True,on_delete=models.SET_NULL)
     prg=models.ForeignKey('ProgrammeBase',null=True,blank=True,
-                          on_delete=models.CASCADE,verbose_name='Programme de la séance')
+                          on_delete=models.SET_NULL,verbose_name='Programme de la séance')
     def __str__(self):
         return '%s' % self.user.username
     
@@ -56,7 +56,7 @@ class Evenement(models.Model):
         )
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
     session_key=models.CharField(max_length=40,null=True)
-    programme=models.ForeignKey(ProgrammeBase,null=True, on_delete=models.CASCADE) #programme de base chargé
+    programme=models.ForeignKey(ProgrammeBase,null=True, on_delete=models.SET_NULL) #programme de base chargé
     type=models.CharField(max_length=3,choices=TYPE_EVENEMENT_CHOICES, default=AUTRE) #type d'évènement
     time=models.IntegerField() #Temps (local à Snap) de l'évènement
     numero=models.IntegerField() #numero d'ordre de l'évènement, indépendant du type
@@ -338,7 +338,7 @@ class Block(models.Model):
     category=models.CharField(max_length=30,null=True,blank=True) #categorie du block
     #parent=models.OneToOneField('self',null=True,on_delete=models.CASCADE,related_name='fils') #block parent (ou lieu d'insertion)
     parent=models.IntegerField(null=True)
-    nextBlock=models.OneToOneField('self',null=True,on_delete=models.CASCADE,related_name='prec') #block suivant
+    nextBlock=models.OneToOneField('self',null=True,on_delete=models.SET_NULL,related_name='prec') #block suivant
     #child=models.ForeignKey('Block',null=True,on_delete=models.CASCADE,related_name='child_Block') #block enfant (si wrap)
     inputs=models.ManyToManyField(BlockInput,null=True) #entrée(s) du block (inputSlotMorph ou Cslotmorph
     inputsBlock=models.ManyToManyField('self',null=True,symmetrical=False) #entrée(s) du block qui sont des blocks
