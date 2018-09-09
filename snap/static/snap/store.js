@@ -1112,7 +1112,7 @@ SnapSerializer.prototype.loadComment = function (model) {
     	//ça ne devrait plus arriver
     	console.log('XX pas JMLid',model)
     	// ajout d'un id unique
-    	comment.JMLid=objectId(bv);  
+    	comment.JMLid=objectId(comment);  
         }
     /**
      * Fin Modification JML
