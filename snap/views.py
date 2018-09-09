@@ -976,7 +976,7 @@ def current_datetime(request):
 
 @login_required(login_url='/accounts/login/')
 def testsnap(request):
-    return render(request,'snap/snap.html',context={'canEditCustomCommand':True})
+    return render(request,'snap/snap.html',context={'canEditCustomCommand':False})
 
 
 def pageref(request):

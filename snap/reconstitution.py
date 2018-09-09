@@ -118,7 +118,7 @@ def listeblock(request,id=None):
             listeBlocks.addFromXML(s)
         #on suit tous les blocs non contenus
         for b in listeBlocks.liste:
-            if (b.parentBlockId==None and len(b.inputs)>0) or b.typeMorph=='CommentMorph':
+            if b.typeMorph!='ScriptsMorph' and (b.parentBlockId is None or b.typeMorph=='CommentMorph'):
                 listeBlocks.setFirstBlock(b)
     
     #evenements de cette partie:
@@ -771,7 +771,7 @@ class SimpleListeBlockSnap:
                     change=changed if changed is not None else change
                     words+="["+repl+"]"
                     nom=nom.replace(e,'%s' % words,1)
-            i+=1
+                i+=1
         else:
             #c'est un CommentMorph
             change=block.change if block.time==thetime else None
@@ -786,7 +786,7 @@ class SimpleListeBlockSnap:
         Si withScript, on ajoute un block Script par script 
         """
         print('item',item.tag,item.items())
-        if item.tag=='block':
+        if item.tag=='block' or item.tag=='custom-block':
             block=SimpleBlockSnap(item.get('JMLid'),0,item.get('typemorph'))
             if 'var' in item.attrib:
                 block.contenu=item.get('var')
@@ -795,7 +795,10 @@ class SimpleListeBlockSnap:
                 return block
             
             #c'est un ['CommandBlockMorph', 'HatBlockMorph','ReporterBlockMorph'] avec blockSpec
-            block.blockSpec=item.get('blockSpec')
+            if item.tag=='custom-block':
+                block.blockSpec=item.get('s')
+            else:
+                block.blockSpec=item.get('blockSpec')
             params=re.findall(r'(%\w+)',block.blockSpec)
             rang=0
             for e in params:
@@ -867,13 +870,15 @@ class SimpleListeBlockSnap:
             #on ajoute les blocks comme étant contenus
             prevblock=None
             rang=0
-            for b in item.findall('block'):
-                child=self.addFromXML(b)
-                if prevblock is not None:
-                    self.setNextBlock(prevblock,child)
-                block.addWrapped(block=child,rang=rang)                
-                prevblock=child                
-                rang+=1
+            #for b in item.findall('block'):
+            for b in item.getchildren():
+                if b.tag=='block' or b.tag=='custom-block':
+                    child=self.addFromXML(b)
+                    if prevblock is not None:
+                        self.setNextBlock(prevblock,child)
+                    block.addWrapped(block=child,rang=rang)                
+                    prevblock=child                
+                    rang+=1
                 #block.addWrappedBlock(child)
                 #TODO: liste.addWrappedBlock(block,child)
             return block
