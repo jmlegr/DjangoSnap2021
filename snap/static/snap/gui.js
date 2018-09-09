@@ -2334,7 +2334,18 @@ IDE_Morph.prototype.applySavedSettings = function () {
     if (keyboard === 'false') {
 	ScriptsMorph.prototype.enableKeyboard = false;
     } else {
-	ScriptsMorph.prototype.enableKeyboard = true;
+	/**
+	 * Modification JML (duff,  9 sept. 2018)
+	 **/
+	//On desactive le support clavier, les modifications par le clavier 
+	//ne sont pour l'instant pas traitées
+	
+	//ScriptsMorph.prototype.enableKeyboard = true;
+	ScriptsMorph.prototype.enableKeyboard = false;
+	/**
+	 * Fin Modification JML
+	 **/
+
     }
 
     // tables
