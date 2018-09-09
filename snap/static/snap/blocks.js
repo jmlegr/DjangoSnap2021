@@ -6106,7 +6106,14 @@ ScriptsMorph.uber = FrameMorph.prototype;
 ScriptsMorph.prototype.cleanUpMargin = 20;
 ScriptsMorph.prototype.cleanUpSpacing = 15;
 ScriptsMorph.prototype.isPreferringEmptySlots = true;
-ScriptsMorph.prototype.enableKeyboard = true;
+/**
+ * Modification JML (duff,  9 sept. 2018)
+ **/
+//ScriptsMorph.prototype.enableKeyboard = true;
+ScriptsMorph.prototype.enableKeyboard = false;
+/**
+ * Fin Modification JML
+ **/
 ScriptsMorph.prototype.enableNestedAutoWrapping = true;
 
 // ScriptsMorph instance creation:
@@ -6995,9 +7002,11 @@ ScriptsMorph.prototype.donnee = function(record) {
 	    if (record.lastDroppedBlock.blockSpec) {
 		data['blockSpec']=record.lastDroppedBlock.blockSpec;
 	    } else {
+		//si pas de blockSpec précisé, on récupère un contenu, s'il y a 
+		// par exemple en cas de CommentBlockMorph
 		data['blockSpec']=record.lastDroppedBlock.getContent?
 					record.lastDroppedBlock.getContent():
-					    null
+					record.lastDroppedBlock.contents?record.lastDroppedBlock.contents.text:null
 	    }
 	    
 	    data['category']=record.lastDroppedBlock.category  ;
@@ -7028,66 +7037,66 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    }
     	    //console.log('parent'+record.lastDroppedBlock.parent,record.lastDroppedBlock.parent,(record.lastDroppedBlock.parent instanceof BlockMorph));    	
     	    // récupération des entrées
-    	    var t=record.lastDroppedBlock.inputs();
-    	    //console.log('inputs'+t,t);
-    	    var inputs= new Array();
-    	    var inputsBlock=new Array();
-    	    t.forEach(function(input,i) {
-    		if (!input.JMLdroppedId) {   
-    		    //c'est un input non encore rendu unique (une copie)
-    		    input.JMLid=objectId(input);
-    		    input.JMLdroppedId=objectId(input);
-    		}    	    	
-    		//console.log('->',input,input.contents?('<<'+input.contents().text+'>>'):'**',input.evaluate());
-
+    	    if (record.lastDroppedBlock.inputs && record.lastDroppedBlock.inputs()) {
+    		var t=record.lastDroppedBlock.inputs();
+    		//console.log('inputs'+t,t);
+    		var inputs= new Array();
+    		var inputsBlock=new Array();
+    		t.forEach(function(input,i) {
+    		    if (!input.JMLdroppedId) {   
+    			//c'est un input non encore rendu unique (une copie)
+    			input.JMLid=objectId(input);
+    			input.JMLdroppedId=objectId(input);
+    		    }    	    	
+    		    //console.log('->',input,input.contents?('<<'+input.contents().text+'>>'):'**',input.evaluate());
 		    //console.log('eval',input.getContent())
-    		var isColor=(input.constructor.name=="ColorSlotMorph")
-    		var isBoolean=(input.constructor.name=='BooleanSlotMorph')
-    		inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
-    		    contenu:input.contents?input.contents().text:
+    		    var isColor=(input.constructor.name=="ColorSlotMorph")
+    		    var isBoolean=(input.constructor.name=='BooleanSlotMorph')
+    		    inputs.push({JMLid:input.JMLid,typeMorph:input.constructor.name,
+    			contenu:input.contents?input.contents().text:
     				isColor?(input.color.r+","
     					+input.color.g+','
     					+input.color.b+","
     					+input.color.a):
     				isBoolean?''+input.value:null,
-    		    rang:t.indexOf(input),
-    		    isNumeric:input.isNumeric,
-    		    isPredicate:input.isPredicate
-    		    });  	    		    	    	
-    	    	if (record.action=='creation' && input.constructor.name=='MultiArgMorph') {
-    	    	    //c'est une création de multimorph, on rajoute les inputs dans scripts
-    	    	    //TODO voir pour les cas de custom blocks avec 2 multiargs? ou trop rare et pas nécessaire?
-    	    	    var script={
+    			rang:t.indexOf(input),
+    			isNumeric:input.isNumeric,
+    			isPredicate:input.isPredicate
+    		    	});  	    		    	    	
+    	    	    if (record.action=='creation' && input.constructor.name=='MultiArgMorph') {
+    	    		//c'est une création de multimorph, on rajoute les inputs dans scripts
+    	    		//TODO voir pour les cas de custom blocks avec 2 multiargs? ou trop rare et pas nécessaire?
+    	    		var script={
 	    			JMLid:input.JMLid, 
 	    			typeMorph:input.constructor.name,
 	    			selector:input.selector,
 	    			blockSpec:input.blockSpec,
 	    			category:input.category
 	    			}
-    	    	    var scriptInputs=new Array()
-    	    	    input.inputs().forEach(function (inp,i) {
-    	    		if (!inp.JMLdroppedId) {   
-    	    		    //	c'est un input non encore rendu unique (une copie)
-    	    		    inp.JMLid=objectId(inp);
-    	    		    inp.JMLdroppedId=objectId(inp);
-    	    		}    	    
-    	    		isColor=(inp.constructor.name=="ColorSlotMorph") 
-    	    		scriptInputs.push({JMLid:inp.JMLid,typeMorph:inp.constructor.name,
-    	    		    contenu:inp.contents?inp.contents().text:
-    				isColor?(inp.color.r+','
+    	    		var scriptInputs=new Array()
+    	    		input.inputs().forEach(function (inp,i) {
+    	    		    if (!inp.JMLdroppedId) {   
+    	    			//	c'est un input non encore rendu unique (une copie)
+    	    			inp.JMLid=objectId(inp);
+    	    			inp.JMLdroppedId=objectId(inp);
+    	    		    }    	    
+    	    		    isColor=(inp.constructor.name=="ColorSlotMorph") 
+    	    		    scriptInputs.push({JMLid:inp.JMLid,typeMorph:inp.constructor.name,
+    	    			contenu:inp.contents?inp.contents().text:
+    	    			    isColor?(inp.color.r+','
     					+inp.color.g+','
     					+inp.color.b+','
     					+inp.color.a):null,
-    			   rang:input.inputs().indexOf(inp),
-    			   isNumeric:inp.isNumeric,
-    			   isPredicate:inp.isPredicate
-    			   });    	    		
-    		    });
-    	    	    if (scriptInputs) script['inputs']=scriptInputs
-    	    	    data['scripts']=[script]
-    	    	}
-    	    	
-	    });
+    				rang:input.inputs().indexOf(inp),
+    				isNumeric:inp.isNumeric,
+    				isPredicate:inp.isPredicate
+    	    		    	});    	    		
+    	    		});
+    	    		if (scriptInputs) script['inputs']=scriptInputs
+    	    		data['scripts']=[script]
+    	    	    }    	    	
+    		});
+    	    }
     	    if (inputs) data['inputs']=inputs;
     	    
     	    //this.lastDroppedBlock.inputs=inputs;  
@@ -13325,7 +13334,7 @@ ScriptFocusMorph.prototype.processKeyPress = function (event) {
 ScriptFocusMorph.prototype.processKeyEvent = function (event, action) {
     var keyName, ctrl, shift;
 
-    //console.log(event.keyCode);
+    //console.log('KEYEYYEYEYEYEY' ,event.keyCode);
     this.world().hand.destroyTemporaries(); // remove result bubbles, if any
     switch (event.keyCode) {
     case 8:
