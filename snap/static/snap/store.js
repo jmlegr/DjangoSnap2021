@@ -1098,6 +1098,26 @@ SnapSerializer.prototype.loadComment = function (model) {
         scale = SyntaxElementMorph.prototype.scale;
     comment.isCollapsed = (model.attributes.collapsed === 'true');
     comment.setTextWidth(+model.attributes.w * scale);
+    /**
+     * Modification JML (duff,  9 sept. 2018)
+     **/
+    //récupération du JMLid
+    if (Object.prototype.hasOwnProperty.call(
+    	model.attributes,
+    	'JMLid'
+        	)) {
+    	//console.log('JMLid present',model)
+    	comment.JMLid=Number(model.attributes['JMLid'])
+        } else {
+    	//ça ne devrait plus arriver
+    	console.log('XX pas JMLid',model)
+    	// ajout d'un id unique
+    	comment.JMLid=objectId(bv);  
+        }
+    /**
+     * Fin Modification JML
+     **/
+
     return comment;
 };
 
@@ -2420,12 +2440,27 @@ CommentMorph.prototype.toXML = function (serializer) {
         scale = SyntaxElementMorph.prototype.scale;
 
     if (this.block) { // attached to a block
-        return serializer.format(
-            '<comment w="@" collapsed="@">%</comment>',
-            this.textWidth() / scale,
-            this.isCollapsed,
-            serializer.escape(this.text())
-        );
+	/**
+	 * Modification JML (duff,  9 sept. 2018)
+	 **/
+	//return serializer.format(
+	//                '<comment w="@" collapsed="@">%</comment>',
+	//                this.textWidth() / scale,
+	//                this.isCollapsed,
+	//                serializer.escape(this.text())
+	//            );
+	return serializer.format(
+	                '<comment JMLid="@" typemorph="@" w="@" collapsed="@">%</comment>',
+	                this.JMLid,this.constructor.name,
+	                this.textWidth() / scale,
+	                this.isCollapsed,
+	                serializer.escape(this.text())
+	            );
+	/**
+	 * Fin Modification JML
+	 **/
+
+        
     }
 
     // free-floating, determine my save-position
@@ -2434,12 +2469,29 @@ CommentMorph.prototype.toXML = function (serializer) {
     } else {
         position = this.topLeft();
     }
+    /**
+     * Modification JML (duff,  9 sept. 2018)
+     **/
+    //return serializer.format(
+    	//'<comment x="@" y="@" w="@" collapsed="@">%</comment>',
+    	//position.x / scale,
+    	//position.y / scale,
+    	//this.textWidth() / scale,
+    	//this.isCollapsed,
+    	//serializer.escape(this.text())
+	//);
     return serializer.format(
-        '<comment x="@" y="@" w="@" collapsed="@">%</comment>',
-        position.x / scale,
-        position.y / scale,
-        this.textWidth() / scale,
-        this.isCollapsed,
-        serializer.escape(this.text())
-    );
+	        '<comment JMLid="@" typemorph="@" x="@" y="@" w="@" collapsed="@">%</comment>',
+	        this.JMLid,this.constructor.name,
+	        position.x / scale,
+	        position.y / scale,
+	        this.textWidth() / scale,
+	        this.isCollapsed,
+	        serializer.escape(this.text())
+	    );
+    /**
+     * Fin Modification JML
+     **/
+
+    
 };

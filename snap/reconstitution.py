@@ -118,7 +118,7 @@ def listeblock(request,id=None):
             listeBlocks.addFromXML(s)
         #on suit tous les blocs non contenus
         for b in listeBlocks.liste:
-            if b.parentBlockId==None and len(b.inputs)>0:
+            if (b.parentBlockId==None and len(b.inputs)>0) or b.typeMorph=='CommentMorph':
                 listeBlocks.setFirstBlock(b)
     
     #evenements de cette partie:
@@ -179,11 +179,20 @@ def listeblock(request,id=None):
             elif spr.type=='VAL':
                 #c'est une modification de la valeur (directe) d'un inputSlotMorph
                 #on cherche l'input modifié (par le rang ou par le detail)
-                inputBlock=spr.inputs.get(JMLid=spr.detail)
-                inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)                      
-                inputNode.changeValue(inputBlock.contenu)
-                inputNode.action='VAL'
-                listeBlocks.append(inputNode)
+                if spr.location is None:
+                    #c'est un CommentBlock (sans input). La valuer est blockSpec
+                    inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    inputNode.changeValue(spr.blockSpec)
+                    inputNode.blockSpec=spr.blockSpec
+                    inputNode.action='VAL'                    
+                    inputNode.change='changed'
+                    listeBlocks.append(inputNode)  
+                else:
+                    inputBlock=spr.inputs.get(JMLid=spr.detail)
+                    inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)                      
+                    inputNode.changeValue(inputBlock.contenu)
+                    inputNode.action='VAL'
+                    listeBlocks.append(inputNode)
                 listeBlocks.addTick(theTime)
                 #on pourrait faire un lien avec l'ancienne valeur
             elif spr.type=='NEWVAL':
@@ -739,22 +748,23 @@ class SimpleListeBlockSnap:
                     'action':'DELETED'}
                 return resultat,nom,'nochange deleted'
         
-        txt=re.findall(r'(%\w+)',block.blockSpec)
-        repl={}
-        resultat=[]
-        change=None
-        i=0 #rang du %truc traité
-        for e in txt:
-            if e in trad.keys():
-                # c'est un mot clef
-                nom=nom.replace(e,'%s' %trad[e],1)
-            elif e[1:]!="words":
-                #cas général, sauf multiarg
-                repl,changed=traiteElement(block,e,i,resultat)
-                change=changed if changed is not None else change
-                nom=nom.replace(e,'%s' %repl,1)                    
-            else:
-                #linput[0] est un multiarg, on parcours les inputs de ce multiarg
+        if block.typeMorph!='CommentMorph':
+            txt=re.findall(r'(%\w+)',block.blockSpec)
+            repl={}
+            resultat=[]
+            change=None
+            i=0 #rang du %truc traité
+            for e in txt:
+                if e in trad.keys():
+                    # c'est un mot clef
+                    nom=nom.replace(e,'%s' %trad[e],1)
+                elif e[1:]!="words":
+                    #cas général, sauf multiarg
+                    repl,changed=traiteElement(block,e,i,resultat)
+                    change=changed if changed is not None else change
+                    nom=nom.replace(e,'%s' %repl,1)                    
+                else:
+                    #linput[0] est un multiarg, on parcours les inputs de ce multiarg
                     words=""
                     multiArgNode=self.lastNode(block.inputs['%s'%i],thetime,veryLast=True)
                     res,repl,changed=self.parcoursBlock(multiArgNode.JMLid,thetime,toHtml)
@@ -762,7 +772,9 @@ class SimpleListeBlockSnap:
                     words+="["+repl+"]"
                     nom=nom.replace(e,'%s' % words,1)
             i+=1
-        
+        else:
+            #c'est un CommentMorph
+            change=block.change if block.time==thetime else None
         resultat={'JMLid':block.JMLid,'time':thetime,'commande':nom,'action':block.action if block.time==thetime else '','change':block.change}
         #print('nom',nom,' résultat de niom',resultat)
         return resultat,nom,change
@@ -773,7 +785,7 @@ class SimpleListeBlockSnap:
         les place au temps 0
         Si withScript, on ajoute un block Script par script 
         """
-        #print('item',item.tag,item.items())
+        print('item',item.tag,item.items())
         if item.tag=='block':
             block=SimpleBlockSnap(item.get('JMLid'),0,item.get('typemorph'))
             if 'var' in item.attrib:
@@ -805,6 +817,13 @@ class SimpleListeBlockSnap:
                     inp.rang=rang
                     block.addInput(inp);                
                     rang+=1
+            #traitement des commentaires liés            
+            for c in item.findall('comment'):
+                commentBlock=SimpleBlockSnap(c.get('JMLid'),0,c.get('typemorph'))
+                commentBlock.contenu=c.text
+                commentBlock.blockSpec=c.text
+                self.append(commentBlock)
+                #TODO: peaufiner? ajouter un lien                
             self.append(block)
             return block   
         elif item.tag=='list':
@@ -857,4 +876,10 @@ class SimpleListeBlockSnap:
                 rang+=1
                 #block.addWrappedBlock(child)
                 #TODO: liste.addWrappedBlock(block,child)
+            return block
+        elif item.tag=='comment':
+            block=SimpleBlockSnap(item.get('JMLid'),0,item.get('typemorph'))
+            block.contenu=item.text
+            block.blockSpec=item.text
+            self.append(block)
             return block

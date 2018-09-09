@@ -250,6 +250,7 @@ class EvenementSPR(models.Model):
         ('RENVATL','renommage variable locale, juste le template'), #nouveau nom dans detail, ancien dans location
         ('RENVATB','renommage variable de bloc, juste le template'), #nouveau nom dans detail, ancien dans location
         ('VAL','Changement d\'une valeur'), # on renvois le blockmorph, id de l'entrée dans detail, rang dans location
+                                            # si location=null, c'est un CommentMorph normalement (donc contenu dans blockSpec)
         ('+IN','Ajout d\'une entrée'),
         ('-IN','Suppression d\'une entrée'),
         ('NEWVAL','Création et insertion d\'une entrée'), #création + remplacement d'une entrée existante (id remplacée dans détailAction, rang dans location

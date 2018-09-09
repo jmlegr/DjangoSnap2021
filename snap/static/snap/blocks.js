@@ -6960,9 +6960,12 @@ ScriptsMorph.prototype.donnee = function(record) {
 		   case 'valeur': {
 		       data['type']='VAL'; 
 		       data['detail']=record.detailAction;
-		       childs=record.lastDroppedBlock.inputs()
-		       child=childs.filter(function(d) {return d.JMLid==record.detailAction})[0]
-		       data['location']=childs.indexOf(child); //index de l'input remplacé
+		       if (record.lastDroppedBlock.inputs && record.lastDroppedBlock.inputs()){
+			   childs=record.lastDroppedBlock.inputs()
+			   child=childs.filter(function(d) {return d.JMLid==record.detailAction})[0]
+			   data['location']=childs.indexOf(child); //index de l'input remplacé
+		       } //sinon: c'est un CommentMorph, sans doute 
+		       
 		       break;
 		   }
 		   case '+in': {
@@ -12368,6 +12371,29 @@ CommentMorph.prototype.init = function (contents) {
 };
 
 // CommentMorph ops:
+/**
+ * Modification JML (duff,  9 sept. 2018)
+ **/
+CommentMorph.prototype.reactToEdit =function() {
+    
+    this.children.forEach (function (v){
+    	if (v instanceof CursorMorph) {
+    		orig=v.originalContents;
+    	}
+    });
+    if (this.contents.text != orig) {
+	var scripts = this.parentThatIsA(ScriptsMorph);
+	record={};
+     	record.lastDroppedBlock=this;
+     	record.action='valeur';
+     	record.detailAction=this.JMLid;
+    var donnee=new scripts.donnee(record);
+    }
+}
+/**
+ * Fin Modification JML
+ **/
+
 
 CommentMorph.prototype.fullCopy = function () {
     var cpy = new CommentMorph(this.contents.text);

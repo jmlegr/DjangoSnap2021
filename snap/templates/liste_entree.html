@@ -91,7 +91,7 @@ span.SPR_DEL {
 </td>
 {% for j in c.snap %}
 <!--    <td><span class={{j.action}}>{{j.action}}-{{j.change}}-{{j.JMLid}}</span></td>
- -->
+  -->
 
 <td class="u {{j.change | default:'nochange'}}"><span class={{j.action | default:"passe"}}>{{ j.commande | safe }}</span></td>
 {% endfor %}
