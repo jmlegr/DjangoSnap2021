@@ -1190,7 +1190,9 @@ def initClasses(niveaux=[6,5,4,3],classes=7,groupes=15):
             classe,created=models.Classe.objects.get_or_create(nom='%s%s' % (niveau,c+1))
             for el in range(0,groupes):
                 login='%s_%s' % (classe.nom,chr(ord('a')+el))
-                user,created=User.objects.get_or_create(username=login,password=login)
+                user,created=User.objects.get_or_create(username=login)
+                if created:
+                    user.set_password(login)
                 eleve,created=models.Eleve.objects.get_or_create(user=user,classe=classe)
                 if created:
                     user.groups.add(grpEleve)
