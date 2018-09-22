@@ -2379,7 +2379,7 @@ Process.prototype.doAsk = function (data) {
              **/
             liste="";
             stage.threads.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
-            sendEvenement('EPR',{type:'ASK',processes:liste})
+            sendEvenement('EPR',{type:'ASK',processes:liste,detail:data})
     	    //console.log('debut entrée');		
             /**
              * Fin Modification JML
