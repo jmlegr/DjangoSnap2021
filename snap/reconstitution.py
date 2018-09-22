@@ -129,8 +129,9 @@ def listeblock(request,id=None):
     for evt in evs:
         theTime=evt.time
         print('---- temps=',theTime)
-        if evt.type=='EPR':
+        if evt.type=='EPR':            
             epr=evt.evenementepr.all()[0]
+            print('EPR',epr)
             if epr.type in ['START','STOP','REPR','SNP','PAUSE']:                
                 eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}                    
                 if epr.type=='SNP':
@@ -138,6 +139,10 @@ def listeblock(request,id=None):
                     snp=evt.image.all()[0]
                     eprInfos['%s' % theTime]['snp']=serializers.SnapSnapShotSerializer(snp).data
                     listeBlocks.addTick(theTime)
+            elif epr.type in ['ASK','ANSW']:
+                #c'est une interaction avec l'utilisateur
+                eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}
+                listeBlocks.addTick(theTime)
         if evt.type=='ENV':
             env=evt.environnement.all()[0]
             action='ENV_%s' % env.type
@@ -366,6 +371,7 @@ def listeblock(request,id=None):
                      #'links':listeBlocks.links,
                      'etapes':{},#etapes,
                      #'actions':[a.toD3() for a in actions]
+                      "infos":infos,
                      })
     """
     return render(request,'liste_entree.html',{"commandes":commandes,

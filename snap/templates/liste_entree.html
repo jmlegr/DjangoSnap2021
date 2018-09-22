@@ -67,6 +67,13 @@ span.SPR_DEL {
     opacity: 1;
     
 }
+span.ASK {
+    color:blue;    
+}
+span.ANSW {
+    font-size: 150%;
+    color:red;    
+}
 
 
 </style>
@@ -84,9 +91,14 @@ span.SPR_DEL {
 {% for c in commandes %}
 <tr>
 <td style="font-size:70%">({{c.temps}}){{c.epr.type}}
-{% if c.epr.type == 'SNP'%}{{c.epr.detail}} 
+{% if c.epr.type == 'SNP'%}
+:{{c.epr.detail}}
 <img src="{{c.epr.snp.image}}" border="2" width="100" height="100"/>
 </td>
+{% elif c.epr.type == 'ASK' or c.epr.type == 'ANSW' %}
+:<span class="{{c.epr.type}}"> {{c.epr.detail}} </span>
+</td>
+{% elif 
 {% else %}
 </td>
 {% for j in c.snap %}
