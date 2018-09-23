@@ -202,7 +202,7 @@ def listeblock(request,id=None):
                 # il peut être droppé seul (spr.location=None, spr.targetId=None)
                 # ou sous/sur un autre block
                 newNode=createNew(spr)
-                if spr.targetId is not None:
+                if spr.targetId is not None and programme:
                     if spr.location=='bottom':
                         #ajout à la suite d'un autre                        
                         prevNode=listeBlocks.lastNode(spr.targetId, theTime).copy(theTime,action)
@@ -224,7 +224,6 @@ def listeblock(request,id=None):
                             listeBlocks.append(lastPrevNode)
                             listeBlocks.setNextBlock(lastPrevNode,newNode)
                         listeBlocks.setNextBlock(newNode,nextNode)
-                    print ('6>',listeBlocks.lastNode(spr.targetId, theTime))
                 listeBlocks.addTick(theTime)
             elif spr.type=='VAL':
                 #c'est une modification de la valeur (directe) d'un inputSlotMorph
@@ -321,14 +320,73 @@ def listeblock(request,id=None):
                 parentNode.addInput(block=newInputNode,rang=oldInput.rang)
                 listeBlocks.addTick(theTime)
             
-            elif spr.type=='DROP' and spr.typeMorph=='ReporterBlockMorph':
+            elif spr.type=='DROP':                
                 """
-                c'est un reporter déplacé, éventuellement suite à un remplacement silencieux
-                seules les modification de valeurs nous intéressent ici
-                si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
-                sinon c'est un simple déplacement
+                traitement du DROP d'un element existant
                 """
-                print('DROP déjà traité',spr)
+                if spr.typeMorph=='ReporterBlockMorph':
+                    """
+                    c'est un reporter déplacé, éventuellement suite à un remplacement silencieux
+                    seules les modification de valeurs nous intéressent si programme=False
+                    si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
+                    sinon c'est un simple déplacement
+                    """
+                    print('DROP déjà traité',spr)
+                
+                elif programme and (spr.location is not None 
+                                    or listeBlocks.lastNode(spr.blockId, theTime).prevBlockId is not None):
+                    #on veut les étapes, donc on construit
+                    # (sauf si c'est juste un enwsemble de blocs déplacés, sans changement) 
+                    newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                    listeBlocks.append(newNode)                    
+                    if spr.location=='bottom':
+                        #ajout à la suite d'un autre                        
+                        prevNode=listeBlocks.lastNode(spr.targetId, theTime).copy(theTime,action)
+                        listeBlocks.append(prevNode)
+                        #on recherche le dernier block de l'ensemble droppé
+                        bottomNode=newNode
+                        while bottomNode.nextBlockId is not None: 
+                            bottomNode=listeBlocks.lastNode(bottomNode.nextBlockId, theTime)
+                        if bottomNode!=newNode:
+                            bottomNode=bottomNode.copy(theTime,action)
+                            listeBlocks.append(bottomNode)
+                        if prevNode.nextBlockId is not None:
+                            #c'est une insertion
+                            lastNextNode=listeBlocks.lastNode(prevNode.nextBlockId,theTime).copy(theTime,action)
+                            listeBlocks.append(lastNextNode)
+                            listeBlocks.setNextBlock(bottomNode,lastNextNode)
+                            lastNextNode.change='prevchanged'
+                            bottomNode.change='nextchanged'
+                        listeBlocks.setNextBlock(prevNode, newNode)
+                        listeBlocks.addTick(theTime)
+                    elif spr.location=='top':
+                        #ajout au dessus d'un autre block
+                        nextNode=listeBlocks.lastNode(spr.targetId, theTime).copy(theTime,action)
+                        listeBlocks.append(nextNode)
+                        #on rechercher le dernier block de l'ensemble droppé
+                        bottomNode=newNode
+                        while bottomNode.nextBlockId is not None: 
+                            bottomNode=listeBlocks.lastNode(bottomNode.nextBlockId, theTime)
+                        if bottomNode!=newNode:
+                            bottomNode=bottomNode.copy(theTime,action)
+                            listeBlocks.append(bottomNode)
+                        if nextNode.prevBlockId is not None:
+                            #c'est une insertion.
+                            #Note: avec Snap, pas d'insertion top ( a priori)
+                            lastPrevNode=listeBlocks.lastNode(nextNode.prevBlockId,theTime).copy(theTime,action)
+                            listeBlocks.append(lastPrevNode)
+                            listeBlocks.setNextBlock(lastPrevNode,newNode)
+                        listeBlocks.setNextBlock(bottomNode,nextNode)
+                        listeBlocks.addTick(theTime)
+                    elif spr.location is None and listeBlocks.lastNode(spr.blockId, theTime).prevBlockId is not None:
+                        #un block devient block de tête
+                        prevNode=listeBlocks.lastNode(listeBlocks.lastNode(spr.blockId, theTime).prevBlockId, theTime).copy(theTime,action)
+                        listeBlocks.append(prevNode)
+                        listeBlocks.setNextBlock(prevNode,None)
+                        listeBlocks.setPrevBlock(newNode, None)
+                        listeBlocks.addTick(theTime)
+                
+            
                                 
             elif spr.type=='DEL':
                 """
@@ -428,8 +486,10 @@ def listeblock(request,id=None):
             scripts=[]           
             sc=s           
             while sc is not None:
-                snaps=[c['snap'] for c in commandes if c['temps']==temps]
+                snaps=[c['snap'] for c in commandes if c['temps']==temps]               
                 sn=[s for s in snaps[0] if s['JMLid']==sc.JMLid][0]
+                #resultat,nom,change=listeBlocks.parcoursBlock(sc.JMLid, temps, True)                
+                #scripts.append({"JMLid":sc.JMLid,"commande":nom,'prev':sc.prevBlockId,'next':sc.nextBlockId})
                 scripts.append(sn)
                 sc=listeBlocks.lastNode(sc.nextBlockId, temps, veryLast=True)
             etapes[temps].append(scripts)
@@ -745,7 +805,9 @@ class SimpleListeBlockSnap:
             self.links.append({'source':destination.getId(),
                            'target':source.getId(),
                            'type':type})
-        
+        else:
+            source.setPrevBlock(None)
+            
     def lastNode(self,JMLid,thetime,veryLast=False):
         """
         renvoie le dernier block (au sens du temps) de la liste
