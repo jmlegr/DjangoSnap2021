@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.db.models.aggregates import Min
 from django.utils.datetime_safe import datetime
 from lxml import etree
+import DjangoSnap
 
 
 @api_view(('GET',))
@@ -43,6 +44,16 @@ def listesnaps(request,session_key=None):
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
 def listeblock(request,id=None):  
+    """
+    renvoie la liste des commandes et des modifications
+    si ?programme, renvoie les programmes reconstitués
+    sinon renvoie les commandes
+    
+    si ?rendu=json, sous forme json (defaut)
+    si ?rendu=template, en html
+    
+    si ?temps=xx, renvoie l'état du programme au temps xx
+    """
     
     def createNew(spr):
         """
@@ -81,6 +92,13 @@ def listeblock(request,id=None):
                     newInput.addInput(inputMulti)
         return newNode
     
+    print ('/////////////////////////////////')
+    rendu=request.GET.get('rendu','json')
+    snapTemps=request.GET.get('temps',None)
+    programme=request.GET.get('programme',None) is not None
+    
+    print('rendu %s, snap %s, programme %s' % (rendu,snapTemps, programme))
+    print ('/////////////////////////////////')
     #liste les derniers débuts de tous les élèves
     infos={}
     eprInfos={}
@@ -180,7 +198,33 @@ def listeblock(request,id=None):
 
             #traitement NEW: il faut inclure les inputs,
             if spr.type=='NEW':
+                # c'est un ajout de bloc.
+                # il peut être droppé seul (spr.location=None, spr.targetId=None)
+                # ou sous/sur un autre block
                 newNode=createNew(spr)
+                if spr.targetId is not None:
+                    if spr.location=='bottom':
+                        #ajout à la suite d'un autre                        
+                        prevNode=listeBlocks.lastNode(spr.targetId, theTime).copy(theTime,action)
+                        listeBlocks.append(prevNode)
+                        if prevNode.nextBlockId is not None:
+                            #c'est une insertion
+                            lastNextNode=listeBlocks.lastNode(prevNode.nextBlockId,theTime).copy(theTime,action)
+                            listeBlocks.append(lastNextNode)
+                            listeBlocks.setNextBlock(newNode,lastNextNode)
+                        listeBlocks.setNextBlock(prevNode, newNode)
+                    elif spr.location=='top':
+                        #ajout au dessus d'un autre block
+                        nextNode=listeBlocks.lastNode(spr.targetId, theTime).copy(theTime,action)
+                        listeBlocks.append(nextNode)
+                        if nextNode.prevBlockId is not None:
+                            #c'est une insertion.
+                            #Note: avec Snap, pas d'insertion top ( a priori)
+                            lastPrevNode=listeBlocks.lastNode(nextNode.prevBlockId,theTime).copy(theTime,action)
+                            listeBlocks.append(lastPrevNode)
+                            listeBlocks.setNextBlock(lastPrevNode,newNode)
+                        listeBlocks.setNextBlock(newNode,nextNode)
+                    print ('6>',listeBlocks.lastNode(spr.targetId, theTime))
                 listeBlocks.addTick(theTime)
             elif spr.type=='VAL':
                 #c'est une modification de la valeur (directe) d'un inputSlotMorph
@@ -334,7 +378,7 @@ def listeblock(request,id=None):
                 listeBlocks.append(newNode)
                 listeBlocks.addTick(theTime)
             
-            
+    
             
     #on parcours et on affiche les commandes
     commandes=[]
@@ -363,27 +407,58 @@ def listeblock(request,id=None):
                     resultat['change']='change '+resultat['change']
                 res.append(resultat)
         commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
-    """
-    return Response({"commandes":commandes,
+    
+    #reconstitution des étapes: [{temps,scripts}]
+    #avec scripts = [{commande1,commande2 etc} ou commande2=commande1.nextBlock]
+    #et commande={nom,wrapped}
+    print('/*/*/*/*/*/**/*/*/')
+    topBlocks={}
+    etapes={}
+    for temps in listeBlocks.ticks:
+        etapes[temps]=[]
+        print("temps ",temps)
+        #on récupère les topblocks (donc les scripts)
+        #note: pas les reporter?
+        topBlocks[temps]=[]
+        for b in listeBlocks.firstBlocks: 
+            lastb=listeBlocks.lastNode(b,temps,veryLast=True)
+            if lastb is not None and lastb.prevBlockId is None and lastb.parentBlockId is None:
+                topBlocks[temps].append(lastb)
+        for s in topBlocks[temps]:
+            scripts=[]           
+            sc=s           
+            while sc is not None:
+                snaps=[c['snap'] for c in commandes if c['temps']==temps]
+                sn=[s for s in snaps[0] if s['JMLid']==sc.JMLid][0]
+                scripts.append(sn)
+                sc=listeBlocks.lastNode(sc.nextBlockId, temps, veryLast=True)
+            etapes[temps].append(scripts)
+    
+        
+    if snapTemps is not None:
+        commandes=[c for c in commandes if c['temps']==int(snapTemps)]
+    if rendu=='json':
+        return Response({"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
                      "ticks":listeBlocks.ticks,
                      #'links':listeBlocks.links,
-                     'etapes':{},#etapes,
+                     'etapes':etapes,
                      #'actions':[a.toD3() for a in actions]
                       "infos":infos,
                      })
-    """
-    return render(request,'liste_entree.html',{"commandes":commandes,
+    else:
+        template='liste_programme.html' if programme else 'liste_entree.html'        
+        return render(request,template,{"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
                      "ticks":listeBlocks.ticks,
                      #'links':listeBlocks.links,
-                     'etapes':{},#etapes,
+                     'etapes':sorted(etapes.items()),
                      #'actions':[a.toD3() for a in actions]
                      "infos":infos,
                      })
-                            
+                                
 """
 ********************************************************
 OBJETS
@@ -743,7 +818,7 @@ class SimpleListeBlockSnap:
             #un multiarg n'est qu'une suite de %s
             block.blockSpec='|%s|'*len(block.inputs)
         nom=block.blockSpec    
-        print('block ',nom)
+        print('block ',nom, ' next',block.nextBlockId)
         print('inputs ',block.inputs)
         #on cherche à remplacer les "%trucs" par les inputs 
         if block.action=='SPR_DEL' and block.time<thetime:                
@@ -752,7 +827,10 @@ class SimpleListeBlockSnap:
                     'JMLid':block.JMLid,
                     'time':thetime,
                     'commande':nom,
-                    'action':'DELETED'}
+                    'action':'DELETED',
+                    'nextBlockId':block.nextBlockId,
+                    'prevBlockId':block.prevBlockId
+                    }
                 return resultat,nom,'nochange deleted'
         
         if block.typeMorph!='CommentMorph':
@@ -782,7 +860,13 @@ class SimpleListeBlockSnap:
         else:
             #c'est un CommentMorph
             change=block.change if block.time==thetime else None
-        resultat={'JMLid':block.JMLid,'time':thetime,'commande':nom,'action':block.action if block.time==thetime else '','change':block.change}
+        resultat={'JMLid':block.JMLid,
+                  'time':thetime,
+                  'commande':nom,
+                  'action':block.action if block.time==thetime else '',
+                  'change':block.change,
+                  'nextBlockId':block.nextBlockId,
+                  'prevBlockId':block.prevBlockId}
         #print('nom',nom,' résultat de niom',resultat)
         return resultat,nom,change
     
