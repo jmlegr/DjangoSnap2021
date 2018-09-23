@@ -545,7 +545,10 @@ SyntaxElementMorph.prototype.silentReplaceInput = function (oldArg, newArg) {
 	record.lastReplacedInput=oldArg;
 	record.lastDropTarget=this;
 	record.action='replacedSilent';
-	record.detailAction=newArg.JMLid;	 
+	record.detailAction=newArg.JMLid;
+	//record.truc={'old':oldArg,
+	//	'new':newArg,
+	//	'in':this}
 	var donnee=new scripts.donnee(record);
     }
     
@@ -7009,7 +7012,8 @@ ScriptsMorph.prototype.donnee = function(record) {
 		// par exemple en cas de CommentBlockMorph
 		data['blockSpec']=record.lastDroppedBlock.getContent?
 					record.lastDroppedBlock.getContent():
-					record.lastDroppedBlock.contents?record.lastDroppedBlock.contents.text:null
+					record.lastDroppedBlock.contents?
+						record.lastDroppedBlock.contents().text:null
 	    }
 	    
 	    data['category']=record.lastDroppedBlock.category  ;
