@@ -102,14 +102,15 @@ def listeblock(request,id=None):
     #liste les derniers débuts de tous les élèves
     infos={}
     eprInfos={}
-    debuts=EvenementEPR.objects.filter(type__in=['NEW','LOAD']).select_related('evenement','evenement__user').order_by('-evenement__creation')
+    #debuts=EvenementEPR.objects.filter(type__in=['NEW','LOAD']).select_related('evenement','evenement__user').order_by('-evenement__creation')
+    debuts=EvenementENV.objects.filter(type__in=['NEW','LANCE','LOBA','LOVER']).select_related('evenement','evenement__user').order_by('-evenement__creation')
     debut=debuts[0]
     user=debut.evenement.user
     infos['user']=user.username
     infos['date']=debut.evenement.creation
     asession=debut.evenement.session_key
     #on recupere soit un type 'LOBA', 'LOVER','NEW' ou 'LANCE'
-    #evt=EvenementENV.objects.filter(evenement__session_key=asession,evenement__creation__lt=debut.evenement.creation).latest('evenement__creation')
+    #evt=EvenementENV.objects.filter(evenement__session_key=asession,evenement__creation__lte=debut.evenement.creation).latest('evenement__creation')
     evt=debut
     listeBlocks=SimpleListeBlockSnap()
     if evt.type in ['NEW','LANCE']:
@@ -394,6 +395,20 @@ def listeblock(request,id=None):
                 """
                 newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
                 newNode.change='deleted'
+                if newNode.prevBlockId is not None:
+                    prevNode=listeBlocks.lastNode(newNode.prevBlockId, theTime).copy(theTime,action)
+                    prevNode.change='nextchanged'
+                    listeBlocks.append(prevNode)
+                    listeBlocks.setNextBlock(prevNode,None)
+                #on indique la suppression aux descendants
+                #TODO: traiter les cslots?
+                node=newNode
+                while node.nextBlockId is not None: 
+                    nextNode=listeBlocks.lastNode(node.nextBlockId, theTime).copy(theTime,action)
+                    nextNode.change='deleted'
+                    listeBlocks.append(nextNode)
+                    listeBlocks.setNextBlock(node,nextNode)
+                    node=nextNode                        
                 #newNode.parentBlockId='deleted'        
                 listeBlocks.append(newNode)
                 listeBlocks.addTick(theTime)
