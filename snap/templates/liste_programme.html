@@ -1,5 +1,8 @@
 {% load static %}
 <style>
+td {
+    vertical-align: top;
+}
 tr.HatBlockMorph {
 color:green;
 }
@@ -86,7 +89,7 @@ span.ANSW {
 <h3 title="{{infos.tooltip}}">{{infos.type}}</h3>
 <p>le {{infos.date}}</p>
 
-<table align="left">
+<table align="left" >
 <tr>
 {% for c in ticks %}
 <td>temps {{c}} </td>
