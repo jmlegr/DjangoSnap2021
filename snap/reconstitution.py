@@ -347,9 +347,7 @@ def listeblock(request,id=None):
                         #on recherche le dernier block de l'ensemble droppé
                         bottomNode=newNode
                         while bottomNode.nextBlockId is not None: 
-                            bottomNode=listeBlocks.lastNode(bottomNode.nextBlockId, theTime)
-                        if bottomNode!=newNode:
-                            bottomNode=bottomNode.copy(theTime,action)
+                            bottomNode=listeBlocks.lastNode(bottomNode.nextBlockId, theTime).copy(theTime,action)
                             listeBlocks.append(bottomNode)
                         if prevNode.nextBlockId is not None:
                             #c'est une insertion
@@ -397,7 +395,7 @@ def listeblock(request,id=None):
                 newNode.change='deleted'
                 if newNode.prevBlockId is not None:
                     prevNode=listeBlocks.lastNode(newNode.prevBlockId, theTime).copy(theTime,action)
-                    prevNode.change='nextchanged'
+                    prevNode.change='nextdeleted'
                     listeBlocks.append(prevNode)
                     listeBlocks.setNextBlock(prevNode,None)
                 #on indique la suppression aux descendants
@@ -473,11 +471,12 @@ def listeblock(request,id=None):
                 print('    resultat',resultat)
                 print('    nom',nom)
                 print('    change:',change)
-                resultat['change']=change 
+                #resultat['change']=change 
                 if resultat['change'] is None and change is not None:
                     resultat['change']=change
-                if resultat['change'] is not None:
+                if resultat['change'] is not None and resultat['change'].find('nochange')==-1:
                     resultat['change']='change '+resultat['change']
+                print('    ->     ',resultat['change'])
                 res.append(resultat)
         commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
     
@@ -898,18 +897,21 @@ class SimpleListeBlockSnap:
         print('block ',nom, ' next',block.nextBlockId)
         print('inputs ',block.inputs)
         #on cherche à remplacer les "%trucs" par les inputs 
+        """
         if block.action=='SPR_DEL' and block.time<thetime:                
                 nom=''
                 resultat={
                     'JMLid':block.JMLid,
                     'time':thetime,
+                    'lasttimechanged':block.time,
                     'commande':nom,
                     'action':'DELETED',
+                    'change':None,
                     'nextBlockId':block.nextBlockId,
                     'prevBlockId':block.prevBlockId
                     }
                 return resultat,nom,'nochange deleted'
-        
+        """
         if block.typeMorph!='CommentMorph':
             txt=re.findall(r'(%\w+)',block.blockSpec)
             repl={}
@@ -939,8 +941,9 @@ class SimpleListeBlockSnap:
             change=block.change if block.time==thetime else None
         resultat={'JMLid':block.JMLid,
                   'time':thetime,
+                  'lasttimechanged':block.time,
                   'commande':nom,
-                  'action':block.action if block.time==thetime else '',
+                  'action':'%s(%s)' % (block.action,block.time),# if block.time==thetime else '',
                   'change':block.change,
                   'nextBlockId':block.nextBlockId,
                   'prevBlockId':block.prevBlockId}
