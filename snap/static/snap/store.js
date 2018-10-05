@@ -2084,7 +2084,7 @@ ReporterBlockMorph.prototype.toXML = function (serializer) {
 
         return this.selector === 'reportGetVar' ? serializer.format(
             '<block var="@" JMLid="@" typemorph="@"/>',
-            this.blockSpec,this.JMLid, this.constructor.name,
+            this.blockSpec,this.JMLid, this.constructor.name
         ) : this.toBlockXML(serializer);
     /**
      * Fin Modification JML
