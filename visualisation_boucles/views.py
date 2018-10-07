@@ -1,8 +1,9 @@
 from django.shortcuts import render
 
 from rest_framework import viewsets
-from snap.models import ProgrammeBase, EvenementEPR
-from visualisation_boucles.serializers import ProgrammeBaseSerializer
+from snap.models import ProgrammeBase, EvenementEPR, EvenementENV
+from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer
+from rest_framework.response import Response
 # Create your views here.
 def choixbase(request):
     """
@@ -22,6 +23,18 @@ class SessionsProgViewset(viewsets.ViewSet):
     """
     Viewset pour liste des sessions d'un programme de base
     """
+    def list(self,request):
+        queryset=EvenementENV.objects.filter(type='LOBA')\
+                    .order_by('evenement__user','evenement__creation')\
+                    .select_related('evenement')
+        
+        serializer=EvenementENVSerializer(queryset,many=True)
+        return Response(serializer.data)
+    
     def retrieve(self,request,pk=None):
-        queryset=EvenementEPR.objects.all()
-        EvenementEPR.objects.filter(type__in=['NEW','LOAD']).select_related('evenement','evenement__user').order_by('-evenement__creation')
+        queryset=EvenementENV.objects.filter(type='LOBA',valueInt=pk)\
+                    .order_by('evenement__user','evenement__creation')\
+                    .select_related('evenement')
+        serializer=EvenementENVSerializer(queryset,many=True)
+        return Response(serializer.data)
+        
