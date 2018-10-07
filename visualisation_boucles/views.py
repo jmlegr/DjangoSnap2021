@@ -1,9 +1,10 @@
 from django.shortcuts import render
 
 from rest_framework import viewsets
-from snap.models import ProgrammeBase, EvenementEPR, EvenementENV
+from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement
 from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer
 from rest_framework.response import Response
+from django.core.exceptions import ObjectDoesNotExist
 # Create your views here.
 def choixbase(request):
     """
@@ -34,7 +35,33 @@ class SessionsProgViewset(viewsets.ViewSet):
     def retrieve(self,request,pk=None):
         queryset=EvenementENV.objects.filter(type='LOBA',valueInt=pk)\
                     .order_by('evenement__user','evenement__creation')\
-                    .select_related('evenement')
+                    .select_related('evenement')        
         serializer=EvenementENVSerializer(queryset,many=True)
         return Response(serializer.data)
+    
+class SessionEvenementsViewset(viewsets.ViewSet):
+    """
+    viewset pour la liste des évenements constituants un ensemble d'action sur un même programme
+    """
+    def retrieve(self,request,pk=None):
+        """
+        pk contient l'evenement de départ, on renvoit tous les évènements de la même session
+        jusqu'à un EPR LOAD ou NEW
+        """
+        evt=Evenement.objects.get(id=pk)
+        print('evt',evt.session_key,evt.time,evt.numero)
+        try:
+            nextEvtEPR=EvenementEPR.objects.filter(evenement__session_key=evt.session_key)
+                                               #evenement__time__gt=evt.time)
+                                               #type__in=['LOAD','NEW'])\
+                                              # .latest('-evenement__creation')
+        except ObjectDoesNotExist:
+            print('a pas')
+        print('nexrt',nextEvtEPR)
+        evts=Evenement.objects.filter(session_key=evt.session_key,
+                                      time__gte=evt.time,
+                                      time__lt=nextEvtEPR.evenement.time
+                                      )
+        print('evts',[e for e in evts])
+        return Response({'ok':True})
         
