@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    'visualisation_boucles.apps.VisualisationBouclesConfig',
     'snap.apps.SnapConfig', 
     'rest_framework',
     'silk',
