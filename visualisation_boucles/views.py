@@ -85,5 +85,5 @@ class SessionEvenementsViewset(viewsets.ViewSet):
         if request.accepted_renderer.format == 'html':
             return Response({'data':serializer.data},template_name='visualisation_boucles/actionsimple.html')
                             
-        return Response(serializer.data,template_name='visualisation_boucles/actionsimple.html')
+        return Response(serializer.data)
         

@@ -1,0 +1,15 @@
+{% load static %}
+<h1>c'est rendu</h1>
+{% for i in data %}
+<p>{{ i.id}} - {{i.type}}  - 
+{% if i.type == "EPR" %}
+{{i.evenementepr.0.type}}//
+
+{% elif i.type == "SPR" %}
+{{i.evenementspr.0.type}}//
+{% elif i.type == "ENV" %}
+{{i.environnement.0.type}}
+{% else %}
+erreur
+{%endif%}</p>
+{%endfor%}
