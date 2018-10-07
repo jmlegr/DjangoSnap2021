@@ -4448,7 +4448,7 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
      */
     this.isJML=this.serializer.isJML
     this.JMLVersion=this.serializer.JMLVersion
-    sendEvenement('EPR',{type:'LOAD'})
+    //sendEvenement('EPR',{type:'LOAD'})
     this.initIds(!this.isJML);    
     /**
      * Fin Modification JML
