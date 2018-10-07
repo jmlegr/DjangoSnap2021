@@ -85,7 +85,7 @@ class EvenementENV(models.Model):
         ('MENU', 'Clic Menu'),
         ('PARAM','Clic Menu paramètres'),
         ('NEW','Nouveau programme vide'),
-        ('LOBA','Chargement programme de Base'),
+        ('LOBA','Chargement programme de Base'), #nom dans detail, id dans valueInt (à la création)
         ('LOVER','Chargement d\'une version sauvegardée'), # id dans detail 
         ('IMPORT','Importation fichier local'), # normalement suivi d'un EPR  LOAD (pas encore) ou/et SPR OPEN
         ('EXPORT','Exportation fichier local'),        
