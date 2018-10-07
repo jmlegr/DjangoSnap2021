@@ -19,7 +19,6 @@
     $.getJSON('progs', function(data) {
        console.log(data);       
        $.each(data,function (key,prg){
-           console.log('prg:',prg.id,'-',prg.nom,prg.description?':'+prg.description:'');
            $('#selectProgBase').append("<option value='"+prg.id+"'"+
         	   "title='"+prg.description+"'"+
         	   ">"+prg.nom+"</option>");
@@ -28,12 +27,12 @@
        
     });
     $("#envoiProgBase").button().click(function(e) {
-     $.getJSON('progs/'+$("#selectProgBase").val(), function(data) {
+     $.getJSON('progs/'+$("#selectProgBase").val()+"/sessions", function(data) {
          console.log(data);
          $("#session").show();
          $.each(data,function (key,session){
                //console.log('user:',user.id,'-',user.eleve?user.eleve.classe:'prof');
-               $('#sessions').append("<option value='"+session.id+"'>"+(new Date(session.evenement.creation)).toUTCString()+"("+session.evenement.user+")"+"</option>");               
+               $('#sessions').append("<option value='"+session.evenement.id+"'>"+(new Date(session.evenement.creation)).toUTCString()+"("+session.evenement.user+")"+"</option>");               
            }) ;
          
      })
@@ -44,20 +43,11 @@
     );
     $("#envoiSession").button().click(function(e) {
        //console.log("clic"+$("#sessions").val());
-       //$.get('open/'+$("#sessions").val()+"/", function(data)
-           $.get('spropen/'+$("#sessions").val()+"/listeOpen", function(data){
-             //console.log("recept"+data);
-             $( "#log" ).html(data);
-             $('table tr').click(function(){
-                 alert($(this).text());
-             });
-            });
-           $.get('spropen/'+$("#sessions").val()+"/listeActions", function(data) {
-            $("#actions").html(data);           
-            });
-           $.get('tb/'+$("#sessions").val(), function(data) {
-               $("#cyto").html(data);
-           })
+       $.get('actions/'+$("#sessions").val(), function(data){
+	   console.log(data);
+	   $("#actions").html(data);
+       },'html')   
+      
     });
   
  });
@@ -75,7 +65,7 @@
   <input type="submit" id="envoiProgBase">
   
   <div id="session">
-  <label for="session">Choisir une sessions: </label>
+  <label for="session">Choisir une session: </label>
   <select  list="listeSessions" id="sessions"></select>
   <datalist id="listeSessions">  
   </datalist>

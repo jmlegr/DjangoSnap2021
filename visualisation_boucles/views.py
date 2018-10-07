@@ -5,6 +5,8 @@ from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement
 from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.decorators import detail_route
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 # Create your views here.
 def choixbase(request):
     """
@@ -20,6 +22,16 @@ class ProgrammeBaseViewset(viewsets.ModelViewSet):
     queryset=ProgrammeBase.objects.all();
     serializer_class=ProgrammeBaseSerializer
 
+    @detail_route()
+    def sessions(self,request,pk=None):
+        """
+        renvoie la liste des sessions (au sens debut d'un travail) sur le programme donné
+        """
+        queryset=EvenementENV.objects.filter(type='LOBA',valueInt=pk)\
+                    .order_by('evenement__user','evenement__creation')\
+                    .select_related('evenement')        
+        serializer=EvenementENVSerializer(queryset,many=True)
+        return Response(serializer.data)
 class SessionsProgViewset(viewsets.ViewSet):
     """
     Viewset pour liste des sessions d'un programme de base
@@ -43,6 +55,7 @@ class SessionEvenementsViewset(viewsets.ViewSet):
     """
     viewset pour la liste des évenements constituants un ensemble d'action sur un même programme
     """
+    renderer_classes = (JSONRenderer, TemplateHTMLRenderer,)
     def retrieve(self,request,pk=None):
         """
         pk contient l'evenement de départ, on renvoit tous les évènements de la même session
@@ -69,5 +82,8 @@ class SessionEvenementsViewset(viewsets.ViewSet):
                                           creation__gt=firstEvt.evenement.creation
                                           ).order_by('numero')
         serializer=SimpleEvenementSerializer(evts,many=True)
-        return Response(serializer.data)
+        if request.accepted_renderer.format == 'html':
+            return Response({'data':serializer.data},template_name='visualisation_boucles/actionsimple.html')
+                            
+        return Response(serializer.data,template_name='visualisation_boucles/actionsimple.html')
         
