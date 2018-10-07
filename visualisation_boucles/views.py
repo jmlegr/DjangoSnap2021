@@ -51,9 +51,10 @@ class SessionEvenementsViewset(viewsets.ViewSet):
         evt=Evenement.objects.get(id=pk)
         print('evt',evt.session_key,evt.time,evt.numero)
         try:
-            nextEvtEPR=EvenementEPR.objects.filter(evenement__session_key=evt.session_key)
-                                               #evenement__time__gt=evt.time)
-                                               #type__in=['LOAD','NEW'])\
+            nextEvtEPR=EvenementEPR.objects.filter(evenement__session_key=evt.session_key,
+                                               evenement__time__gt=evt.time,
+                                               type__in=['LOAD','NEW'])\
+                                            .order_by('-evenement__creation')
                                               # .latest('-evenement__creation')
         except ObjectDoesNotExist:
             print('a pas')
