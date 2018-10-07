@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 from rest_framework import viewsets
 from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement
-from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer
+from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 # Create your views here.
@@ -49,20 +49,25 @@ class SessionEvenementsViewset(viewsets.ViewSet):
         jusqu'à un EPR LOAD ou NEW
         """
         evt=Evenement.objects.get(id=pk)
-        print('evt',evt.session_key,evt.time,evt.numero)
-        try:
-            nextEvtEPR=EvenementEPR.objects.filter(evenement__session_key=evt.session_key,
-                                               evenement__time__gt=evt.time,
+        firstEvt=EvenementEPR.objects.filter(evenement__session_key=evt.session_key,
+                                               evenement__creation__gte=evt.creation,
                                                type__in=['LOAD','NEW'])\
-                                            .order_by('-evenement__creation')
-                                              # .latest('-evenement__creation')
+                                               .earliest('evenement__creation')
+        try:
+            nextEvtEPR=EvenementEPR.objects.filter(evenement__session_key=firstEvt.evenement.session_key,
+                                               evenement__creation__gt=firstEvt.evenement.creation,
+                                               type__in=['LOAD','NEW'])\
+                                               .earliest('evenement__creation')
+            evts=Evenement.objects.filter(session_key=firstEvt.evenement.session_key,
+                                          creation__gte=firstEvt.evenement.creation,
+                                      creation__lt=nextEvtEPR.evenement.creation
+                                      ).order_by('numero')
+        
         except ObjectDoesNotExist:
-            print('a pas')
-        print('nexrt',nextEvtEPR)
-        evts=Evenement.objects.filter(session_key=evt.session_key,
-                                      time__gte=evt.time,
-                                      time__lt=nextEvtEPR.evenement.time
-                                      )
-        print('evts',[e for e in evts])
-        return Response({'ok':True})
+            #ensemble d'action jusqu'à la fin de la session
+            evts=Evenement.objects.filter(session_key=firstEvt.evenement.session_key,
+                                          creation__gt=firstEvt.evenement.creation
+                                          ).order_by('numero')
+        serializer=SimpleEvenementSerializer(evts,many=True)
+        return Response(serializer.data)
         
