@@ -8,53 +8,7 @@
     cursor: pointer;
 }
 </style>
-<script type="text/javascript">
-  $( document ).ready(function() {      
-    //console.log( "ready!" );
-    $("#session").hide();
-    function log( message ) {
-          $( "<div>" ).text( message ).prependTo( "#log" );
-          $( "#log" ).scrollTop( 0 );
-        }
-    $.getJSON('progs', function(data) {
-       console.log(data);       
-       $.each(data,function (key,prg){
-           $('#selectProgBase').append("<option value='"+prg.id+"'"+
-        	   "title='"+prg.description+"'"+
-        	   ">"+prg.nom+"</option>");
-       }) ;
-       
-       
-    });
-    $("#envoiProgBase").button().click(function(e) {
-     $.getJSON('progs/'+$("#selectProgBase").val()+"/sessions", function(data) {
-         console.log(data);
-         $("#session").show();
-         $.each(data,function (key,session){
-               //console.log('user:',user.id,'-',user.eleve?user.eleve.classe:'prof');
-               $('#sessions').append("<option value='"+session.evenement.id+"'>"+(new Date(session.evenement.creation)).toUTCString()+"("+session.evenement.user+")"+"</option>");               
-           }) ;
-         
-     })
-    
-    });
-    $("#selectProgBase").change(function() {
-    log("change"+$("#selectProgBase").val())}
-    );
-    $("#envoiSession").button().click(function(e) {
-       //console.log("clic"+$("#sessions").val());
-       $.get('actions/'+$("#sessions").val(), function(data){
-	   console.log(data);
-	   $("#actions").html(data);
-       },'html')   
-      
-    });
-  
- });
-  
-  
 
-</script>
 <h1>Visualisation de l'apparition des boucles</h1>
 <h3>Sélection du programme de base</h3>
 
@@ -81,4 +35,81 @@
   <div id="actions" style="height: 200px; overflow: auto;" class="ui-widget-content"></div>
 </div>
 
-<div id="cyto"></div>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script type="text/javascript">
+  $( document ).ready(function() {      
+    //console.log( "ready!" );
+    $("#session").hide();
+    function log( message ) {
+          $( "<div>" ).text( message ).prependTo( "#log" );
+          $( "#log" ).scrollTop( 0 );
+        }
+    $.getJSON('progs', function(data) {
+       console.log(data);       
+       $.each(data,function (key,prg){
+           $('#selectProgBase').append("<option value='"+prg.id+"'"+
+               "title='"+prg.description+"'"+
+               ">"+prg.nom+"</option>");
+       }) ;
+       
+       
+    });
+    $("#envoiProgBase").button().click(function(e) {
+     $.getJSON('progs/'+$("#selectProgBase").val()+"/sessions", function(data) {
+         console.log(data);
+         $("#session").show();
+         $.each(data,function (key,session){
+               //console.log('user:',user.id,'-',user.eleve?user.eleve.classe:'prof');
+               $('#sessions').append("<option value='"+session.evenement.id+"'>"+(new Date(session.evenement.creation)).toUTCString()+"("+session.evenement.user+")"+"</option>");               
+           }) ;
+         
+     })
+    
+    });
+    $("#selectProgBase").change(function() {
+    log("change"+$("#selectProgBase").val())}
+    );
+    $("#envoiSession").button().click(function(e) {
+       //console.log("clic"+$("#sessions").val());
+       $.get('actions/'+$("#sessions").val(), function(data){
+       console.log("recept",data,d3.select("actions"));
+       blocks=d3.select("#actions")
+        .selectAll(".block")
+        .data(data, function(e){return e.id;}) 
+       blocks
+        .enter().append("p")
+            .attr("class","block")
+            .attr("title",function (d) {
+        	   console.log("title",d);
+        	   return "t:"+d.id+"-"+d.type})
+            .text(function(d) {
+                switch (d.type){
+                case "EPR": return "état  :"+d.evenementepr[0].type; break;
+                case "SPR": var spr=d.evenementspr[0];
+                            return "statut:"+spr.type+"("+spr.typeMorph+","+spr.blockSpec+")"; 
+                            break;
+                case "ENV": return "env.  :"+d.environnement[0].type; break;
+                default: return "inconnu";
+                }
+            });
+       blocks.text(function(d) {
+           switch (d.type){
+           case "EPR": return "UPDATEétat  :"+d.evenementepr[0].type; break;
+           case "SPR": return "UPDATEstatut:"+d.evenementspr[0].type; break;
+           case "ENV": return "UPDATEenv.  :"+d.environnement[0].type; break;
+           default: return "UPDATEinconnu";
+           }
+       });
+      blocks.exit().remove();
+       //$("#actions").html(data);
+       },'json')   
+      
+    });
+  
+ });
+  
+  
+
+</script>
+<div id="cyto">ici</div>
