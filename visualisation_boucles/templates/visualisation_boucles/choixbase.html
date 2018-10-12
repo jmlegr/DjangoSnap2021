@@ -7,6 +7,21 @@
     background-color: orange;
     cursor: pointer;
 }
+.cer {
+    fill:red;
+}
+.toolTip {
+position: absolute;
+ z-index: 10;
+    visibility: hidden;
+min-width: 80px;
+height: auto;
+background: none repeat scroll 0 0 darkslategrey;
+border-radius: 25px;
+border: 2px solid #6F257F;
+padding: 14px;
+text-align: center;
+}
 </style>
 
 <h1>Visualisation de l'apparition des boucles</h1>
@@ -28,6 +43,7 @@
 <div class="ui-widget" style="margin-top:2em; font-family:Arial">
   Result:
   <div id="log" style="height: 400px; overflow: auto;" class="ui-widget-content"></div>
+  <svg id="mysvg"></svg>
 </div>
 
 <div class="ui-widget" style="margin-top:2em; font-family:Arial">
@@ -74,7 +90,114 @@
        //console.log("clic"+$("#sessions").val());
        $.get('actions/'+$("#sessions").val(), function(data){
        console.log("recept",data,d3.select("actions"));
-       blocks=d3.select("#actions")
+       var index=0; //index horizontal, change si drop/new
+       var vindex=0; //index vertical pour non drop/new
+       var duplicInfos=null; //infos de duplication
+       var otherData=[];
+       var newData=[],
+           newNodes=null;
+       data.forEach(function(d){
+	   //on rajoute unchamps pour accès direct à l'évènement spr/epr/env
+	   switch (d.type){
+           case "EPR": d.infos=d.evenementepr[0]; break;
+           case "SPR": d.infos=d.evenementspr[0]; break;
+           case "ENV": d.infos=d.environnement[0]; break;
+           default: d.infos=null;
+	   }
+	   //enregistrement des infos de duplication
+	   if (d.type=="ENV" && d.environnement[0].type=="DUPLIC") {
+	       duplicInfos=d.environnement[0].detail.split(";").length;
+	   } 
+	   //changement d'index si drop/new
+	   if (d.type=="SPR" && (d.evenementspr[0].type=="DROP" || d.evenementspr[0].type=="NEW")) {
+		  d.index=index;
+		  index+=1;
+		  if (duplicInfos != null) {
+		      d.duplicInfos=duplicInfos;
+		      duplicInfos=null;
+		  }
+		  vindex=0;
+		  if (newNodes!=null) {
+		      newData.push(newNodes);
+		      newNodes=null;
+		  }
+		  newData.push(d);		  
+	    }
+	   else {
+	       //changement de vindex sinon
+	       d.index=index;
+	       d.vindex=vindex;
+	       vindex+=1;
+	       if (newNodes==null) {
+		      newNodes=[d];
+	       } else {
+		      newNodes.push(d);
+	       }
+	   }
+	   });
+       if (newNodes!=null) newData.push(newNodes);
+       console.log('nexdata',newData);
+       var rects=d3.select("#mysvg")
+                .selectAll(".act")
+                .data(newData.filter(e=>!Array.isArray(e)),function(e){return e.id;})
+                //.data(data.filter(function(e){return e.vindex==null}),function(e){return e.id;})
+       rects.enter().append("rect")
+            .attr("class","act")
+            .attr("width",18)
+            .attr("height",10)
+            .attr("x",function(d){return d.index*20})
+            .append("title")
+                .text(function(d){return d.infos.type+"("+d.duplicInfos+")"})
+       rects.exit().remove()
+       var tooltip=d3.select("#tooltip");
+       tooltip.on("mouseover",d=>tooltip.style("visibility","visible"))
+              .on("mouseout",d=>tooltip.style("visibility","hidden"))
+              .on("click",function(d){
+        	   //on ferme seulement si on n'a pas cliqué sur un tp
+        	   if (!d3.event.target.classList.contains("tp"))   tooltip.style("visibility","hidden");
+              });
+       var cers=d3.select("#mysvg")
+                .selectAll(".cer")
+                .data(newData.filter(e=>Array.isArray(e)),function(e){return e.id;})
+                //.data(data.filter(function(e){return e.vindex!=null}),function(e){return e.id;})
+       cers.enter().append("circle")
+            .attr("class","cer")
+            .attr("r",d=>2+d.length)
+            .attr("cx",function(d,i){return i*20})
+            .attr("cy",function(d){return 5})
+            .on("mouseover", d=>{
+        	   tooltip.style("visibility","visible");
+        	   var t=tooltip.selectAll(".tp").data(d);
+               t.enter().append("p").attr("class","tp")
+                    .text(e=>e.type+":"+e.infos.type)
+                    .on("mouseover",function() {
+                	   d3.select(this).style("background-color", "orange");
+                    })
+                    .on("mouseout",function() {
+                	d3.select(this).style("background-color", null);
+                    });
+               t.text(e=>"(m)"+e.type+":"+e.infos.type)
+               t.exit().remove();
+        	   
+            })
+            .on("mousemove", function(d){
+        	   tooltip
+        	    .style("left", d3.event.pageX - 2 +"px")
+                .style("top", d3.event.pageY - (d.length*50/2) + "px")
+                
+                //.style("display", "inline-block")
+                ;
+        	 })
+            .on("mouseout", d=>{
+        	   console.log("kit");
+        	   tooltip.style("visibility","hidden");
+        	 //tooltip.style("display", "none");});
+            });
+        	   
+            //.append("title")
+            //    .text(function(d){return d.type+":"+d.infos.type});
+       cers.exit().remove();
+       var blocks=d3.select("#actions")
         .selectAll(".block")
         .data(data, function(e){return e.id;}) 
        blocks
@@ -87,7 +210,8 @@
                 switch (d.type){
                 case "EPR": return "état  :"+d.evenementepr[0].type; break;
                 case "SPR": var spr=d.evenementspr[0];
-                            return "statut:"+spr.type+"("+spr.typeMorph+","+spr.blockSpec+")"; 
+                            return "statut:"+spr.type+"("+spr.typeMorph+","+spr.blockSpec+")"
+                                     +(d.index==null?"-":d.index)+(d.duplicInfos==null?"/":d.duplicInfos); 
                             break;
                 case "ENV": return "env.  :"+d.environnement[0].type; break;
                 default: return "inconnu";
@@ -112,4 +236,4 @@
   
 
 </script>
-<div id="cyto">ici</div>
+<div id="tooltip" class="toolTip"><p>ici tooltip</p></div>
