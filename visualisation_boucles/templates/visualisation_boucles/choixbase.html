@@ -7,7 +7,7 @@
     background-color: orange;
     cursor: pointer;
 }
-.cer {
+.actions {
     fill:red;
 }
 .toolTip {
@@ -16,11 +16,16 @@ position: absolute;
     visibility: hidden;
 min-width: 80px;
 height: auto;
-background: none repeat scroll 0 0 darkslategrey;
-border-radius: 25px;
+background: none repeat scroll 0 0 gainsboro;
+border-radius: 5px;
 border: 2px solid #6F257F;
 padding: 14px;
 text-align: center;
+}
+
+.imagetooltip {
+background: none repeat scroll 0 0 lavender;
+pointer-events: none;
 }
 </style>
 
@@ -62,7 +67,7 @@ text-align: center;
           $( "#log" ).scrollTop( 0 );
         }
     $.getJSON('progs', function(data) {
-       console.log(data);       
+       //console.log(data);       
        $.each(data,function (key,prg){
            $('#selectProgBase').append("<option value='"+prg.id+"'"+
                "title='"+prg.description+"'"+
@@ -73,7 +78,7 @@ text-align: center;
     });
     $("#envoiProgBase").button().click(function(e) {
      $.getJSON('progs/'+$("#selectProgBase").val()+"/sessions", function(data) {
-         console.log(data);
+         //console.log(data);
          $("#session").show();
          $.each(data,function (key,session){
                //console.log('user:',user.id,'-',user.eleve?user.eleve.classe:'prof');
@@ -138,11 +143,11 @@ text-align: center;
        if (newNodes!=null) newData.push(newNodes);
        console.log('nexdata',newData);
        var rects=d3.select("#mysvg")
-                .selectAll(".act")
+                .selectAll(".drops")
                 .data(newData.filter(e=>!Array.isArray(e)),function(e){return e.id;})
                 //.data(data.filter(function(e){return e.vindex==null}),function(e){return e.id;})
        rects.enter().append("rect")
-            .attr("class","act")
+            .attr("class","drops")
             .attr("width",18)
             .attr("height",10)
             .attr("x",function(d){return d.index*20})
@@ -153,16 +158,18 @@ text-align: center;
        tooltip.on("mouseover",d=>tooltip.style("visibility","visible"))
               .on("mouseout",d=>tooltip.style("visibility","hidden"))
               .on("click",function(d){
-        	   //on ferme seulement si on n'a pas cliqué sur un tp
-        	   if (!d3.event.target.classList.contains("tp"))   tooltip.style("visibility","hidden");
-              });
+        	    //on ferme seulement si on n'a pas cliqué sur un tp
+        	       if (!d3.event.target.classList.contains("tp")) { 
+        		    tooltip.style("visibility","hidden");        	 
+        	       }
+        	   });
        var cers=d3.select("#mysvg")
-                .selectAll(".cer")
+                .selectAll(".actions")
                 .data(newData.filter(e=>Array.isArray(e)),function(e){return e.id;})
                 //.data(data.filter(function(e){return e.vindex!=null}),function(e){return e.id;})
        cers.enter().append("circle")
-            .attr("class","cer")
-            .attr("r",d=>2+d.length)
+            .attr("class","actions")
+            .attr("r",d=>Math.min(8,2+d.length))
             .attr("cx",function(d,i){return i*20})
             .attr("cy",function(d){return 5})
             .on("mouseover", d=>{
@@ -172,11 +179,27 @@ text-align: center;
                     .text(e=>e.type+":"+e.infos.type)
                     .on("mouseover",function() {
                 	   d3.select(this).style("background-color", "orange");
+                	           var img=d3.event.target.__data__.image;
+                               if (img.length>0) {                                  
+                                  d3.select("#imagetooltip").select("image")
+                                    .attr("xlink:href",img[0].image)
+                                    .attr("x",0)
+                                    .attr("y",0)
+                                    .attr("width","100%")
+                                    .attr("height","100%")                            
+                                    ;
+                                  d3.select("#imagetooltip")
+                                          .style("visibility","visible")
+                                          .style("left", d3.event.pageX + 2 +"px")
+                                           .style("top", d3.event.pageY + 2 + "px")
+                                    
+                               }              
                     })
                     .on("mouseout",function() {
                 	d3.select(this).style("background-color", null);
+                	d3.select("#imagetooltip").style("visibility","hidden");
                     });
-               t.text(e=>"(m)"+e.type+":"+e.infos.type)
+               t.text(e=>e.type+":"+e.infos.type)
                t.exit().remove();
         	   
             })
@@ -184,7 +207,6 @@ text-align: center;
         	   tooltip
         	    .style("left", d3.event.pageX - 2 +"px")
                 .style("top", d3.event.pageY - (d.length*50/2) + "px")
-                
                 //.style("display", "inline-block")
                 ;
         	 })
@@ -193,10 +215,8 @@ text-align: center;
         	   tooltip.style("visibility","hidden");
         	 //tooltip.style("display", "none");});
             });
-        	   
-            //.append("title")
-            //    .text(function(d){return d.type+":"+d.infos.type});
        cers.exit().remove();
+       
        var blocks=d3.select("#actions")
         .selectAll(".block")
         .data(data, function(e){return e.id;}) 
@@ -204,7 +224,6 @@ text-align: center;
         .enter().append("p")
             .attr("class","block")
             .attr("title",function (d) {
-        	   console.log("title",d);
         	   return "t:"+d.id+"-"+d.type})
             .text(function(d) {
                 switch (d.type){
@@ -237,3 +256,4 @@ text-align: center;
 
 </script>
 <div id="tooltip" class="toolTip"><p>ici tooltip</p></div>
+<div id="imagetooltip" class="toolTip imagetooltip"><svg width=300 height=300><image></image></svg></div>
