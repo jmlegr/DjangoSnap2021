@@ -142,18 +142,18 @@ pointer-events: none;
 	   });
        if (newNodes!=null) newData.push(newNodes);
        console.log('nexdata',newData);
-       var rects=d3.select("#mysvg")
+       var drops=d3.select("#mysvg")
                 .selectAll(".drops")
                 .data(newData.filter(e=>!Array.isArray(e)),function(e){return e.id;})
                 //.data(data.filter(function(e){return e.vindex==null}),function(e){return e.id;})
-       rects.enter().append("rect")
+       drops.enter().append("rect")
             .attr("class","drops")
             .attr("width",18)
             .attr("height",10)
             .attr("x",function(d){return d.index*20})
             .append("title")
                 .text(function(d){return d.infos.type+"("+d.duplicInfos+")"})
-       rects.exit().remove()
+       drops.exit().remove()
        var tooltip=d3.select("#tooltip");
        tooltip.on("mouseover",d=>tooltip.style("visibility","visible"))
               .on("mouseout",d=>tooltip.style("visibility","hidden"))
@@ -163,11 +163,11 @@ pointer-events: none;
         		    tooltip.style("visibility","hidden");        	 
         	       }
         	   });
-       var cers=d3.select("#mysvg")
+       var actions=d3.select("#mysvg")
                 .selectAll(".actions")
                 .data(newData.filter(e=>Array.isArray(e)),function(e){return e.id;})
                 //.data(data.filter(function(e){return e.vindex!=null}),function(e){return e.id;})
-       cers.enter().append("circle")
+       actions.enter().append("circle")
             .attr("class","actions")
             .attr("r",d=>Math.min(8,2+d.length))
             .attr("cx",function(d,i){return i*20})
@@ -211,11 +211,10 @@ pointer-events: none;
                 ;
         	 })
             .on("mouseout", d=>{
-        	   console.log("kit");
         	   tooltip.style("visibility","hidden");
         	 //tooltip.style("display", "none");});
             });
-       cers.exit().remove();
+       actions.exit().remove();
        
        var blocks=d3.select("#actions")
         .selectAll(".block")
