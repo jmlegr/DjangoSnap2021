@@ -3,6 +3,7 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement
 from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer
+               
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.decorators import detail_route
@@ -86,4 +87,11 @@ class SessionEvenementsViewset(viewsets.ViewSet):
             return Response({'data':serializer.data},template_name='visualisation_boucles/actionsimple.html')
                             
         return Response(serializer.data)
+
+class SimpleSessionViewset(viewsets.ViewSet): 
+    renderer_classes = (JSONRenderer, )    
+
+    def list(self,request):
+        queryset=Evenement.objects.all().values('creation').dates('creation','day')
         
+        return Response(queryset)

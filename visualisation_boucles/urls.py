@@ -11,8 +11,10 @@ router = DefaultRouter()
 router.register(r'progs', views.ProgrammeBaseViewset)
 router.register(r'bases',views.SessionsProgViewset,base_name='sessionsprog')
 router.register(r'actions',views.SessionEvenementsViewset,base_name='actions')
+router.register(r'sessions',views.SimpleSessionViewset,base_name='sessions')
 urlpatterns = [
     path('base',views.choixbase,name='choixprg_base'),
+    
     ]
 
 urlpatterns += [
