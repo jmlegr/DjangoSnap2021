@@ -3,6 +3,15 @@ import {
     xsend,
     url
 } from './xsend.js'
+
+var margin = {
+        top: 30,
+        right: 40,
+        bottom: 50,
+        left: 50
+    },
+    width = window.innerWidth*0.9 - margin.left - margin.right,
+    height = 200 - margin.top - margin.bottom;
 var tableChart = dc.dataTable('#dc-table-graph'),
     countChart = dc.dataCount("#selectedClasse"),
     selectedCountChart = dc.dataCount("#selectedLines")
@@ -89,7 +98,8 @@ var selectAllSessions = function () {
 }
 
 var lance = function () {
-    d3.json("https://api.myjson.com/bins/gnn28").then(function (data) {
+    //d3.json("https://api.myjson.com/bins/gnn28").then(function (data) {
+    d3.json("sessions").then(function (data) {
         data.forEach(function (e) {
             e.debut = new Date(e.debut);
             e.fin = new Date(e.fin);
@@ -127,14 +137,7 @@ var lance = function () {
 
         // .tickValues(heures)
 
-        var margin = {
-                top: 30,
-                right: 40,
-                bottom: 50,
-                left: 50
-            },
-            width = 500 - margin.left - margin.right,
-            height = 200 - margin.top - margin.bottom;
+        
         var timeScale = d3.scaleTime()
             .domain([d3.timeDay.offset(d3.min(sessionsLimites, d => d3.min(d.values, e => e.value.fmin)), -1),
             d3.timeDay.offset(d3.max(sessionsLimites, d => d3.max(d.values, e => e.value.fmax)), 1)])
