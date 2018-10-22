@@ -112,7 +112,11 @@ class SimpleSessionViewset(viewsets.ViewSet):
     
     @list_route(methods=['post'])
     def visualise(self,request):
-        print(request.data)
-        l=request.data
-        
-        return Response(l)
+        #print(request.data)
+        l=[i['session_key'] for i in request.data['data']  ]      
+        evts=Evenement.objects.filter(session_key__in=l)\
+                .select_related('user')\
+                .prefetch_related('evenementspr','evenementepr','environnement','image',\
+                                  'evenementspr__inputs','evenementspr__scripts')
+        serializer=SimpleEvenementSerializer(evts,many=True)
+        return Response(serializer.data)

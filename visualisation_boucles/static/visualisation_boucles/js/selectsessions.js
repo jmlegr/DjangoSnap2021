@@ -318,11 +318,11 @@ var lance = function () {
             var z = d3.select("#visualisation-type input:checked").node().value
             var liste = selectedCountChart.dimension().all()
             console.log("z", z, liste)
-            alert("chargement de " + z)
+            //alert("chargement de " + z)
             xsend(url, csrf_token, {
                 "type": z,
                 "data": liste
-            }, "POST").then(response => console.log('Sucscess:', response, JSON.stringify(response)))
+            }, "POST").then(response => console.log('Sucscess:', response))
         })
 
     d3.select("#selectAllClasseAnchor").on("click", function () {
