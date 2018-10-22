@@ -14,7 +14,7 @@ router.register(r'actions',views.SessionEvenementsViewset,base_name='actions')
 router.register(r'sessions',views.SimpleSessionViewset,base_name='sessions')
 urlpatterns = [
     path('base',views.choixbase,name='choixprg_base'),
-    
+    path('select',views.selectSessions),
     ]
 
 urlpatterns += [

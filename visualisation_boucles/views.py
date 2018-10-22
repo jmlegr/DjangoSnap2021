@@ -2,12 +2,14 @@ from django.shortcuts import render
 
 from rest_framework import viewsets
 from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement
-from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer
+from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer\
+                    ,VerySimpleEvenementSerializer, ResumeSessionSerializer
                
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+from django.db.models.aggregates import Min, Max, Count
 # Create your views here.
 def choixbase(request):
     """
@@ -15,7 +17,9 @@ def choixbase(request):
     (choix du programme de base)
     """
     return render(request,'visualisation_boucles/choixbase.html');
-    
+def selectSessions(request):
+    return render(request,'visualisation_boucles/selectSessions.html')
+
 class ProgrammeBaseViewset(viewsets.ModelViewSet):
     """
     API Endpoint pour Programme de Base
@@ -92,6 +96,23 @@ class SimpleSessionViewset(viewsets.ViewSet):
     renderer_classes = (JSONRenderer, )    
 
     def list(self,request):
-        queryset=Evenement.objects.all().values('creation').dates('creation','day')
+        #queryset=Evenement.objects.filter(numero=1).values('creation').dates('creation','day')
+        #evts=EvenementENV.objects.filter(type='LANCE').values_list('evenement',flat=True)
+        sessions=Evenement.objects.order_by().values("session_key","user",
+                                                     "user__username",
+                                                     "user__eleve__classe",
+                                                     "user__eleve__classe__nom").distinct()\
+                .annotate(debut=Min('creation'),fin=Max('creation'),nb_evts=Count("session_key"))
+        print(sessions)
+        #queryset=Evenement.objects.filter(id__in=evts)
+        #print(queryset)
+        serializer=ResumeSessionSerializer(sessions,many=True)
+        return Response(serializer.data)
+        #return Response(evts)
+    
+    @list_route(methods=['post'])
+    def visualise(self,request):
+        print(request.data)
+        l=request.data
         
-        return Response(queryset)
+        return Response(l)
