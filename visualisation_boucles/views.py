@@ -92,10 +92,42 @@ class SessionEvenementsViewset(viewsets.ViewSet):
                             
         return Response(serializer.data)
 
+from django.db import connection
 class SimpleSessionViewset(viewsets.ViewSet): 
     renderer_classes = (JSONRenderer, )    
 
+    
     def list(self,request):
+        """
+        renvoie la liste des sessions/utilisateurs, avec date de début et de fin, infos utilisateurs et classe,
+        nbre d'évènements de chaque catégories, nombre de chargement et nom du programme chargé (si base) ou id (si document)
+        """
+        cursor=connection.cursor()
+        req="""SELECT DISTINCT snap_evenement.session_key, snap_evenement.user_id as user, 
+snap_eleve.id AS eleve_id, auth_user.username as user_nom, snap_eleve.classe_id as classe_id, snap_classe.nom as classe_nom,
+MIN(snap_evenement.creation) AS debut, 
+MAX(snap_evenement.creation) AS fin, 
+COUNT(snap_evenement.session_key) AS nb_evts,
+COUNT(CASE WHEN snap_evenement.type = 'ENV' then snap_evenement.id ELSE NULL END) as nbEnv,
+COUNT(CASE WHEN snap_evenement.type = 'EPR' then snap_evenement.id ELSE NULL END) as nbEpr,
+COUNT(CASE WHEN snap_evenement.type = 'SPR' then snap_evenement.id ELSE NULL END) as nbSpr,
+COUNT(CASE WHEN snap_evenementepr.type = 'LOAD' THEN snap_evenement.id ELSE NULL END) as nbLoads,
+COUNT(CASE WHEN snap_evenementepr.type = 'NEW' THEN snap_evenement.id ELSE NULL END) as nbNew,
+COUNT(CASE WHEN snap_evenementenv.type = 'LANCE' THEN snap_evenement.id ELSE NULL END) as nbLance,
+GROUP_CONCAT(distinct if (snap_evenementepr.type="LOAD",snap_evenementepr.detail,null) ) AS loads 
+FROM snap_evenement 
+INNER JOIN auth_user ON (snap_evenement.user_id = auth_user.id) 
+LEFT OUTER JOIN snap_eleve ON (auth_user.id = snap_eleve.user_id) 
+LEFT OUTER JOIN snap_classe ON (snap_eleve.classe_id = snap_classe.id)
+LEFT OUTER JOIN snap_evenementepr ON (snap_evenement.id = snap_evenementepr.evenement_id) 
+LEFT OUTER JOIN snap_evenementenv ON (snap_evenement.id = snap_evenementenv.evenement_id)
+GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NULL"""
+        cursor.execute(req)
+        columns = [col[0] for col in cursor.description]
+        return Response([dict(zip(columns,row)) for row in cursor.fetchall()])
+
+    @list_route()
+    def listesimple(self,request):
         #queryset=Evenement.objects.filter(numero=1).values('creation').dates('creation','day')
         #evts=EvenementENV.objects.filter(type='LANCE').values_list('evenement',flat=True)
         sessions=Evenement.objects.order_by().values("session_key","user",
@@ -120,3 +152,7 @@ class SimpleSessionViewset(viewsets.ViewSet):
                                   'evenementspr__inputs','evenementspr__scripts')
         serializer=SimpleEvenementSerializer(evts,many=True)
         return Response(serializer.data)
+    
+    def visualiseConstruction(self,request):
+        l=[i['session_key'] for i in request.data['data']  ]
+        evts=Evenement.objects.filter(session_key__in=l,numero=1)

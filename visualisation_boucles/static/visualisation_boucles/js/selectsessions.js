@@ -14,8 +14,10 @@ var margin = {
     height = 200 - margin.top - margin.bottom;
 var tableChart = dc.dataTable('#dc-table-graph'),
     countChart = dc.dataCount("#selectedClasse"),
-    selectedCountChart = dc.dataCount("#selectedLines")
-
+    selectedCountChart = dc.dataCount("#selectedLines"),
+    selectProgramme = dc.selectMenu('#selectProgramme'),
+    filterProgramme = dc.textFilterWidget("#filterProgramme")
+    
 var findSelected = function () {
     // renvoi la liste des sessions
     // correspondant aux classe/date
@@ -104,8 +106,9 @@ var lance = function () {
             e.debut = new Date(e.debut);
             e.fin = new Date(e.fin);
             e.selected = false; // selectionné pour analyse
+            e.programme=e.loads?e.loads.split(','):[]
         })
-        // console.log("recp",data)
+         console.log("recp",data)
         var sessionsClasse = d3.nest().key(d => d.classe_id).entries(data)
         // console.log("par classe",sessionsClasse)
         var sessionsHeures = d3.nest().key(d => `${d.classe_nom}(${d.classe_id})`).sortKeys(d3.ascending).key(d => d3.timeHour(d.debut)).sortKeys((a, b) => new Date(a) - new Date(b)).entries(data)
@@ -223,7 +226,8 @@ var lance = function () {
         var sngx = crossfilter([])
         var sessionDim = ngx.dimension(d => d.session_key)
         var selectedDim = sngx.dimension(d => d.selected)
-        // selectedDim.filter(true)
+        var programmeDim= ngx.dimension(d => d.programme,true) //c'est un array
+        
         var bySession = sessionDim.group();
 
         var filterClasseSession = function () {
@@ -257,6 +261,33 @@ var lance = function () {
 
         // on demarre avec une selection vide
         sessionDim.filter("")
+        
+        //filtre par programme        
+        selectProgramme
+            .dimension(programmeDim)
+            .group(programmeDim.group())
+            .multiple(true)
+            .title(d=> isNaN(d.key)?`BASE: ${d.key} (${d.value})`:`id: ${d.key} (${d.value})`)
+            .order((a,b)=> isNaN(a.key) > isNaN(b.key) ? -1 
+                            : isNaN(b.key) > isNaN(a.key) ? 1 
+                                    : a.value > b.value ? -1 
+                                            : b.value > a.value ? 1 
+                                                    : 0)
+            .promptText('Tous les programmes')
+        filterProgramme.dimension(programmeDim)
+            .on("postRender",function(){
+                // on reinitialise le selectProgramme, et on décale le filtrage
+                var s=d3.select("#filterProgramme input"), //elt input                
+                    f=s.on('input') //event function
+                s.on('input.a',function() {
+                    if (selectProgramme.filters().length>0) selectProgramme.replaceFilter(null).redraw()
+                    })
+                //nécessaire sinon on filtre avec le search avant d'annnuler tout filtrage
+                s.on('input.b',f)
+            })
+        
+            
+            //.onClick(function(d){console.log('clic',d)})
         // creation de la table
         tableChart.dimension(sessionDim)
             .group(d => d.classe_nom)
@@ -282,13 +313,37 @@ var lance = function () {
                     label: 'fin',
                     format: d => d3.timeFormat("%X")(d.fin)
                 },
-                {
+                /*{
                     label: 'session',
                     format: d => d.session_key
-                },
+                },*/
                 {
                     label: 'evts',
                     format: d => d.nb_evts
+                },
+                {
+                    label: 'env',
+                    format: d => d.nbEnv
+                },
+                {
+                    label: 'spr',
+                    format: d => d.nbSpr
+                },
+                {
+                    label: 'epr',
+                    format: d => d.nbEpr
+                },
+                {
+                    label: 'new',
+                    format: d => d.nbNew
+                },
+                {
+                    label: 'load',
+                    format: d => d.nbLoads
+                },
+                {
+                    label: 'prgs',
+                    format: d => d.loads
                 },
             ])
             .sortBy(d => d.user)
