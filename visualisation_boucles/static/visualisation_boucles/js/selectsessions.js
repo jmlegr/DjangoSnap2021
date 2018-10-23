@@ -16,7 +16,8 @@ var tableChart = dc.dataTable('#dc-table-graph'),
     countChart = dc.dataCount("#selectedClasse"),
     selectedCountChart = dc.dataCount("#selectedLines"),
     selectProgramme = dc.selectMenu('#selectProgramme'),
-    filterProgramme = dc.textFilterWidget("#filterProgramme")
+    filterProgramme = dc.textFilterWidget("#filterProgramme"),
+    pieChart=dc.pieChart("#piechart")
     
 var findSelected = function () {
     // renvoi la liste des sessions
@@ -279,6 +280,7 @@ var lance = function () {
                 // on reinitialise le selectProgramme, et on décale le filtrage
                 var s=d3.select("#filterProgramme input"), //elt input                
                     f=s.on('input') //event function
+                    
                 s.on('input.a',function() {
                     if (selectProgramme.filters().length>0) selectProgramme.replaceFilter(null).redraw()
                     })
@@ -359,6 +361,44 @@ var lance = function () {
                     toggleSelect(d3.select(this))
                 })
             })
+        //le piechart des evenements
+        function regroup(dim, cols) {
+           var _groupAll = dim.groupAll().reduce(
+                function(p, v) { // add
+                    cols.forEach(function(c) {
+                        p[c] += v[c];
+                    });
+                    return p;
+                },
+                function(p, v) { // remove
+                    cols.forEach(function(c) {
+                        p[c] -= v[c];
+                    });
+                    return p;
+                },
+                function() { // init
+                    var p = {};
+                    cols.forEach(function(c) {
+                        p[c] = 0;
+                    });
+                    return p;
+                });
+            return {
+                all: function() {
+                    // or _.pairs, anything to turn the object into an array
+                    return d3.map(_groupAll.value()).entries();
+                }
+            };
+        }
+        var evtsDim=ngx.dimension(d=>d.nbEvts),
+            evtsGroup=regroup(evtsDim,['nbEpr','nbSpr','nbEnv'])
+        pieChart
+            .width(200).height(200)
+            .dimension(evtsDim)
+            .group(evtsGroup)
+            .label(d=>d.key+"("+d.value+")")
+            //.onClick(function() {console.log('rine')})
+        pieChart.filter = function() {};
 
         // creation des compteurs
         countChart.dimension(ngx).group(ngx.groupAll()) // classe/date
