@@ -1,7 +1,6 @@
 import {
-    data,
     xsend,
-    url
+    urls
 } from './xsend.js'
 
 var margin = {
@@ -408,16 +407,42 @@ var lance = function () {
     })
 
     // choix de la visualisation
+    var isPlan=function(user,nom,elt,reperes) {
+        if (elt.detail==nom) return true
+        //juste pour test
+        let lastSave=undefined
+        if (elt.type=="SAVE") lastSave=elt
+        else lastSave=reperes.find(d=>d.evenement.user==user && d.type=="SAVE" && d.detail==elt.detail)
+        //console.log("test",user,nom,elt,lastSave)
+        if (lastSave==undefined) return false
+        let index=reperes.indexOf(lastSave)
+        if (index<=0) return false
+        return isPlan(user,nom,reperes[index-1],reperes)         
+    }
+    
     d3.select("#visualiser")
         .on("click", function () {
             var z = d3.select("#visualisation-type input:checked").node().value
             var liste = selectedCountChart.dimension().all()
+            let url="",data=[]
             console.log("z", z, liste)
             //alert("chargement de " + z)
+            if (z=="reperes") {
+                url=urls.reperes               
+                data=liste.map(d=>d.session_key)
+            } else {
+                url=urls.visualise
+                data=liste
+            }
             xsend(url, csrf_token, {
                 "type": z,
-                "data": liste
-            }, "POST").then(response => console.log('Sucscess:', response))
+                "data": data
+            }, "POST")
+            .then(response => {console.log("sessions",response)
+                response.forEach(function(i) {
+                    console.log(i.evenement.user,i.type,i.detail,isPlan(i.evenement.user,"ressort-v1",i,response))
+                })                     //console.log(d3.nest().key(d=>d.evenement.user).entries(response))
+            })
         })
 
     d3.select("#selectAllClasseAnchor").on("click", function () {

@@ -37,6 +37,7 @@ class SimpleEPRSerializer(serializers.ModelSerializer):
         model=EvenementEPR
         exclude=('evenement',)
 
+        
 class SimpleSPRSerializer(serializers.ModelSerializer):
     nb=serializers.SerializerMethodField()
     def get_nb(self,obj):
@@ -61,7 +62,12 @@ class VerySimpleEvenementSerializer(serializers.ModelSerializer):
     class Meta:
         model=Evenement
         fields='__all__'
-        
+class ReperesEPRSerializer(serializers.ModelSerializer):
+    #evenement=serializers.SlugRelatedField(read_only=True,slug_field='time')
+    evenement=VerySimpleEvenementSerializer()
+    class Meta:
+        model=EvenementEPR
+        fields=('evenement','type','detail')        
         
 class SimpleEvenementSerializer(serializers.ModelSerializer):
     evenementepr=SimpleEPRSerializer(many=True)

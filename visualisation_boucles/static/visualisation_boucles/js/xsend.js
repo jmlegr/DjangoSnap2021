@@ -1,8 +1,8 @@
-let data = {
-    d: "ok",
-    j: true
+
+var urls = {
+        'visualise':"sessions/visualise/",
+        'reperes':"sessions/reperes/",
 }
-let url = "sessions/visualise/"
 
 var xsend = function (url, csrf_token, data, method = "GET") {
     return fetch(url, {
@@ -25,7 +25,6 @@ var xsend = function (url, csrf_token, data, method = "GET") {
 }
 
 export {
-    data,
-    url,
+    urls,
     xsend
 }

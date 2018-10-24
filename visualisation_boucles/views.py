@@ -3,7 +3,8 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement
 from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer\
-                    ,VerySimpleEvenementSerializer, ResumeSessionSerializer
+                    ,VerySimpleEvenementSerializer, ResumeSessionSerializer,\
+                    ReperesEPRSerializer
                
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
@@ -142,6 +143,33 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
         return Response(serializer.data)
         #return Response(evts)
     
+    @detail_route(url_path='reperes')
+    def reperes_detail(self,request,pk=None):
+        """
+        éléments clés de la session pk
+        """
+        reperes=EvenementEPR.objects.filter(evenement__session_key=pk,type__in=["LOAD","SAVE","NEW"])\
+                .order_by('evenement__time')\
+                .select_related('evenement',
+                                'evenement__user',
+                                'evenement__user__eleve',
+                                'evenement__user__eleve__classe')
+        serializer=ReperesEPRSerializer(reperes,many=True)
+        return Response(serializer.data)
+    
+    @list_route(['post'],url_path='reperes')
+    def reperes_list(self,request):
+        reperes=EvenementEPR.objects.filter(evenement__session_key__in=request.data['data']
+                                            ,type__in=["LOAD","SAVE","NEW"])\
+                                            .order_by('evenement__user','evenement__creation')\
+                                            .select_related('evenement',
+                                                            'evenement__user',
+                                                            'evenement__user__eleve',
+                                                            'evenement__user__eleve__classe')
+        serializer=ReperesEPRSerializer(reperes,many=True)
+        return Response(serializer.data)
+    
+        
     @list_route(methods=['post'])
     def visualise(self,request):
         #print(request.data)
