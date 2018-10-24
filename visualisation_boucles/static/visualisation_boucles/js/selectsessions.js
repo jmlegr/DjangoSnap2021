@@ -445,10 +445,7 @@ var lance = function () {
                 "type": z,
                 "data": data
             }, "POST")
-            .then(response => {console.log("sessions",response)
-                
-                    //console.log(i.evenement.user,i.type,i.detail,isSujet(i.evenement.user,"ressort-v1",i,response))
-                    //console.log(i.evenement.user,i.type,i.detail,getSujet(i.evenement.user,i,response))
+            .then(response => {console.log("sessions",response)                
                     let users=d3.map(response,d=>d.evenement.user).keys()
                     console.log('rep',users)
                     users.forEach(function(u){graphSujet(u,response)})
