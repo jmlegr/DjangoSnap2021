@@ -2,6 +2,11 @@ import {
     xsend,
     urls
 } from './xsend.js'
+import {
+    isSujet,
+    getSujet,
+    graphSujet
+    } from './films.js'
 
 var margin = {
         top: 30,
@@ -422,6 +427,8 @@ var lance = function () {
     
     d3.select("#visualiser")
         .on("click", function () {
+            //on supprime les graphes
+            d3.select("#graphSujet").selectAll("*").remove()
             var z = d3.select("#visualisation-type input:checked").node().value
             var liste = selectedCountChart.dimension().all()
             let url="",data=[]
@@ -439,9 +446,13 @@ var lance = function () {
                 "data": data
             }, "POST")
             .then(response => {console.log("sessions",response)
-                response.forEach(function(i) {
-                    console.log(i.evenement.user,i.type,i.detail,isPlan(i.evenement.user,"ressort-v1",i,response))
-                })                     //console.log(d3.nest().key(d=>d.evenement.user).entries(response))
+                
+                    //console.log(i.evenement.user,i.type,i.detail,isSujet(i.evenement.user,"ressort-v1",i,response))
+                    //console.log(i.evenement.user,i.type,i.detail,getSujet(i.evenement.user,i,response))
+                    let users=d3.map(response,d=>d.evenement.user).keys()
+                    console.log('rep',users)
+                    users.forEach(function(u){graphSujet(u,response)})
+                
             })
         })
 

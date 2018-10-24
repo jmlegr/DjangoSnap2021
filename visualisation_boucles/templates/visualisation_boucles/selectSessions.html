@@ -45,7 +45,7 @@ var csrf_token="{{ csrf_token }}";
 <div style="float: left">
       <button class="btn" id="visualiser">visualiser</button>
 </div>
-
+<span id="graphSujet" class="dc-chart" style="float:right"></span>
 <div id="tableSessions" class="dc-chart">
     <table class='table table-hover table-striped table-bordered' id='dc-table-graph'>
         <thead>
@@ -56,6 +56,7 @@ var csrf_token="{{ csrf_token }}";
     </table>
 </div>
 <div id="piechart" class="dc-chart" style="float:right"></div>
+
 </body>
 
 <script type="module" src="{% static 'visualisation_boucles/js/main.js' %}"></script>

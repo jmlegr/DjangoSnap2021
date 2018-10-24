@@ -55,6 +55,10 @@ class SimpleClasseSerializer(serializers.ModelSerializer):
               
 class VerySimpleEvenementSerializer(serializers.ModelSerializer):
     classe=serializers.SerializerMethodField()
+    user_nom=serializers.SerializerMethodField()
+    
+    def get_user_nom(self,obj):
+        return obj.user.username
     
     def get_classe(self,obj):
         serializer=SimpleClasseSerializer(obj.user.eleve.classe)
@@ -65,6 +69,7 @@ class VerySimpleEvenementSerializer(serializers.ModelSerializer):
 class ReperesEPRSerializer(serializers.ModelSerializer):
     #evenement=serializers.SlugRelatedField(read_only=True,slug_field='time')
     evenement=VerySimpleEvenementSerializer()
+    
     class Meta:
         model=EvenementEPR
         fields=('evenement','type','detail')        
