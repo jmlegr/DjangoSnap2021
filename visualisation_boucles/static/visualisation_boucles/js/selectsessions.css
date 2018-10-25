@@ -52,3 +52,12 @@
 #dc-table-graph > tbody > .dc-table-row.selected {
     background-color: #a6daac;
 }
+
+.tippy-content p {
+	line-height: 1;
+	margin: 0 0 2px;
+}
+.imagetooltip {
+background: none repeat scroll 0 0 lavender;
+pointer-events: none;
+}

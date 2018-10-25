@@ -1,7 +1,8 @@
 from django.shortcuts import render
 
 from rest_framework import viewsets
-from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement
+from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement,\
+    SnapSnapShot
 from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer\
                     ,VerySimpleEvenementSerializer, ResumeSessionSerializer,\
                     ReperesEPRSerializer
@@ -166,6 +167,19 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
                                                             'evenement__user',
                                                             'evenement__user__eleve',
                                                             'evenement__user__eleve__classe')
+        for e in reperes:
+            #recherche du dernier snap
+            print("e",e.__dict__)
+            try:
+                snaps=SnapSnapShot.objects.filter(evenement__user=e.evenement.user,
+                                              evenement__session_key=e.evenement.session_key,
+                                              evenement__time__lt=e.evenement.time
+                                              )
+                e.snapshot=snaps
+                print("snap",snaps)
+            except IndexError:
+                snap=None
+                print("pasnsap")
         serializer=ReperesEPRSerializer(reperes,many=True)
         return Response(serializer.data)
     

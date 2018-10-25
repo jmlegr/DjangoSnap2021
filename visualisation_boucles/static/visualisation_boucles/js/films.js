@@ -175,17 +175,78 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
             .data(nodes)
             .enter()
             .append("circle")
+            .attr("class","node")
             .attr("r", 5)
             .attr("fill", d => color(d.type))
-        //.append("text").text("r").attr("fill","blue")
-        //.call(drag(simulation));
-
+          const state = {
+       isFetching: false,
+       canFetch: true
+        }   
+        tippy(".node",{placement:"top",size:'tiny',interactive:true,
+        //trigger:"click",
+        distance:5,
+        delay:[100,100],
+        animation:'fade',
+        content: function(d){
+            console.log("toolt",d)
+            let data=d.__data__
+            return "<strong>[ "+nodes.indexOf(data)+" ]</strong>"
+                    +(data.snapshot?"<p class=hasimage>"
+                                    +data.snapshot.image.substring(
+                                            data.snapshot.image.lastIndexOf('_')+1)
+                                    +"</p>":"")
+                    +"<p>"+data.type+" <i>"+(data.detail?data.detail:"")+"<i></p>"
+                    +"<p><strong>"+data.sujet+"</strong> id "+data.id+"<p>"
+            },
+            onShown(tip) {
+                
+                let s=tippy('.hasimage',{
+                        theme:'light',                 
+                        placement:'right',
+                        delay:200,
+                        arrow:true,
+                        arrowType: 'round',
+                        size: 'large',
+                        duration: 500,
+                        animation: 'perspective',
+                        async onShow(ttip) {                     
+                            if ( state.isFetching || !state.canFetch) return
+                            state.isFetching = true
+                            state.canFetch = false
+                            console.log("tip",tip,tip.reference)
+                            try {
+                              var image=tip.reference.__data__.snapshot.image
+                              const response = await fetch(image)
+                              const blob = await response.blob()
+                              const url = URL.createObjectURL(blob)
+                              if (ttip.state.isVisible) {
+                                const img = new Image()
+                                img.width = 300
+                                img.height = 300
+                                img.src = url
+                                ttip.setContent(img)
+                              }
+                            } catch (e) {
+                              ttip.setContent(`Fetch failed. ${e}`)
+                            } finally {
+                              state.isFetching = false
+                            }
+                          },
+                          onHidden(ttip) {
+                            state.canFetch = true
+                            //ttip.setContent("juste une image")
+                          }
+                          
+                        })
+            }, 
+        })
+            /*
         node.append("title")
             .text(d => "[ " + nodes.indexOf(d) + " ]\n" +
                 d.type + " " +
                 (d.detail ? d.detail : "") +
                 "\n" + d.sujet + "\nid " + d.id);
-
+*/
         function ticked() {
             link
                 .attr("x1", d => d.source.x)
