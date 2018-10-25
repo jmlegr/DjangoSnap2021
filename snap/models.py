@@ -34,7 +34,7 @@ def user_directory_path(instance, filename):
 class ProgrammeBase(models.Model):
     #Nom du programme de base
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
-    nom=models.CharField(max_length=50,null=True,blank=True)
+    nom=models.CharField(max_length=50,null=False,blank=False,unique=True)
     description = models.CharField(max_length=255, blank=True)
     file=models.FileField(upload_to=user_directory_path)
     creation=models.DateTimeField(auto_now_add=True)
