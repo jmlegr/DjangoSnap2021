@@ -50,9 +50,14 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
     // ne contenant que les événements clés (NEW, LOAD, SAVE)
     let nodes = reperes.filter(d => d.evenement.user == user)
     let links = []
+    const width = 150,
+        height = 150;
+    const dy=(height-10)/nodes.length 
     //construction des liens
     nodes.forEach(function (node, index) {
         node.id = node.evenement.id
+        node.fy=index*dy-height/2+10
+        node.x=0
         if (index > 0) links.push({
             source: nodes[index - 1],
             target: node,
@@ -107,8 +112,7 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
         l.temps = Math.round((new Date(l.target.evenement.creation) - new Date(l.source.evenement.creation)) / 1000)
     })
     console.log("user", user, nodes, links, reperes)
-    const width = 150,
-        height = 150;
+    
     let chart = function () {
         //const links = data.links.map(d => Object.create(d));
         //const nodes = data.nodes.map(d => Object.create(d));
@@ -165,7 +169,7 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
             .attr("stroke", d => d.type == "LOAD_BASE" ? color("LOAD") :
                 d.type == "LOAD_SAVED" ? color("SAVE") :
                 color(d.type))
-            .attr("stroke-opacity", d => d.type == "next" ? 0.2 : 0.8)
+            .attr("stroke-opacity", d => d.type == "next" ? 0.4 : 0.8)
         link.append("title").text(d => d.source.id + ">" + d.target.id + "\n" +
             "(" + formatSecondsToHMS(d.temps) + ")")
 
@@ -271,12 +275,15 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
 
     function forceSimulation(nodes, links) {
         return d3.forceSimulation(nodes)
-            .force("y", d3.forceY().y(d => nodes.indexOf(d) * 20))
-            .force("x", d3.forceX().strength(d => d.type == "NEW" || (d.type == "LOAD" && d.detail == undefined) ? 0.05 : 0.1))
-            //.force("link", d3.forceLink(links).id(d => d.id).distance(d=>d.type=="next"?10:50))
+            //.force("y", d3.forceY().y(d => nodes.indexOf(d) * 20))
+            .force("x", d3.forceX().strength(d => d.type == "NEW" || (d.type == "LOAD" && d.detail == undefined) ? 0.5 : 0.1))
+            .force("link", d3.forceLink(links)
+                    .id(d => d.id)
+                    .distance(d=>d.type=="next"?dy:dy*2)
+                    .strength(d=>d.type=="next"?0.8:0.1))
             //.force("charge", d3.forceManyBody())
-            .force("center", d3.forceCenter())
-            .force("collide", d3.forceCollide(20));
+            //.force("center", d3.forceCenter())
+            .force("collide", d3.forceCollide(10));
     }
 
     let svg = chart();
