@@ -70,6 +70,16 @@ class Evenement(models.Model):
         res['time']=self.time
         return res
     
+    def getEvenementType(self):
+        """
+        renvoi le sous evenement (de type ENV, SPR ou EPR)
+        """
+        if self.type==self.ENVIRONNEMENT: return self.environnement.all()[0]
+        elif self.type==self.ETAT_PROGRAMME: return self.evenementepr.all()[0]
+        elif self.type==self.STRUCTURE_PROGRAMME: return self.evenementspr.all()[0]
+        else:
+            raise KeyError(u'Type evenement inconnu (%s)' % self.type)
+        
     def __str__(self):
         return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
     class Meta:
