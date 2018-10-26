@@ -34,7 +34,7 @@ def user_directory_path(instance, filename):
 class ProgrammeBase(models.Model):
     #Nom du programme de base
     user=models.ForeignKey(User,on_delete=models.CASCADE) #utilisateur
-    nom=models.CharField(max_length=50,null=True,blank=True)
+    nom=models.CharField(max_length=50,null=False,blank=False,unique=True)
     description = models.CharField(max_length=255, blank=True)
     file=models.FileField(upload_to=user_directory_path)
     creation=models.DateTimeField(auto_now_add=True)
@@ -58,7 +58,7 @@ class Evenement(models.Model):
     session_key=models.CharField(max_length=40,null=True)
     programme=models.ForeignKey(ProgrammeBase,null=True, on_delete=models.SET_NULL) #programme de base chargé
     type=models.CharField(max_length=3,choices=TYPE_EVENEMENT_CHOICES, default=AUTRE) #type d'évènement
-    time=models.IntegerField() #Temps (local à Snap) de l'évènement
+    time=models.BigIntegerField() #Temps (local à Snap) de l'évènement
     numero=models.IntegerField() #numero d'ordre de l'évènement, indépendant du type
     creation=models.DateTimeField(auto_now_add=True)
     def toD3(self):
