@@ -69,7 +69,8 @@ class VerySimpleEvenementSerializer(serializers.ModelSerializer):
 class ReperesEPRSerializer(serializers.ModelSerializer):
     #evenement=serializers.SlugRelatedField(read_only=True,slug_field='time')
     evenement=VerySimpleEvenementSerializer()
-    snapshot=SimpleSnapShotSerializer(read_only=True)  
+    snapshot=SimpleSnapShotSerializer(read_only=True) 
+     
     class Meta:
         model=EvenementEPR
         fields=('evenement','type','detail','snapshot')        

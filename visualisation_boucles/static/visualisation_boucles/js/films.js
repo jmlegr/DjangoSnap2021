@@ -129,7 +129,7 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
 
         // Define Zoom Function Event Listener
         function zoomFunction() {
-            console.log("zoom", d3.zoomTransform(this), svg2.select("g.mapsvg"))
+            //console.log("zoom", d3.zoomTransform(this), svg2.select("g.mapsvg"))
             var transform = d3.zoomTransform(this);
             svg2.select("g.mapsvg")
                 //.attr("transform", "translate(" +( transform.x) + "," + (transform.y) + ") scale(" + transform.k + ")");
@@ -188,7 +188,7 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
         delay:[100,100],
         animation:'fade',
         content: function(d){
-            console.log("toolt",d)
+            //console.log("toolt",d)
             let data=d.__data__
             return "<strong>[ "+nodes.indexOf(data)+" ]</strong>"
                     +(data.snapshot?"<p class=hasimage>"
@@ -213,7 +213,7 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
                             if ( state.isFetching || !state.canFetch) return
                             state.isFetching = true
                             state.canFetch = false
-                            console.log("tip",tip,tip.reference)
+                            //console.log("tip",tip,tip.reference)
                             try {
                               var image=tip.reference.__data__.snapshot.image
                               const response = await fetch(image)

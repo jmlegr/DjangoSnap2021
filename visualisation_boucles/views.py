@@ -176,7 +176,8 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
                                               evenement__time__lt=e.evenement.time
                                               ).order_by('-evenement__time')
                 e.snapshot=snaps[0]
-                print("snap",snaps[0])
+                #print("snap",snaps[0])
+                
             except IndexError:
                 snap=None
                 print("pasnsap")
@@ -187,7 +188,7 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
                                                             'evenement__user',
                                                             'evenement__user__eleve',
                                                             'evenement__user__eleve__classe')
-        last=Evenement.objects.filter(session_key__in=request.data['data'])\
+        lasts=Evenement.objects.filter(session_key__in=request.data['data'])\
                                             .select_related('user',
                                                             'user__eleve',
                                                             'user__eleve__classe')\
