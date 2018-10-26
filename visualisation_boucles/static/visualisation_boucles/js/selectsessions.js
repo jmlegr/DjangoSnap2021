@@ -319,10 +319,10 @@ var lance = function () {
                     label: 'fin',
                     format: d => d3.timeFormat("%X")(d.fin)
                 },
-                /*{
+                {
                     label: 'session',
                     format: d => d.session_key
-                },*/
+                },
                 {
                     label: 'evts',
                     format: d => d.nb_evts

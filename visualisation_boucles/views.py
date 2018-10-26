@@ -180,7 +180,7 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
                 
             except IndexError:
                 snap=None
-                print("pasnsap")
+                #print("pasnsap")
         lances=EvenementENV.objects.filter(evenement__session_key__in=request.data['data']
                                             ,type__in=["LANCE","IMPORT","EXPORT"])\
                                             .order_by('evenement__user','evenement__time')\
@@ -188,30 +188,33 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
                                                             'evenement__user',
                                                             'evenement__user__eleve',
                                                             'evenement__user__eleve__classe')
-        lasts=Evenement.objects.filter(session_key__in=request.data['data'])\
+        lasts=[]
+        for session in request.data['data']:
+            last=Evenement.objects.filter(session_key=session)\
                                             .select_related('user',
                                                             'user__eleve',
                                                             'user__eleve__classe')\
-                                            .latest('time')
-        if last.type=='ENV': last=last.environnement.all()[0]
-        elif last.type=='SPR': last=last.evenementspr.all()[0]
-        elif last.type=="EPR": last=last.evenementepr.all()[0]
-        else:
-            raise KeyError(u'type d\'événement inexistant(%s)' % last.type)
-        print("LAST",last,last.type, last in reperes)
-        if last in reperes:
-            #le dernier evenement est déjà présent
-            queryset=itertools.chain(lances,reperes)
-        else:
-            #on ajoute le dernier evenement (de l'ensemble de la session)
-            queryset=itertools.chain(lances,reperes,[last])
-        #lances=[{'evenement':l.evenement,'type':l.type,'detail':l.detail}
-        #        for l in lances]        
-        serializerL=ReperesEPRSerializer(queryset,many=True)
-        print("lances:",serializerL.data)
-        data=sorted(serializerL.data,key= lambda x:x['evenement']['time'])
-        #serializer=ReperesEPRSerializer(reperes,many=True)
-        #print("rep",type(serializer.data))        
+                                            .latest('time')\
+                                            .getEvenementType() 
+            if last not in reperes:
+                lasts.append(last)
+        #print("LAST",lasts)
+        for e in lasts:
+            #recherche du dernier snap
+            try:
+                snaps=SnapSnapShot.objects.filter(evenement__user=e.evenement.user,
+                                              evenement__session_key=e.evenement.session_key,
+                                              evenement__time__lte=e.evenement.time
+                                              ).order_by('-evenement__time')
+                e.snapshot=snaps[0]
+                #print("snap",snaps[0])
+                
+            except IndexError:
+                snap=None
+                #print("pasnsap")
+        queryset=itertools.chain(lances,reperes,lasts)
+        serializer=ReperesEPRSerializer(queryset,many=True)
+        data=sorted(serializer.data,key= lambda x:x['evenement']['time'])              
         return Response(data)
     
         

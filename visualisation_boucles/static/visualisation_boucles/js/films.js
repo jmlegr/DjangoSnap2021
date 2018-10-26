@@ -23,6 +23,7 @@ var getSujet = function (user, elt, reperes) {
     //trouve, si possible, le sujet du film dont fait partie l'élément elt
     // reperes est un tableau d'élélément EPS {evenement,type,detail}
     // ne contenant que les événements clés (NEW, LOAD, SAVE)
+    if (elt.evenement.type != "EPR" || !(elt.type=="LOAD" || elt.type=="SAVE") ) return elt.evenement.type
     if (elt.detail) {
         if (isNaN(elt.detail)) return elt.detail
         let lastSave = reperes.find(d => d.evenement.user == user && d.type == "SAVE" && d.detail == elt.detail)
@@ -95,8 +96,10 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
                         type: node.type + "_SAVED"
                     })
                 }
-            }
-
+            } 
+        } else {
+            //c'est un autre type devenement(lance ou fin de session)
+            node.sujet=getSujet(user, node, nodes)
         }
     })
     //on ajoute le temps
