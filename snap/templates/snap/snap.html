@@ -127,8 +127,8 @@
         {% if user.groups.all.0.name == "eleves" %}
         //console.log('Eleve connecté');
         var newdate=new Date();
-        var time=newdate.getTime()-date_debut;
-        
+        //var time=newdate.getTime()-date_debut;
+        var time=newdate.getTime()
         numero_evt+=1;
         var json={
             evenement:{type:type,time:time,numero:numero_evt},             
