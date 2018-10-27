@@ -61,3 +61,14 @@
 background: none repeat scroll 0 0 lavender;
 pointer-events: none;
 }
+
+#overlayDiv {
+    position: fixed;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    background-color: #bbbbda;
+    z-index:999;
+    visibility: hidden;
+}

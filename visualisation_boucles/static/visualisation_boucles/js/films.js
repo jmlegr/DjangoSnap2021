@@ -1,7 +1,7 @@
 /**
 de quoi tester et construire les films/sequences/plans des programmes
 **/
-
+import {xsend} from './xsend.js'
 export {
     isSujet,
     getSujet,
@@ -44,11 +44,13 @@ function formatSecondsToHMS(num) {
     var s = num - (h * 3600 + m * 60);
     return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
 }
-var graphSujet = function (user, reperes, div = "graphSujet") {
+var graphSujet = function (user, reperes, callback=function(d){console.log("recept",d)},div = "graphSujet") {
     // construit l'évolution du sujet sur les sessions données
     //  reperes est un tableau d'élélément EPS {evenement,type,detail}
     // ne contenant que les événements clés (NEW, LOAD, SAVE)
-    let nodes = reperes.filter(d => d.evenement.user == user)
+    const nodes = reperes.filter(d => d.evenement.user == user)
+    const session_keys=d3.map(nodes,d=>d.evenement.session_key).keys() //sessions concernant cet élève
+    
     let links = []
     const width = 150,
         height = 150;
@@ -111,7 +113,7 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
     links.forEach(function (l) {
         l.temps = Math.round((new Date(l.target.evenement.creation) - new Date(l.source.evenement.creation)) / 1000)
     })
-    console.log("user", user, nodes, links, reperes)
+    //console.log("user", user, nodes, links, reperes)
     
     let chart = function () {
         //const links = data.links.map(d => Object.create(d));
@@ -150,15 +152,28 @@ var graphSujet = function (user, reperes, div = "graphSujet") {
 
         let svg = svg2.append("g").attr("class", "mapsvg").call(zoom)
         var rect = svg.append("rect")
+            .datum({sessions:session_keys,user:nodes[0].evenement.user_nom,creation:nodes[0].evenement.creation})
             .attr("x", -width / 2)
             .attr("y", -height / 2)
             .attr("height", height)
             .attr("width", width)
             .style("fill", "none")
             .style("pointer-events", "all")
+        rect.on("click",callback)
+            /*
         rect.on("click", function (d, i) {
-            console.log("cliock", svg2.attr("id"))
-        })
+            console.log("cliock", svg2.attr("id"),d)
+            const o=d3.select("#overlayDiv")
+            console.log("s",o.style("hidden"))            
+            xsend("/boucles/sessions/donnees/", csrf_token, {
+                "type": "ii",
+                "data": d
+            }, "POST")
+                .then(function(response) {console.log("recu:",response)})           
+            
+            o.style("visibility",z=>o.style("visibility")=="hidden"?"visible":"hidden")
+            
+        })*/
         //.style("opacity",0.1);
         const link = svg.append("g")
 

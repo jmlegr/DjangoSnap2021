@@ -7,6 +7,7 @@ import {
     getSujet,
     graphSujet
     } from './films.js'
+import {locale} from './locale.js'
 
 var margin = {
         top: 30,
@@ -425,6 +426,166 @@ var lance = function () {
         return isPlan(user,nom,reperes[index-1],reperes)         
     }
     
+    const statsGraphSession=function(d) {
+        const overlay=d3.select("#overlayDiv")
+        overlay.style("visibility","visible")
+            .html(e=>`Attente de ${d.sessions}...`)
+        //.on("click",function() {d3.select("#overlayDiv").style("visibility","hidden")})
+        
+        xsend("/boucles/sessions/donnees/", csrf_token, {
+            "type": "ii",
+            "data": d.sessions
+        }, "POST")
+            .then(function(response) {
+                console.log("UUUUUU",d)
+                overlay.html("réception de "+response.length+" données.")
+                overlay.append("h2").html(d.user)
+                overlay.append("h4").html(locale.utcFormat("%c")(new Date(d.creation)))
+                //console.log("recu iuiu:",response)
+                const setDataType=function(obj) {
+                    switch (obj.type) {
+                        case "EPR": obj.data=obj.evenementepr[0];break;
+                        case "SPR": obj.data=obj.evenementspr[0];  break;
+                        case "ENV": obj.data=obj.environnement[0];break;
+                        default: obj.data={}                    
+                    }
+                    delete obj["evenementepr"]; 
+                    delete obj["evenementspr"];
+                    delete obj["environnement"]; 
+                    obj.data.type=obj.data.type+"_"+obj.type
+                    return obj
+                }
+                response.forEach(function(d){
+                    d=setDataType(d)})
+                const ntx=crossfilter(response),
+                       typeDimension=ntx.dimension(d=>d.type),
+                       typeDataDimension=ntx.dimension(d=>d.data.type),
+                       countType=typeDimension.group().reduceCount(),
+                       countDataType=typeDataDimension.group().reduceCount(),
+                       countByDataType=typeDimension.group().reduce(
+                               function(p, v) {//add
+                                    p[v.data.type]=(p[v.data.type]||0)+1                                     
+                                    return p;
+                                   },
+                                function(p, v) {//remove
+                                     p[v.data.type]=(p[v.data.type]||0)-1
+                                     return p;
+                                   },
+                                function(p) {//initial
+                                     p={};
+                                     return p;
+                                   }
+                                 )
+                d3.select("#overlayDiv").append("div").attr("id","statsgen")                
+                var chart = dc.barChart('#statsgen');
+                chart
+                //.width("70%")
+                .height(300)
+                .margins({left: 20, top: 40, right: 10, bottom: 30})
+                .x(d3.scaleBand())
+                .xUnits(dc.units.ordinal)
+                //.brushOn(false)
+                .renderLabel(true)
+                .xAxisLabel('Type d\'événement')
+                .yAxisLabel('Nombre d\'événements')
+                .dimension(typeDataDimension)
+                //.barPadding(0.1)
+                 
+                .outerPadding(0.5)
+                .group(countDataType);
+                
+                d3.select("#overlayDiv").append("div").attr("id","statsDetail")
+                var allTypes=countDataType.top(Infinity).map(d=>d.key)
+                var gchart=dc.barChart("#statsDetail")
+                gchart//.width("30%")
+                    .height(300)
+                    .margins({left: 100, top: 40, right: 10, bottom: 30})
+                     .colors( d3.scaleOrdinal(["#b80043",
+                         "#48c316",
+                         "#7b2bdb",
+                         "#ac9a00",
+                         "#0142e2",
+                         "#968c00",
+                         "#9159ff",
+                         "#2c7000",
+                         "#ee50ff",
+                         "#01b375",
+                         "#ad00c5",
+                         "#b1af42",
+                         "#6d00a0",
+                         "#007438",
+                         "#ff3bac",
+                         "#54bd96",
+                         "#ee0069",
+                         "#00b8be",
+                         "#ed6300",
+                         "#487bff",
+                         "#c96100",
+                         "#015dd2",
+                         "#f09550",
+                         "#0049aa",
+                         "#af000a",
+                         "#0061ac",
+                         "#a33c00",
+                         "#97a5fd",
+                         "#2c4900",
+                         "#b4007e",
+                         "#006d50",
+                         "#d60067",
+                         "#92b57b",
+                         "#621477",
+                         "#c4a85a",
+                         "#2a3284",
+                         "#fa8e68",
+                         "#004582",
+                         "#c10034",
+                         "#7d8cc1",
+                         "#843d00",
+                         "#be9ce7",
+                         "#4b4000",
+                         "#f087d6",
+                         "#d5a169",
+                         "#7d0060",
+                         "#e19989",
+                         "#3f3368",
+                         "#ff7873",
+                         "#804c71",
+                         "#ff6075",
+                         "#761228",
+                         "#ff639d",
+                         "#8e4c4d",
+                         "#a0004e"]))//d3.interpolateViridis(20))
+                    .x(d3.scaleBand())
+                    .xUnits(dc.units.ordinal)
+                    .brushOn(false)
+                    .renderLabel(true)
+                    .xAxisLabel('Type d\'événement')
+                    .yAxisLabel('Nombre d\'événements')
+                    .dimension(typeDataDimension)
+                    //.barPadding(0.1)
+                    .title(function(d) {
+                        return this.layer+": " + d.value[this.layer];
+                    })
+                    .outerPadding(0.5)
+                    .group(countByDataType,allTypes[0],function(d){                        
+                        return d.value[allTypes[0]] || 0
+                    });
+                allTypes.forEach(function(i,j){
+                    if (j>0) {
+                        gchart.stack(countByDataType,i,function(d){ 
+                            return d.value[i] || 0
+                        })
+                    }
+                })
+                gchart.legend(dc.legend())
+            dc.renderAll();
+            d3.select("#overlayDiv").append("button").attr("class","btn").text("Fermer")
+                .on("click",function() {d3.select("#overlayDiv").style("visibility","hidden")})
+            
+                 
+            })     
+    }
+    
     d3.select("#visualiser")
         .on("click", function () {
             //on supprime les graphes
@@ -448,8 +609,7 @@ var lance = function () {
             .then(response => {console.log("sessions",response)                
                     let users=d3.map(response,d=>d.evenement.user).keys()
                     console.log('rep',users)
-                    users.forEach(function(u){graphSujet(u,response)})
-                
+                    users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                
             })
         })
 
