@@ -224,7 +224,8 @@ var lance = function () {
             .append("title")
             .text(function (d) {
                 return "classe de " + d.classe.split("(")[0] + ":\n" +
-                    d3.timeFormat("%x à %X")(d.heure) + `: ${d.data.length} mesure` + (d.data.length > 1 ? "s." : ".")
+                    //d3.timeFormat("%x à %X")(d.heure) + `: ${d.data.length} mesure` + (d.data.length > 1 ? "s." : ".")
+                locale.utcFormat("%x à %X")(d.heure) + `: ${d.data.length} mesure` + (d.data.length > 1 ? "s." : ".")
             })
         project.exit().remove()
 
@@ -309,16 +310,16 @@ var lance = function () {
                 {
                     label: "date",
                     format: function (d) {
-                        return d3.timeFormat("%x")(d.debut)
+                        return locale.utcFormat("%x")(d.debut)
                     }
                 },
                 {
                     label: 'début',
-                    format: d => d3.timeFormat("%X")(d.debut)
+                    format: d => locale.utcFormat("%X")(d.debut)
                 },
                 {
                     label: 'fin',
-                    format: d => d3.timeFormat("%X")(d.fin)
+                    format: d => locale.utcFormat("%X")(d.fin)
                 },
                 {
                     label: 'session',
@@ -437,7 +438,6 @@ var lance = function () {
             "data": d.sessions
         }, "POST")
             .then(function(response) {
-                console.log("UUUUUU",d)
                 overlay.html("réception de "+response.length+" données.")
                 overlay.append("h2").html(d.user)
                 overlay.append("h4").html(locale.utcFormat("%c")(new Date(d.creation)))
