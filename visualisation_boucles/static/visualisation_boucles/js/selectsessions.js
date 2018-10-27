@@ -8,6 +8,7 @@ import {
     graphSujet
     } from './films.js'
 import {locale} from './locale.js'
+import {affActions} from './drops.js'
 
 var margin = {
         top: 30,
@@ -438,10 +439,22 @@ var lance = function () {
             "data": d.sessions
         }, "POST")
             .then(function(response) {
+                response.sort((x,y)=>d3.ascending(x.time,y.time))
                 overlay.html("réception de "+response.length+" données.")
                 overlay.append("h2").html(d.user)
                 overlay.append("h4").html(locale.utcFormat("%c")(new Date(d.creation)))
                 //console.log("recu iuiu:",response)
+                overlay.append("div")
+                    .attr("class","actions")
+                    .attr("id","actionsDiv")
+                    .style("height","300px")
+                    .style("width","30%")
+                    .style("overflow","auto")
+                var duplicInfos=null; //infos de duplication
+                var hindex=0; //index horizontal, change si drop/new
+                var vindex=0; //index vertical pour non drop/new
+                var newData=[],
+                    newNodes=null;
                 const setDataType=function(obj) {
                     switch (obj.type) {
                         case "EPR": obj.data=obj.evenementepr[0];break;
@@ -455,8 +468,44 @@ var lance = function () {
                     obj.data.type=obj.data.type+"_"+obj.type
                     return obj
                 }
-                response.forEach(function(d){
-                    d=setDataType(d)})
+                 
+                let dtime=null, fromStartTime=null
+                response.forEach(function(d){                    
+                    d.dtime=dtime?(d.time-dtime):0
+                    dtime=d.time
+                    if (fromStartTime==null) fromStartTime=d.time
+                    d.fromStart=d.time-fromStartTime
+                    d=setDataType(d)
+                    if (d.type=="ENV" && d.data.type=="DUPLIC") {
+                        duplicInfos=d.data.detail.split(";").length;
+                    }
+                    if (d.type=="SPR" && (d.data.type=="DROP" || d.data.type=="NEW")) {
+                        d.hindex=hindex;
+                        hindex+=1;
+                        if (duplicInfos != null) {
+                            d.duplicInfos=duplicInfos;
+                            duplicInfos=null;
+                        }
+                        vindex=0;
+                        if (newNodes!=null) {
+                            newData.push(newNodes);
+                            newNodes=null;
+                        }
+                        newData.push(d);        
+                      }
+                     else {
+                         //changement de vindex sinon
+                         d.hindex=hindex;
+                         d.vindex=vindex;
+                         vindex+=1;
+                         if (newNodes==null) {
+                            newNodes=[d];
+                         } else {
+                            newNodes.push(d);
+                         }
+                     }
+                 })
+                affActions(response)
                 const ntx=crossfilter(response),
                        typeDimension=ntx.dimension(d=>d.type),
                        typeDataDimension=ntx.dimension(d=>d.data.type),
@@ -476,10 +525,12 @@ var lance = function () {
                                      return p;
                                    }
                                  )
-                d3.select("#overlayDiv").append("div").attr("id","statsgen")                
+                d3.select("#overlayDiv").append("div").attr("id","statsDetail").attr("class","dc-chart")
+                d3.select("#overlayDiv").append("div").attr("id","statsgen").attr("class","dc-chart")               
                 var chart = dc.barChart('#statsgen');
                 chart
                 //.width("70%")
+                //.width(600)
                 .height(300)
                 .margins({left: 20, top: 40, right: 10, bottom: 30})
                 .x(d3.scaleBand())
@@ -494,10 +545,10 @@ var lance = function () {
                 .outerPadding(0.5)
                 .group(countDataType);
                 
-                d3.select("#overlayDiv").append("div").attr("id","statsDetail")
+                
                 var allTypes=countDataType.top(Infinity).map(d=>d.key)
                 var gchart=dc.barChart("#statsDetail")
-                gchart//.width("30%")
+                gchart.width(500)
                     .height(300)
                     .margins({left: 100, top: 40, right: 10, bottom: 30})
                      .colors( d3.scaleOrdinal(["#b80043",

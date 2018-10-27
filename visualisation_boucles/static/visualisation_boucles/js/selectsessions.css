@@ -72,3 +72,13 @@ pointer-events: none;
     z-index:999;
     visibility: hidden;
 }
+
+#actionsDiv {
+	float:left
+}
+.block {
+font-size:10;
+}
+.block:hover {
+background-color: yellow;
+}
