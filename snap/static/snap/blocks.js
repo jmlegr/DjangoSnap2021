@@ -6737,13 +6737,16 @@ ScriptsMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
     this
     /**
      * Modification JML (duff,  30 déc. 2017)
+     * modification le 29/10/2018 pour remplacer evenment ENV par SPR
      **/
     
-    sendEvenement(type='ENV',
+    sendEvenement(type='SPR',
 	    data={type:'UNDROP',detail:origine,
-	    	key:key,clic:clic,
-	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
-	    	valueInt:this.dropRecord.lastDroppedBlock.JMLid
+	    	//key:key,clic:clic,
+	    	//valueChar:this.dropRecord.lastDroppedBlock.selector,
+	    	//valueInt:this.dropRecord.lastDroppedBlock.JMLid
+            blockId:this.dropRecord.lastDroppedBlock.JMLid,
+            selector:this.dropRecord.lastDroppedBlock.selector,
 	    	});    
     /**
      * Fin Modification JML
@@ -6785,12 +6788,15 @@ ScriptsMorph.prototype.redrop = function (origine=null,key=false,clic=false) {
     }
     /**
      * Modification JML (duff,  30 déc. 2017)
+     * modification le 29/10/2018 pour remplacer evenment ENV par SPR
      **/
-    sendEvenement(type='ENV',
+    sendEvenement(type='SPR',
 	    data={type:'REDROP',detail:origine,
-	    	key:key,clic:clic,
-	    	valueChar:this.dropRecord.lastDroppedBlock.selector,
-	    	valueInt:this.dropRecord.lastDroppedBlock.JMLid
+          //key:key,clic:clic,
+            //valueChar:this.dropRecord.lastDroppedBlock.selector,
+            //valueInt:this.dropRecord.lastDroppedBlock.JMLid
+            blockId:this.dropRecord.lastDroppedBlock.JMLid,
+            selector:this.dropRecord.lastDroppedBlock.selector,
 	    	});    
     /**
      * Fin Modification JML

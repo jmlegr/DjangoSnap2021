@@ -112,8 +112,8 @@ class EvenementENV(models.Model):
         ('AFFBL','Affichage Blocs'), # category  detail?
         ('AFFVAR','Affichage ou non Variable'), #avec nom en option et valeur en bool   
         ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression 
-        ('UNDROP','Undrop'), #origine dans detail
-        ('REDROP','Redrop'),   
+        #('UNDROP','Undrop'), #origine dans detail
+        #('REDROP','Redrop'),   
         ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) 
         ('POPUP','Ouverture popup'),
         ('AUTRE','(Non identifié)'),
@@ -267,6 +267,8 @@ class EvenementSPR(models.Model):
         ('DROPVAL','Déplacement et insertion d\'une entrée'), #déplacement + remplacement d'une entrée existante (id remplacée dans détailAction
         ('ERR','Erreur'), #erreur détectée, précision dans détail
         ('OPEN','Ouverture de Scripts'),
+        ('UNDROP','Undrop'), #origine dans detail
+        ('REDROP','Redrop'),  
         ('AUTRE','(Non identifié'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementspr')
