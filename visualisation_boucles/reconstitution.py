@@ -117,9 +117,10 @@ def listeblock(request,session_key=None):
             #on précise que les blocks existants n'existent plus
             #theTime - 1 millisecond pour éviter la confusion avec la création des nouveaux blocs
             #on peut aussi faire la différence avec le numéro
-            
+            listeBlocks.initDrop()
             for i in listeBlocks.lastNodes(theTime):
                 newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
+                newi.deleted=True
             if len(listeBlocks.liste)>0: listeBlocks.addTick(theTime-1)
         elif evt.type=='ENV' and evtType.type in ['LOBA','LOVER']:
             #c'est un chargement de fichier
@@ -802,6 +803,10 @@ class SimpleListeBlockSnap:
         self.dropped=[] #liste des drop pour undrop/redrop
         self.idropped=-1 #index de l'historique des drop pour undrop/redrop
         
+    def initDrop(self):
+        self.idropped=-1
+        self.droppped=[]
+        
     def addTick(self,time):
         if time not in self.ticks:
             self.ticks.append(time)
@@ -943,20 +948,32 @@ class SimpleListeBlockSnap:
         """
         self.idropped+=1
         self.dropped.insert(self.idropped,{'spr':spr.id,'time':thetime})
+        #print('                                           **********')
+        #print('                                            insert',self.idropped,self.dropped[self.idropped],spr.blockId,spr.blockSpec)
+        #print('                                           **********')
+        #print('avbant:',[i for i in self.dropped]) 
         #on efface le reste de la liste
-        for j in range(self.idropped+1,len(self.dropped)-1):
-            self.dropped.pop(self.idropped)
-                
+        for j in range(self.idropped+1,len(self.dropped)):            
+            self.dropped.pop()
+        #print([i for i in self.dropped])   
     def undrop(self):
         """
         récupère l'id et le temps du dernier spr drop
         """
         droppedspr=self.dropped[self.idropped]
         self.idropped-=1
+        #print('                                           **********')
+        #print('                                            undrop',self.idropped,droppedspr)
+        #print('                                           **********')
+        #print([i for i in self.dropped])
         return droppedspr
         
     def redrop(self):
         self.idropped+=1
+        #print('                                           **********')
+        #print('                                            redrop',self.idropped,self.dropped[self.idropped])
+        #print('                                           **********')
+        #print([i for i in self.dropped])
         return self.dropped[self.idropped]
     
     def parcoursBlock(self,JMLid,thetime,toHtml=True):
