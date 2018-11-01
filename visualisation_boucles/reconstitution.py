@@ -419,6 +419,10 @@ def listeblock(request,session_key=None):
                         listeBlocks.setNextBlock(newNode,newNextBlock)
                     listeBlocks.addTick(theTime)   
                 elif spr.location=="slot":
+                    if history is None:
+                        listeBlocks.recordDrop(spr, theTime)
+                    else:
+                        action+=" %s" % history
                     #c'est un drop dans le CSLotMorph d'une boucle englobante
                     #parentId est le bloc englobant, targetId le CslotMorph                    
                     newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
