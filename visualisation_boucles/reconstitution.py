@@ -334,7 +334,7 @@ def listeblock(request,session_key=None):
                     if lastContenu is not None:
                         #l'ancien contenu devient le nextblock
                         lastContenu=lastContenu.copy(theTime)
-                        lastContenu.setUnwrapped()
+                        lastContenu.unwrap()
                         listeBlocks.append(lastContenu)
                         newNode.setNextBlock(lastContenu)
                     conteneurNode.setWrapped(newNode)
@@ -354,18 +354,22 @@ def listeblock(request,session_key=None):
                     """
                     print('DROP déjà traité',spr)                
                 
+                if history is None:
+                    listeBlocks.recordDrop(spr, theTime)
+                else:
+                    action+=" %s" % history
+                #On récupère le block et on le recopie
+                newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
                 #si ni le prevBlock ni le nextblock (ni wrapp?) ne change, c'est un simplement déplacement non pris en compte
                 #pour l'instant on le fait quand même
-                
-                if spr.location=='bottom':
-                    if history is None:
-                        listeBlocks.recordDrop(spr, theTime)
-                    else:
-                        action+=" %s" % history
+                #on vérifie si le block déplacé n'était pas contenu
+                if newNode.conteneurBlockId is not None:
+                    lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
+                    lastConteneur.setWrapped(None)
+                    listeBlocks.append(lastConteneur)
+                    newNode.setConteneur(None)
+                if spr.location=='bottom':                    
                     #c'est un bloc ajouté à la suite d'un autre
-                    #On récupère le block et on le recopie
-                    lastNode=listeBlocks.lastNode(spr.blockId, theTime)
-                    newNode=lastNode.copy(theTime,action)
                     newNode.change='inserted_%s' % spr.location
                     listeBlocks.append(newNode)
                     #on recupere le prevblock  avant modif
@@ -391,15 +395,8 @@ def listeblock(request,session_key=None):
                     listeBlocks.setNextBlock(newPrevBlock, newNode)                    
                     listeBlocks.addTick(theTime)
                 elif spr.location=='top':
-                    if history is None:
-                        listeBlocks.recordDrop(spr, theTime)
-                    else:
-                        action+=" %s" % history
                     #c'est un bloc ajouté avant d'un autre
                     #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
-                    #On récupère le block et on le recopie
-                    lastNode=listeBlocks.lastNode(spr.blockId, theTime)
-                    newNode=lastNode.copy(theTime,action)
                     newNode.change='inserted_%s' % spr.location
                     listeBlocks.append(newNode)
                     #on récupère la cible
@@ -419,13 +416,8 @@ def listeblock(request,session_key=None):
                         listeBlocks.setNextBlock(newNode,newNextBlock)
                     listeBlocks.addTick(theTime)   
                 elif spr.location=="slot":
-                    if history is None:
-                        listeBlocks.recordDrop(spr, theTime)
-                    else:
-                        action+=" %s" % history
                     #c'est un drop dans le CSLotMorph d'une boucle englobante
-                    #parentId est le bloc englobant, targetId le CslotMorph                    
-                    newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                    #parentId est le bloc englobant, targetId le CslotMorph                  
                     newNode.change='wrapped'
                     conteneurNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime)
                     listeBlocks.append(conteneurNode)
@@ -433,19 +425,17 @@ def listeblock(request,session_key=None):
                     if lastContenu is not None:
                         #l'ancien contenu devient le nextblock
                         lastContenu=lastContenu.copy(theTime)
-                        lastContenu.setUnwrapped()
+                        lastContenu.unwrap()
                         listeBlocks.append(lastContenu)
                         newNode.setNextBlock(lastContenu)
                     conteneurNode.setWrapped(newNode)
                     listeBlocks.addTick(theTime)
                 elif spr.location is None:
-                    #droppé tout seul                    
-                    lastNode=listeBlocks.lastNode(spr.blockId, theTime)                                          
+                    #droppé tout seul                                                             
                     #on recupere le prevblock avant modif
-                    lastPrevBlock=listeBlocks.lastNode(lastNode.prevBlockId,theTime)
+                    lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
                     #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
                     if lastPrevBlock is not None:
-                        newNode=lastNode.copy(theTime,action)
                         newNode.change='inserted_%s' % spr.location
                         newNode.setPrevBlock(None)
                         listeBlocks.append(newNode)
@@ -454,7 +444,7 @@ def listeblock(request,session_key=None):
                         listeBlocks.append(newLastPrevBlock)                        
                         if history is None:
                             listeBlocks.recordDrop(spr, theTime)
-                        listeBlocks.addTick(theTime)
+                    listeBlocks.addTick(theTime)
                                                     
             elif spr.type=='VAL':
                 #c'est une modification de la valeur (directe) d'un inputSlotMorph
@@ -786,7 +776,7 @@ class SimpleBlockSnap:
             block.conteneurBlockId=self.JMLid
         else:
             self.wrappedBlockId=None
-    def setUnwrapped(self):
+    def unwrap(self):
         """
         sort le block de son conteneur
         !!! ne met pas à jour le conteneur!!!
