@@ -227,15 +227,41 @@ def listeblock(request,session_key=None):
                         newNextBlock.change="uninsert"
                         newNextBlock.setPrevBlock(None)
                         listeBlocks.append(newNextBlock)                        
-                if dspr.type=="DROP":
+                elif dspr.type=="DROP":
                     #c'était un déplacement                    
                     newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action) 
                     listeBlocks.append(newNode)
-                    #on passe newprevNode->newNode->...>finDropNode->lastnextPrevNode
-                    #à newprevNode->lastnextPrevNode et (ancienNewNode).prevNode->newNode->...->findDropNode
-                    #et lastNextPrevNode correspond ) (anciennewprevNode)->lastNextprevNode
-                    if dspr.location=='bottom':                    
-                        #donc if newNode.prevBlockId is not None:
+                    if dspr.location=='bottom':
+                        #on passe de target->newNode->...->finscript->nextnode (où nextnode.id=ancienTarget.next)
+                        #à ancienprev(newnode)->newNode->...->finscript et target->nextNode
+                        target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)
+                        listeBlocks.append(target)
+                        ancienTarget=listeBlocks.lastNode(dspr.targetId,s['time'])
+                        nextNode=listeBlocks.lastNode(ancienTarget.nextBlockId,theTime)
+                        if nextNode is not None:
+                            nextNode=nextNode.copy(theTime)
+                            listeBlocks.append(nextNode)
+                            finScript=listeBlocks.lastNode(nextNode.prevBlockId,theTime).copy(theTime)
+                            if finScript.JMLid!=newNode.JMLid:
+                                listeBlocks.append(finScript)
+                            else:
+                                finScript=newNode
+                        else:
+                            finScript=newNode
+                        ancienPrevNode=listeBlocks.lastNode(dspr.blockId,s['time'])
+                        if ancienPrevNode is not None:
+                            ancienPrevNode=ancienPrevNode.copy(theTime)
+                            listeBlocks.append(ancienPrevNode)
+                        listeBlocks.setPrevBlock(newNode,ancienPrevNode)
+                        listeBlocks.setNextBlock(finScript,None)
+                        listeBlocks.setNextBlock(target,nextNode)
+                        """         
+                        #on passe newprevNode->newNode->...>finDropNode->lastnextPrevNode
+                        #à newprevNode->lastnextPrevNode et (ancienNewNode).prevNode->newNode->...->findDropNode
+                        #et lastNextPrevNode correspond ) (anciennewprevNode)->lastNextprevNode  
+                        
+                        print("                                     ++++++++")
+                        print("                                     ",dspr.targetId,newNode.prevBlockId)     
                         newPrevNode=listeBlocks.lastNode(newNode.prevBlockId, theTime).copy(theTime)
                         listeBlocks.append(newPrevNode)
                         tempo=listeBlocks.lastNode(newNode.prevBlockId,s['time']) #existe forcement, c'est une insertion bottom
@@ -258,7 +284,30 @@ def listeblock(request,session_key=None):
                             listeBlocks.append(newAncienPrevNode)
                             listeBlocks.setNextBlock(newAncienPrevNode,newNode)
                         else:
-                            listeBlocks.setPrevBlock(newNode,None)        
+                            print("                                     newprevnone",dspr.targetId,newNode.prevBlockId)
+                            listeBlocks.setPrevBlock(newNode,None)
+                        """
+                    elif dspr.location=='top':
+                        #on passe de newNode->...->finscript->target 
+                        #à target(sans prev)  et ancienprevdenewnode->newNode->...->finScript
+                        print("                                     --------")
+                        print("                                     ",dspr.targetId)    
+                        target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)                        
+                        listeBlocks.append(target)
+                        ancienNode=listeBlocks.getNode(newNode.JMLid,s['time'])
+                        newPrev=listeBlocks.lastNode(ancienNode.prevBlockId,theTime)
+                        if newPrev is not None:
+                            newPrev=newPrev.copy(theTime)
+                            listeBlocks.append(newPrev)
+                        listeBlocks.setPrevBlock(newNode,newPrev)
+                        finScript=listeBlocks.lastNode(target.prevBlockId,theTime).copy(theTime)                        
+                        if finScript.JMLid!=newNode.JMLid:
+                            listeBlocks.append(finScript)
+                            listeBlocks.setNextBlock(finScript,None)
+                        else:
+                            listeBlocks.setNextBlock(newNode,None)
+                        listeBlocks.setPrevBlock(target,None)
+                        
                 listeBlocks.addTick(theTime)   
                         
                     #soucis; faut il oprendre la derniere modification? la modif faite au temps du drop?
@@ -271,16 +320,19 @@ def listeblock(request,session_key=None):
             
             #traitement NEW: il faut inclure les inputs,
             if spr.type=='NEW':
+                action+=" %s" % spr.location
                 if history is None:
                     newNode=createNew(spr,theTime,action)
                     listeBlocks.recordDrop(spr, theTime)
                 else:
                     #c'est un redrop, on récupère la dernière version du noeud
+                    action+=" %s" % history
                     newNode=listeBlocks.lastNode(spr.blockId,theTime).copy(theTime,action)
                     newNode.deleted=False
                     newNode.change=history
                     listeBlocks.append(newNode)
                 if spr.location=="bottom":
+                    
                     #c'est un bloc ajouté à la suite d'un autre
                     prevBlock=listeBlocks.lastNode(spr.targetId,theTime)
                     newPrevBlock=listeBlocks.addSimpleBlock(theTime, 
@@ -294,13 +346,16 @@ def listeblock(request,session_key=None):
                                                                 block=nextBlock)
                         newNextBlock.change='insert'
                         listeBlocks.setNextBlock(newNode,newNextBlock)
-                    """if nextBlock is not None and not nextBlock.deleted:
-                        newNextBlock=listeBlocks.addSimpleBlock(theTime,
-                                                                block=nextBlock,
-                                                                action='insert')
-                        listeBlocks.setNextBlock(newNode,newNextBlock)
-                    else:
-                        listeBlocks.setNextBlock(newNode,None)"""
+                elif spr.location=="top":
+                    #c'est un block ajouté au dessus d'un autre
+                    #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
+                    nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
+                    newNextBlock=listeBlocks.addSimpleBlock(theTime, 
+                                                            block=nextBlock 
+                                                            )
+                    newNextBlock.change='insert_%s' % spr.location
+                    listeBlocks.setNextBlock(newNode,newNextBlock)
+                    #on ne vérifie pas si le next avait un prev, ça ne doit pas arriver                   
                 listeBlocks.addTick(theTime)
             
             elif spr.type=='DROP':
@@ -321,6 +376,8 @@ def listeblock(request,session_key=None):
                 if spr.location=='bottom':
                     if history is None:
                         listeBlocks.recordDrop(spr, theTime)
+                    else:
+                        action+=" %s" % history
                     #c'est un bloc ajouté à la suite d'un autre
                     #On récupère le block et on le recopie
                     lastNode=listeBlocks.lastNode(spr.blockId, theTime)
@@ -349,6 +406,34 @@ def listeblock(request,session_key=None):
                         listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
                     listeBlocks.setNextBlock(newPrevBlock, newNode)                    
                     listeBlocks.addTick(theTime)
+                elif spr.location=='top':
+                    if history is None:
+                        listeBlocks.recordDrop(spr, theTime)
+                    else:
+                        action+=" %s" % history
+                    #c'est un bloc ajouté avant d'un autre
+                    #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
+                    #On récupère le block et on le recopie
+                    lastNode=listeBlocks.lastNode(spr.blockId, theTime)
+                    newNode=lastNode.copy(theTime,action)
+                    newNode.change='inserted_%s' % spr.location
+                    listeBlocks.append(newNode)
+                    #on récupère la cible
+                    nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
+                    newNextBlock=listeBlocks.addSimpleBlock(theTime, 
+                                                            block=nextBlock 
+                                                            )
+                    newNextBlock.change='insert_%s' % spr.location
+                    #on ne vérifie pas si le next avait un prev, ça ne doit pas arriver
+                    #on va cherche le fin du script droppé (si c'en est un)
+                    finBlock=listeBlocks.lastFromBlock(theTime,newNode)
+                    if finBlock.JMLid!=newNode.JMLid:
+                        newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
+                        newFinBlock.change='insert'
+                        listeBlocks.setNextBlock(newFinBlock,newNextBlock)
+                    else:
+                        listeBlocks.setNextBlock(newNode,newNextBlock)
+                    listeBlocks.addTick(theTime)   
                 elif spr.location is None:
                     #droppé tout seul                    
                     lastNode=listeBlocks.lastNode(spr.blockId, theTime)                                          
@@ -947,7 +1032,7 @@ class SimpleListeBlockSnap:
         ajoute l'action spr dans ll'historique des drops
         """
         self.idropped+=1
-        self.dropped.insert(self.idropped,{'spr':spr.id,'time':thetime})
+        self.dropped.insert(self.idropped,{'spr':spr.id,'time':thetime,'block':spr.blockId,'target':spr.targetId,'loc':spr.location})
         #print('                                           **********')
         #print('                                            insert',self.idropped,self.dropped[self.idropped],spr.blockId,spr.blockSpec)
         #print('                                           **********')
@@ -955,7 +1040,7 @@ class SimpleListeBlockSnap:
         #on efface le reste de la liste
         for j in range(self.idropped+1,len(self.dropped)):            
             self.dropped.pop()
-        #print([i for i in self.dropped])   
+        #print([print(i) for i in self.dropped])   
     def undrop(self):
         """
         récupère l'id et le temps du dernier spr drop
@@ -965,7 +1050,7 @@ class SimpleListeBlockSnap:
         #print('                                           **********')
         #print('                                            undrop',self.idropped,droppedspr)
         #print('                                           **********')
-        #print([i for i in self.dropped])
+        #print([print(i) for i in self.dropped])
         return droppedspr
         
     def redrop(self):
