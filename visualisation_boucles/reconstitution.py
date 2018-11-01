@@ -255,38 +255,7 @@ def listeblock(request,session_key=None):
                         listeBlocks.setPrevBlock(newNode,ancienPrevNode)
                         listeBlocks.setNextBlock(finScript,None)
                         listeBlocks.setNextBlock(target,nextNode)
-                        """         
-                        #on passe newprevNode->newNode->...>finDropNode->lastnextPrevNode
-                        #à newprevNode->lastnextPrevNode et (ancienNewNode).prevNode->newNode->...->findDropNode
-                        #et lastNextPrevNode correspond ) (anciennewprevNode)->lastNextprevNode  
                         
-                        print("                                     ++++++++")
-                        print("                                     ",dspr.targetId,newNode.prevBlockId)     
-                        newPrevNode=listeBlocks.lastNode(newNode.prevBlockId, theTime).copy(theTime)
-                        listeBlocks.append(newPrevNode)
-                        tempo=listeBlocks.lastNode(newNode.prevBlockId,s['time']) #existe forcement, c'est une insertion bottom
-                        if tempo.nextBlockId is not None:
-                            lastNextPrevNode=listeBlocks.lastNode(tempo.nextBlockId,theTime).copy(theTime)
-                            if lastNextPrevNode is not None:
-                                listeBlocks.append(lastNextPrevNode)
-                                finDropNode=listeBlocks.lastNode(lastNextPrevNode.prevBlockId,theTime).copy(theTime)
-                                if finDropNode.JMLid!=newNode.JMLid:
-                                    listeBlocks.append(finDropNode)
-                                    listeBlocks.setNextBlock(finDropNode,None)
-                                else:
-                                    listeBlocks.setNextBlock(newNode,None)                        
-                            listeBlocks.setNextBlock(newPrevNode,lastNextPrevNode)
-                        else:
-                            listeBlocks.setNextBlock(newPrevNode,None)
-                        ancienNode=listeBlocks.lastNode(dspr.blockId,s['time'])
-                        if ancienNode.prevBlockId is not None:
-                            newAncienPrevNode=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
-                            listeBlocks.append(newAncienPrevNode)
-                            listeBlocks.setNextBlock(newAncienPrevNode,newNode)
-                        else:
-                            print("                                     newprevnone",dspr.targetId,newNode.prevBlockId)
-                            listeBlocks.setPrevBlock(newNode,None)
-                        """
                     elif dspr.location=='top':
                         #on passe de newNode->...->finscript->target 
                         #à target(sans prev)  et ancienprevdenewnode->newNode->...->finScript
@@ -294,7 +263,7 @@ def listeblock(request,session_key=None):
                         print("                                     ",dspr.targetId)    
                         target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)                        
                         listeBlocks.append(target)
-                        ancienNode=listeBlocks.getNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
                         newPrev=listeBlocks.lastNode(ancienNode.prevBlockId,theTime)
                         if newPrev is not None:
                             newPrev=newPrev.copy(theTime)
@@ -355,7 +324,22 @@ def listeblock(request,session_key=None):
                                                             )
                     newNextBlock.change='insert_%s' % spr.location
                     listeBlocks.setNextBlock(newNode,newNextBlock)
-                    #on ne vérifie pas si le next avait un prev, ça ne doit pas arriver                   
+                    #on ne vérifie pas si le next avait un prev, ça ne doit pas arriver      
+                elif spr.location=="slot":
+                    #c'est un drop dans le CSLotMorph d'une boucle englobante
+                    #parentId est le bloc englobant, targetId le CslotMorph
+                    conteneurNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime)
+                    listeBlocks.append(conteneurNode)
+                    lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
+                    if lastContenu is not None:
+                        #l'ancien contenu devient le nextblock
+                        lastContenu=lastContenu.copy(theTime)
+                        lastContenu.setUnwrapped()
+                        listeBlocks.append(lastContenu)
+                        newNode.setNextBlock(lastContenu)
+                    conteneurNode.setWrapped(newNode)
+                     
+                                 
                 listeBlocks.addTick(theTime)
             
             elif spr.type=='DROP':
@@ -434,6 +418,22 @@ def listeblock(request,session_key=None):
                     else:
                         listeBlocks.setNextBlock(newNode,newNextBlock)
                     listeBlocks.addTick(theTime)   
+                elif spr.location=="slot":
+                    #c'est un drop dans le CSLotMorph d'une boucle englobante
+                    #parentId est le bloc englobant, targetId le CslotMorph                    
+                    newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                    newNode.change='wrapped'
+                    conteneurNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime)
+                    listeBlocks.append(conteneurNode)
+                    lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
+                    if lastContenu is not None:
+                        #l'ancien contenu devient le nextblock
+                        lastContenu=lastContenu.copy(theTime)
+                        lastContenu.setUnwrapped()
+                        listeBlocks.append(lastContenu)
+                        newNode.setNextBlock(lastContenu)
+                    conteneurNode.setWrapped(newNode)
+                    listeBlocks.addTick(theTime)
                 elif spr.location is None:
                     #droppé tout seul                    
                     lastNode=listeBlocks.lastNode(spr.blockId, theTime)                                          
@@ -632,7 +632,8 @@ def listeblock(request,session_key=None):
         #le client devra retouver les blocs de débuts (prevBlock=None et parent=None)
         #puis reconstruire
         commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
-    
+    for i in listeBlocks.liste:
+        print(i)
     return Response({"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
@@ -704,6 +705,7 @@ class SimpleBlockSnap:
         self.conteneurBlockId=None # id block conteneur s'il existe (ie ce block est "wrapped"    
         self.inputs={}           # liste des id blocks inputs , sous la forme {rang:inputid}
         self.wrapped={}         # liste des ids des blocks commandes contenus, sous la forme {rang:commandid}
+        self.wrappedBlockId=None #id du premier bloc contenu
         self.contenu=None        # contenu du block(ie la valeur pour un InputSlotMorph)
         self.deleted=False      # indique si le noeud a été supprimé
         
@@ -768,6 +770,37 @@ class SimpleBlockSnap:
         anc=self.inputs['%s' % rang] if rang in self.inputs else None        
         self.inputs['%s' %rang]=inputNodeId
         return anc
+    
+    def setWrapped(self,block):
+        """
+        met l'id du block comme bloc contenu
+        met à jour le bloc conteneur
+        !!!ne met pas à jour l'ancien contenu!!! 
+        """
+        if block is not None:
+            self.wrappedBlockId=block.JMLid
+            block.conteneurBlockId=self.JMLid
+        else:
+            self.wrappedBlockId=None
+    def setUnwrapped(self):
+        """
+        sort le block de son conteneur
+        !!! ne met pas à jour le conteneur!!!
+        """
+        self.conteneurBlockId=None
+    
+    def setConteneur(self,block):
+        """ 
+        met le block comme conteneur de self
+        !!! ne met pas à jour l'ancien conteneur!!!
+        """
+        if block is not None:
+            self.conteneurBlockId=block.JMLid
+            block.setWrapped(self)
+        else:
+            self.conteneurBlockId=None
+            
+    '''
     def addWrapped(self,block=None,JMLid=None,rang=None):
         """
         met l'id du block en input et met le chanmps conteneur du block à jour
@@ -785,7 +818,7 @@ class SimpleBlockSnap:
         anc=self.wrapped['%s' % rang] if rang in self.wrapped else None        
         self.wrapped['%s' %rang]=wrappedNodeId
         return anc
-    
+    '''
     def copy(self,thetime,action=None):
         """ renvoie une copie complète en chabngeant time et action"""
         cp=copy.copy(self)
@@ -1171,7 +1204,9 @@ class SimpleListeBlockSnap:
                   'change': change,#block.change,
                   'deleted':block.deleted,
                   'nextBlock':block.nextBlockId,
-                  'prevBlock':block.prevBlockId}
+                  'prevBlock':block.prevBlockId,
+                  'conteneurBlock':block.conteneurBlockId,
+                  'wrappedBlock':block.wrappedBlockId}
         #print('nom',nom,' résultat de niom',resultat)
         return resultat,nom,change
     
