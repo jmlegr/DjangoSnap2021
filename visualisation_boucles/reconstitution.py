@@ -215,8 +215,13 @@ def listeblock(request,session_key=None):
                     #newNode=listeBlocks.getNode(spr.blockId,s['time']).copy(theTime,"UNDROPPED_DEL") 
                     newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action)
                     newNode.deleted=True
-                    newNode.change="undrop delete"                   
+                    newNode.change="undrop delete"
                     listeBlocks.append(newNode)
+                    if newNode.conteneurBlockId is not None:
+                        lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
+                        lastConteneur.setWrapped(None)
+                        newNode.unwrap()
+                        listeBlocks.append(lastConteneur)
                     if newNode.prevBlockId is not None:
                         newPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime).copy(theTime)
                         newPrevBlock.change="uninsert"
@@ -276,6 +281,28 @@ def listeblock(request,session_key=None):
                         else:
                             listeBlocks.setNextBlock(newNode,None)
                         listeBlocks.setPrevBlock(target,None)
+                    elif dspr.location=='slot':
+                        conteneur=listeBlocks.lastNode(dspr.parentId,theTime).copy(theTime)
+                        listeBlocks.append(conteneur)
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        if ancienNode.conteneurBlockId is not None:
+                            newAncienNodeConteneur=listeBlocks.lastNode(ancienNode.conteneurBlockId,theTime).copy(theTime)
+                            newAncienNodeConteneur.setWrapped(newNode)
+                            listeBlocks.append(newAncienNodeConteneur)
+                        if ancienNode.prevBlockId is not None:
+                            newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
+                            listeBlocks.append(newAncienPrevBlock)
+                        newNode.nextBlockId=ancienNode.nextBlockId
+                        ancienConteneur=listeBlocks.lastNode(dspr.parentId,s['time'])
+                        if ancienConteneur.wrappedBlockId is not None:
+                            contenu=listeBlocks.lastNode(ancienConteneur.wrappedBlockId,theTime).copy(theTime)
+                            contenu.setPrevBlock(None)                            
+                            listeBlocks.append(contenu)
+                            conteneur.setWrapped(contenu)
+                        else:
+                            conteneur.setWrapped(None)
+                            
                         
                 listeBlocks.addTick(theTime)   
                         
@@ -337,7 +364,7 @@ def listeblock(request,session_key=None):
                         lastContenu.unwrap()
                         listeBlocks.append(lastContenu)
                         newNode.setNextBlock(lastContenu)
-                    conteneurNode.setWrapped(newNode)
+                    conteneurNode.setWrapped(newNode)                   
                      
                                  
                 listeBlocks.addTick(theTime)
@@ -373,7 +400,7 @@ def listeblock(request,session_key=None):
                     newNode.change='inserted_%s' % spr.location
                     listeBlocks.append(newNode)
                     #on recupere le prevblock  avant modif
-                    lastPrevBlock=listeBlocks.lastNode(lastNode.prevBlockId,theTime)                    
+                    lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
                     #s'il avait un prevBlock, il faut le mettre à None                    
                     if lastPrevBlock is not None:
                         newLastPrevBlock=lastPrevBlock.copy(theTime)
@@ -429,6 +456,14 @@ def listeblock(request,session_key=None):
                         listeBlocks.append(lastContenu)
                         newNode.setNextBlock(lastContenu)
                     conteneurNode.setWrapped(newNode)
+                    #on recupere le prevblock avant modif
+                    lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
+                    #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
+                    if lastPrevBlock is not None:
+                        newNode.setPrevBlock(None)
+                        newLastPrevBlock=lastPrevBlock.copy(theTime)
+                        newLastPrevBlock.setNextBlock(None)
+                        listeBlocks.append(newLastPrevBlock) 
                     listeBlocks.addTick(theTime)
                 elif spr.location is None:
                     #droppé tout seul                                                             
@@ -441,9 +476,7 @@ def listeblock(request,session_key=None):
                         listeBlocks.append(newNode)
                         newLastPrevBlock=lastPrevBlock.copy(theTime)
                         newLastPrevBlock.setNextBlock(None)
-                        listeBlocks.append(newLastPrevBlock)                        
-                        if history is None:
-                            listeBlocks.recordDrop(spr, theTime)
+                        listeBlocks.append(newLastPrevBlock)     
                     listeBlocks.addTick(theTime)
                                                     
             elif spr.type=='VAL':
