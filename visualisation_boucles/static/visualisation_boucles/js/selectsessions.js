@@ -8,7 +8,7 @@ import {
     graphSujet
     } from './films.js'
 import {locale} from './locale.js'
-import {affActions} from './drops.js'
+import {affActions,truc} from './drops.js'
 
 var margin = {
         top: 30,
@@ -506,6 +506,7 @@ var lance = function () {
                      }
                  })
                 affActions(response)
+                d3.select("#actionsDiv").call(truc)
                 const ntx=crossfilter(response),
                        typeDimension=ntx.dimension(d=>d.type),
                        typeDataDimension=ntx.dimension(d=>d.data.type),

@@ -104,6 +104,7 @@ def listeblock(request,session_key=None):
     listeBlocks=SimpleListeBlockSnap()
     #on traite les évènements
     dtime=None
+    evtPrec=None
     for evt in evts:
         if dtime is None:
             dtime=evt.time
@@ -123,11 +124,13 @@ def listeblock(request,session_key=None):
                 newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
                 newi.deleted=True
             if len(listeBlocks.liste)>0: listeBlocks.addTick(theTime-1)
+            evtPrec=evtType
         elif evt.type=='ENV' and evtType.type in ['LOBA','LOVER']:
             #c'est un chargement de fichier
             #TODO: traiter import
             for i in listeBlocks.lastNodes(theTime):
                 newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
+                newi.deleted=True
             listeBlocks.addTick(theTime-1)
             if evtType.type=='LOBA':
                 p=ProgrammeBase.objects.get(id=evtType.valueInt) #detail contient le nom
@@ -152,7 +155,7 @@ def listeblock(request,session_key=None):
             for b in listeBlocks.liste:
                 if b.time==theTime and b.typeMorph!='ScriptsMorph' and (b.parentBlockId is None or b.typeMorph=='CommentMorph'):
                     listeBlocks.setFirstBlock(b)
-        
+            evtPrec=evtType
         if evt.type=='EPR':            
             #epr=evt.evenementepr.all()[0]
             epr=evtType
@@ -168,6 +171,7 @@ def listeblock(request,session_key=None):
                 #c'est une interaction avec l'utilisateur
                 eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}
                 listeBlocks.addTick(theTime)
+            evtPrec=evtType
         if evt.type=='ENV':
             #env=evt.environnement.all()[0]
             env=evtType
@@ -191,6 +195,7 @@ def listeblock(request,session_key=None):
                         listeBlocks.setFirstBlock(newBlock)
                     
                 listeBlocks.addTick(theTime)
+            evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]
             spr=evtType      
@@ -233,16 +238,28 @@ def listeblock(request,session_key=None):
                         newNextBlock.change="uninsert"
                         newNextBlock.setPrevBlock(None)
                         listeBlocks.append(newNextBlock)                        
-                elif dspr.type=="DROP":
-                    #c'était un déplacement                    
-                    newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action) 
+                elif dspr.type=="DROP" or dspr.type=="DEL":
+                    #Un DEL est toujours précédé d'un DROP, il faut traiter les deux d'un coup
+                    #on récupère le block
+                    if dspr.type=="DEL":
+                        deleted=True
+                        s=listeBlocks.undrop()
+                        dspr=EvenementSPR.objects.get(id=s['spr'])
+                        #if dspr.type!="DROP":
+                        #    raise Exception("PAS de drop avant un del!")
+                        newNode=listeBlocks.lastNode(dspr.blockId,theTime,deleted=True).copy(theTime,action)
+                        newNode.deleted=False
+                    else:           
+                        deleted=False         
+                        newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action)
+                    #on traite le déplacement                 
                     listeBlocks.append(newNode)
                     if dspr.location=='bottom':
                         #on passe de target->newNode->...->finscript->nextnode (où nextnode.id=ancienTarget.next)
                         #à ancienprev(newnode)->newNode->...->finscript et target->nextNode
                         target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)
                         listeBlocks.append(target)
-                        ancienTarget=listeBlocks.lastNode(dspr.targetId,s['time'])
+                        ancienTarget=listeBlocks.lastNode(dspr.targetId,s['time'],veryLast=deleted)
                         nextNode=listeBlocks.lastNode(ancienTarget.nextBlockId,theTime)
                         if nextNode is not None:
                             nextNode=nextNode.copy(theTime)
@@ -254,7 +271,7 @@ def listeblock(request,session_key=None):
                                 finScript=newNode
                         else:
                             finScript=newNode
-                        ancienNode=listeBlocks.lastNode(dspr.blockId,s['time'])                        
+                        ancienNode=listeBlocks.lastNode(dspr.blockId,s['time'],veryLast=deleted)                        
                         if ancienNode.prevBlockId is not None:
                             ancienPrevNode=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
                             listeBlocks.append(ancienPrevNode)
@@ -321,10 +338,64 @@ def listeblock(request,session_key=None):
                             conteneur.setWrapped(contenu)
                         else:
                             conteneur.setWrapped(None)
-                            newNode.unwrap()
+                            newNode.unwrap()                       
+                
+                elif dspr.type=="NEWVAL":
+                    #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
+                    if dspr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                        #si on a créé un inp directement, la valeur est dans blockspec
+                        contenu=dspr.blockSpec
+                        isSlot=True
+                    else:
+                        isSlot=False
+                        contenu=None
+                    #on récupère le parent
+                    parentNode=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime,action)
+                    listeBlocks.append(parentNode)
+                    newInputNode=listeBlocks.lastNode(dspr.detail,theTime).copy(theTime)
+                    newInputNode.change='newval'
+                    listeBlocks.append(newInputNode)
+                    #on récupère et modifie l'input modifié
+                    oldInput=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime)
+                    oldInput.change='replaced'
+                    oldInput.parentBlockId=None
+                    oldInput.deleted=True
+                    if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                        listeBlocks.liste.append(oldInput)
+                    else:
+                        listeBlocks.liste.append(oldInput)
+                        listeBlocks.setFirstBlock(oldInput)
+                    #on change l'input
+                    parentNode.addInput(newInputNode)                    
+                elif dspr.type=="DROPVAL":                    
+                    #on récupère le parent
+                    parentNode=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime,action)
+                    listeBlocks.append(parentNode)
+                    newInputNode=listeBlocks.lastNode(dspr.detail,theTime).copy(theTime)
+                    newInputNode.change='dropval'
+                    listeBlocks.append(newInputNode)
+                    #on récupère et modifie l'input modifié
+                    oldInput=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime)
+                    oldInput.change='replaced'
+                    #on recherche s'il avait un parent
+                    ancienInput=listeBlocks.lastNode(dspr.blockId,s['time'])
+                    if ancienInput.parentBlockId is not None:
+                        ancienParent=listeBlocks.lastNode(ancienInput.parentBlockId,theTime).copy(theTime)
+                        ancienParent.addInput(oldInput)
+                        listeBlocks.append(ancienParent)
+                    else:
+                        oldInput.parentBlockId=None
                         
-                listeBlocks.addTick(theTime)   
-                        
+                    if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                        listeBlocks.liste.append(oldInput)
+                    else:
+                        listeBlocks.liste.append(oldInput)
+                        listeBlocks.setFirstBlock(oldInput)
+                    #on change l'input
+                    parentNode.addInput(newInputNode)
+                
+                
+                listeBlocks.addTick(theTime)               
                     #soucis; faut il oprendre la derniere modification? la modif faite au temps du drop?
             elif spr.type=="REDROP":
                 history="REDROP"
@@ -393,132 +464,155 @@ def listeblock(request,session_key=None):
                                  
                 listeBlocks.addTick(theTime)
             
-            elif spr.type=='DROP':
-                if spr.location:
-                    action+=' '+spr.location
-                if spr.typeMorph=='ReporterBlockMorph':
-                    """
-                    c'est un reporter déplacé, éventuellement suite à un remplacement silencieux
-                    seules les modification de valeurs nous intéressent ici
-                    si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
-                    sinon c'est un simple déplacement
-                    """
-                    print('DROP déjà traité',spr)                
-                
-                if history is None:
-                    listeBlocks.recordDrop(spr, theTime)
+            elif spr.type=='DROP' or spr.type=="DEL":
+                #""" un DEL est soit précédé d'un DROP, soit d'un DROPEX (en ENV)
+                if (spr.type=="DEL" and evtPrec.type=="DROPEX"):
+                    #on ne change rien, c'est comme un drop, il faudra rajouter deleted
+                    deleted=True
                 else:
-                    action+=" %s" % history
-                #On récupère le block et on le recopie
-                newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
-                #si ni le prevBlock ni le nextblock (ni wrapp?) ne change, c'est un simplement déplacement non pris en compte
-                #pour l'instant on le fait quand même                
-                listeBlocks.append(newNode)
-                #on vérifie si le block déplacé n'était pas contenu
-                if newNode.conteneurBlockId is not None:
-                    lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
-                    lastConteneur.setWrapped(None)
-                    newNode.unwrap()
-                    listeBlocks.append(lastConteneur)
-                    #newNode.setConteneur(None)
-                if spr.location=='bottom':                    
-                    #c'est un bloc ajouté à la suite d'un autre
-                    newNode.change='inserted_%s' % spr.location
-                    #on recupere le prevblock  avant modif
-                    lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
-                    #s'il avait un prevBlock, il faut le mettre à None                    
-                    if lastPrevBlock is not None:
-                        newLastPrevBlock=lastPrevBlock.copy(theTime)
-                        newLastPrevBlock.setNextBlock(None)
-                        listeBlocks.append(newLastPrevBlock)
-                    #on configure le nouveau prevblock
-                    newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
-                    listeBlocks.append(newPrevBlock)
-                    #s'il avait un nextblock, c'est une insertion
-                    if newPrevBlock.nextBlockId is not None:                        
-                        #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
-                        lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
-                        if lastFromNode.JMLid!=newNode.JMLid:
-                            lastFromNode=lastFromNode.copy(theTime)
-                            listeBlocks.append(lastFromNode)
-                        newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
-                        listeBlocks.append(newLastNextBlock)
-                        listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
-                    listeBlocks.setNextBlock(newPrevBlock, newNode)                    
-                    listeBlocks.addTick(theTime)
-                elif spr.location=='top':
-                    #c'est un bloc ajouté avant d'un autre
-                    #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
-                    newNode.change='inserted_%s' % spr.location
-                    #on récupère la cible
-                    nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
-                    newNextBlock=listeBlocks.addSimpleBlock(theTime, 
-                                                            block=nextBlock 
-                                                            )
-                    newNextBlock.change='insert_%s' % spr.location
-                    #on ne vérifie pas si le next avait un prev, ça ne doit pas arriver
-                    #on va cherche le fin du script droppé (si c'en est un)
-                    finBlock=listeBlocks.lastFromBlock(theTime,newNode)
-                    if finBlock.JMLid!=newNode.JMLid:
-                        newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
-                        newFinBlock.change='insert'
-                        listeBlocks.setNextBlock(newFinBlock,newNextBlock)
-                    else:
-                        listeBlocks.setNextBlock(newNode,newNextBlock)
-                    listeBlocks.addTick(theTime)   
-                elif spr.location=="slot":
-                    #c'est un drop dans le CSLotMorph d'une boucle englobante
-                    #parentId est le bloc englobant, targetId le CslotMorph                  
-                    newNode.change='wrapped'
-                    conteneurNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime)
-                    listeBlocks.append(conteneurNode)
-                    """
-                    conteneurNode=listeBlocks.lastNode(spr.parentId,theTime,veryLast=True)
-                    if conteneurNode.time<theTime:
-                        conteneurNode=conteneurNode.copy(theTime)
-                        listeBlocks.append(conteneurNode)
-                    """
-                    #on recupere le prevblock avant modif
-                    lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
-                    #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
-                    if lastPrevBlock is not None:
-                        newNode.setPrevBlock(None)
-                        newLastPrevBlock=lastPrevBlock.copy(theTime)
-                        newLastPrevBlock.setNextBlock(None)
-                        listeBlocks.append(newLastPrevBlock) 
-                    else:
-                        listeBlocks.setPrevBlock(newNode,None)
+                    deleted=False
+                if (spr.type=="DEL" and evtPrec.type=="DROP"):
+                    # le DROP a déjà été traité, on modifie juste pour del
+                    newNode=listeBlocks.lastNode(spr.blockId, theTime)
+                    newNode.change=('' if history is None else history+' ')+'deleted'
+                    newNode.action=action
+                    #newNode.parentBlockId='deleted'      
+                    newNode.deleted=True
+                    listeBlocks.recordDrop(spr, theTime)
+                else:  
+                    if spr.location:
+                        action+=' '+spr.location
+                    if spr.typeMorph=='ReporterBlockMorph':
+                        """
+                        c'est un reporter déplacé, éventuellement suite à un remplacement silencieux
+                        seules les modification de valeurs nous intéressent ici
+                        si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
+                        sinon c'est un simple déplacement
+                        """
+                        print('DROP déjà traité',spr)                
                     
-                    lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
-                    if lastContenu is not None:
-                        #l'ancien contenu devient le nextblock
-                        lastContenu=lastContenu.copy(theTime)
-                        lastContenu.unwrap()
-                        listeBlocks.append(lastContenu)
-                        #on va chercher le fin du script droppé (si c'en est un)
+                    if history is None:
+                        listeBlocks.recordDrop(spr, theTime)
+                    else:
+                        action+=" %s" % history
+                    #On récupère le block et on le recopie
+                    newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                    #si ni le prevBlock ni le nextblock (ni wrapp?) ne change, c'est un simplement déplacement non pris en compte
+                    #pour l'instant on le fait quand même                
+                    listeBlocks.append(newNode)
+                    #on vérifie si le block déplacé n'était pas contenu
+                    if newNode.conteneurBlockId is not None:
+                        lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
+                        lastConteneur.setWrapped(None)
+                        newNode.unwrap()
+                        listeBlocks.append(lastConteneur)
+                        #newNode.setConteneur(None)
+                    if spr.location=='bottom':                    
+                        #c'est un bloc ajouté à la suite d'un autre
+                        newNode.change='inserted_%s' % spr.location
+                        #on recupere le prevblock  avant modif
+                        lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
+                        #s'il avait un prevBlock, il faut le mettre à None                    
+                        if lastPrevBlock is not None:
+                            newLastPrevBlock=lastPrevBlock.copy(theTime)
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.append(newLastPrevBlock)
+                        #on configure le nouveau prevblock
+                        newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                        listeBlocks.append(newPrevBlock)
+                        #s'il avait un nextblock, c'est une insertion
+                        if newPrevBlock.nextBlockId is not None:                        
+                            #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
+                            lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
+                            if lastFromNode.JMLid!=newNode.JMLid:
+                                lastFromNode=lastFromNode.copy(theTime)
+                                listeBlocks.append(lastFromNode)
+                            newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
+                            listeBlocks.append(newLastNextBlock)
+                            listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
+                        listeBlocks.setNextBlock(newPrevBlock, newNode)                    
+                        listeBlocks.addTick(theTime)
+                    elif spr.location=='top':
+                        #c'est un bloc ajouté avant d'un autre
+                        #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
+                        newNode.change='inserted_%s' % spr.location
+                        #on récupère la cible
+                        nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
+                        newNextBlock=listeBlocks.addSimpleBlock(theTime, 
+                                                                block=nextBlock 
+                                                                )
+                        newNextBlock.change='insert_%s' % spr.location
+                        #on ne vérifie pas si le next avait un prev, ça ne doit pas arriver
+                        #on va cherche le fin du script droppé (si c'en est un)
                         finBlock=listeBlocks.lastFromBlock(theTime,newNode)
                         if finBlock.JMLid!=newNode.JMLid:
                             newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
                             newFinBlock.change='insert'
-                            listeBlocks.setNextBlock(newFinBlock,lastContenu)
+                            listeBlocks.setNextBlock(newFinBlock,newNextBlock)
                         else:
-                            listeBlocks.setNextBlock(newNode,lastContenu)
-                    conteneurNode.setWrapped(newNode)
-                    print('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
-                    listeBlocks.addTick(theTime)
-                elif spr.location is None:
-                    #droppé tout seul                                                             
-                    #on recupere le prevblock avant modif
-                    lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
-                    #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
-                    if lastPrevBlock is not None:
-                        newNode.change='inserted_%s' % spr.location
-                        newNode.setPrevBlock(None)
-                        listeBlocks.append(newNode)
-                        newLastPrevBlock=lastPrevBlock.copy(theTime)
-                        newLastPrevBlock.setNextBlock(None)
-                        listeBlocks.append(newLastPrevBlock)     
-                    listeBlocks.addTick(theTime)
+                            listeBlocks.setNextBlock(newNode,newNextBlock)
+                        listeBlocks.addTick(theTime)   
+                    elif spr.location=="slot":
+                        #c'est un drop dans le CSLotMorph d'une boucle englobante
+                        #parentId est le bloc englobant, targetId le CslotMorph                  
+                        newNode.change='wrapped'
+                        conteneurNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime)
+                        listeBlocks.append(conteneurNode)
+                        """
+                        conteneurNode=listeBlocks.lastNode(spr.parentId,theTime,veryLast=True)
+                        if conteneurNode.time<theTime:
+                            conteneurNode=conteneurNode.copy(theTime)
+                            listeBlocks.append(conteneurNode)
+                        """
+                        #on recupere le prevblock avant modif
+                        lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
+                        #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
+                        if lastPrevBlock is not None:
+                            newNode.setPrevBlock(None)
+                            newLastPrevBlock=lastPrevBlock.copy(theTime)
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.append(newLastPrevBlock) 
+                        else:
+                            listeBlocks.setPrevBlock(newNode,None)
+                        
+                        lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
+                        if lastContenu is not None:
+                            #l'ancien contenu devient le nextblock
+                            lastContenu=lastContenu.copy(theTime)
+                            lastContenu.unwrap()
+                            listeBlocks.append(lastContenu)
+                            #on va chercher le fin du script droppé (si c'en est un)
+                            finBlock=listeBlocks.lastFromBlock(theTime,newNode)
+                            if finBlock.JMLid!=newNode.JMLid:
+                                newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
+                                newFinBlock.change='insert'
+                                listeBlocks.setNextBlock(newFinBlock,lastContenu)
+                            else:
+                                listeBlocks.setNextBlock(newNode,lastContenu)
+                        conteneurNode.setWrapped(newNode)
+                        print('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
+                        listeBlocks.addTick(theTime)
+                    elif spr.location is None:
+                        #droppé tout seul                                                             
+                        #on recupere le prevblock avant modif
+                        lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
+                        #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
+                        if lastPrevBlock is not None:
+                            newNode.change='inserted_%s' % spr.location
+                            newNode.setPrevBlock(None)
+                            listeBlocks.append(newNode)
+                            newLastPrevBlock=lastPrevBlock.copy(theTime)
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.append(newLastPrevBlock)  
+                        if deleted:
+                            newNode.deleted=True
+                            newNode.action+=" DEL"   
+                            #on place tous ses next à deleted
+                            while newNode.nextBlockId is not None:
+                                newNode=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(evtPrec.evenement.time)
+                                newNode.deleted=True
+                                listeBlocks.append(newNode)
+                        listeBlocks.addTick(theTime)
                                                     
             elif spr.type=='VAL':
                 #c'est une modification de la valeur (directe) d'un inputSlotMorph
@@ -544,8 +638,11 @@ def listeblock(request,session_key=None):
                 c'est un reporter nouveau(NEW) déplacé dans un inputSlotMorph de l'element targetId,
                 ou un nouveau inputSlot dans le cas d'un remplacement silencieux (isSlot=True)                    
                 """
+                
                 if isSlot:
                     #c'est un remplacement silencieux
+                    if history is None:
+                        listeBlocks.recordDrop(spr, theTime)
                     # blockid est le nouvel input, detail l'input remplacé, parentId le block parent
                     #on récupère le parent
                     parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
@@ -571,14 +668,23 @@ def listeblock(request,session_key=None):
                     parentNode.addInput(block=newInput,rang=oldInput.rang)
                     listeBlocks.addTick(theTime)                
                 else:
+                    if history is None:
+                        #on crée le nouveau block (et ajout dans la liste)
+                        newInputNode=createNew(spr,theTime,action)
+                        newInputNode.change='added'
+                        listeBlocks.recordDrop(spr, theTime)
+                    else:
+                        #c'est un redrop, on récupère la dernière version du noeud
+                        action+=" %s" % history
+                        newInputNode=listeBlocks.lastNode(spr.blockId,theTime,deleted=True).copy(theTime,action)
+                        newInputNode.deleted=False
+                        newInputNode.change=history
+                        listeBlocks.append(newInputNode)
                     #on récupère le parent
-                    parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
-                    listeBlocks.append(parentNode)
-                    #on crée le nouveau block (et ajout dans la liste)
-                    newInputNode=createNew(spr,theTime,action)
-                    newInputNode.change='added'
+                    parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                    listeBlocks.append(parentNode)                    
                     #on récupère et modifie l'input modifié
-                    oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime)
                     oldInput.change='replaced'
                     oldInput.parentBlockId=None
                     if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -588,8 +694,7 @@ def listeblock(request,session_key=None):
                         listeBlocks.setFirstBlock(oldInput)
                     #on change l'input
                     parentNode.addInput(newInputNode)
-                    listeBlocks.addTick(theTime)    
-                    if history is None: listeBlocks.recordDrop(spr, theTime)         
+                    listeBlocks.addTick(theTime)             
            
             elif spr.type=='DROPVAL':
                 """
@@ -614,19 +719,6 @@ def listeblock(request,session_key=None):
                     listeBlocks.setFirstBlock(oldInput)
                 #on change l'input
                 parentNode.addInput(block=newInputNode,rang=oldInput.rang)
-                listeBlocks.addTick(theTime)
-                if history is None: listeBlocks.recordDrop(spr, theTime)
-            
-          
-                                
-            elif spr.type=='DEL':
-                """
-                on supprime un bloc et ses descendants
-                """
-                newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
-                newNode.change=('' if history is None else history+' ')+'deleted'
-                #newNode.parentBlockId='deleted'        
-                listeBlocks.append(newNode)
                 listeBlocks.addTick(theTime)
                 if history is None: listeBlocks.recordDrop(spr, theTime)
                 
@@ -669,13 +761,10 @@ def listeblock(request,session_key=None):
                 listeBlocks.addTick(theTime)
             
             
-            
+        evtPrec=evtType
     #on parcours et on affiche les commandes
     commandes=[]
-    print('-----------------------------------------------------------------------------------------')
-    for i in listeBlocks.liste:
-        print(i)
-    print('-----------------------------------------------------------------------------------------')
+    
     for temps in listeBlocks.ticks:
         print('*********************')
         res=[]
@@ -704,7 +793,10 @@ def listeblock(request,session_key=None):
         #le client devra retouver les blocs de débuts (prevBlock=None et parent=None)
         #puis reconstruire
         commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
-    
+    print('-----------------------------------------------------------------------------------------')
+    for i in listeBlocks.liste:
+        print(i)
+    print('-----------------------------------------------------------------------------------------')
     return Response({"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
@@ -995,7 +1087,7 @@ class SimpleListeBlockSnap:
         
     def initDrop(self):
         self.idropped=-1
-        self.droppped=[]
+        self.dropped=[]
         
     def addTick(self,time):
         if time not in self.ticks:
@@ -1123,7 +1215,7 @@ class SimpleListeBlockSnap:
                     liste.append(i.JMLid)
         return liste
     
-    def lastNodes(self,thetime,veryLast=False):
+    def lastNodes(self,thetime,veryLast=False,deleted=False):
         """
         renvoie les derniers blocks (au sens du temps) de la liste
         max(temps)<=thetime si veryLast, sinon max(temps)<thetime
@@ -1131,9 +1223,10 @@ class SimpleListeBlockSnap:
         listeJMLid=self.listeJMLid(thetime, veryLast)
         liste=[]
         for jmlid in listeJMLid:
-            last=self.lastNode(jmlid, thetime, veryLast)
-            if last.action not in ['SPR_DEL','DELETE']:
-                liste.append(last)
+            last=self.lastNode(jmlid, thetime, veryLast,deleted=True)
+            #if last.action not in ['SPR_DEL','DELETE']:
+            if deleted or not last.deleted:
+                liste.append(last)            
         return liste
     
     def recordDrop(self,spr,thetime):
@@ -1141,7 +1234,7 @@ class SimpleListeBlockSnap:
         ajoute l'action spr dans ll'historique des drops
         """
         self.idropped+=1
-        self.dropped.insert(self.idropped,{'spr':spr.id,'time':thetime,'block':spr.blockId,'target':spr.targetId,'loc':spr.location})
+        self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime,'block':spr.blockId,'target':spr.targetId,'loc':spr.location})
         #print('                                           **********')
         #print('                                            insert',self.idropped,self.dropped[self.idropped],spr.blockId,spr.blockSpec)
         #print('                                           **********')
