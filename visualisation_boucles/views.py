@@ -9,10 +9,12 @@ from visualisation_boucles.serializers import ProgrammeBaseSerializer, Evenement
                
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework.decorators import detail_route, list_route
-from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+from rest_framework.decorators import detail_route, list_route, renderer_classes
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer,\
+    StaticHTMLRenderer
 from django.db.models.aggregates import Min, Max, Count
 import itertools
+from django.http.response import HttpResponse
 # Create your views here.
 def choixbase(request):
     """
@@ -64,6 +66,8 @@ class SessionEvenementsViewset(viewsets.ViewSet):
     viewset pour la liste des évenements constituants un ensemble d'action sur un même programme
     """
     renderer_classes = (JSONRenderer, TemplateHTMLRenderer,)
+    
+    
     def retrieve(self,request,pk=None):
         """
         pk contient l'evenement de départ, on renvoit tous les évènements de la même session
@@ -97,9 +101,9 @@ class SessionEvenementsViewset(viewsets.ViewSet):
 
 from django.db import connection
 class SimpleSessionViewset(viewsets.ViewSet): 
-    renderer_classes = (JSONRenderer, )    
-
+    #renderer_classes = (JSONRenderer,StaticHTMLRenderer )    
     
+    @renderer_classes((JSONRenderer,))
     def list(self,request):
         """
         renvoie la liste des sessions/utilisateurs, avec date de début et de fin, infos utilisateurs et classe,
@@ -130,6 +134,7 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
         return Response([dict(zip(columns,row)) for row in cursor.fetchall()])
 
     @list_route()
+    @renderer_classes((JSONRenderer,))
     def listesimple(self,request):
         #queryset=Evenement.objects.filter(numero=1).values('creation').dates('creation','day')
         #evts=EvenementENV.objects.filter(type='LANCE').values_list('evenement',flat=True)
@@ -146,6 +151,7 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
         #return Response(evts)
     
     @detail_route(url_path='reperes')
+    @renderer_classes((JSONRenderer,))
     def reperes_detail(self,request,pk=None):
         """
         éléments clés de la session pk
@@ -160,6 +166,7 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
         return Response(serializer.data)
     
     @list_route(['post'],url_path='reperes')
+    @renderer_classes((JSONRenderer,))
     def reperes_list(self,request):
         reperes=EvenementEPR.objects.filter(evenement__session_key__in=request.data['data']
                                             ,type__in=["LOAD","SAVE","NEW"])\
@@ -219,6 +226,7 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
     
         
     @list_route(methods=['post'])
+    @renderer_classes((JSONRenderer,))
     def visualise(self,request):
         #print(request.data)
         l=[i['session_key'] for i in request.data['data']  ]      
@@ -229,6 +237,18 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
         serializer=SimpleEvenementSerializer(evts,many=True)
         return Response(serializer.data)
     
+    @renderer_classes((JSONRenderer,))
     def visualiseConstruction(self,request):
         l=[i['session_key'] for i in request.data['data']  ]
         evts=Evenement.objects.filter(session_key__in=l,numero=1)
+        
+    @list_route(['post'],url_path='donnees')
+    @renderer_classes((JSONRenderer, StaticHTMLRenderer,))
+    def donnees_sessions(self,request):
+        evts=Evenement.objects.filter(session_key__in=request.data['data'] )\
+                .select_related('user')\
+                .prefetch_related('evenementspr','evenementepr','environnement','image',\
+                                  'evenementspr__inputs','evenementspr__scripts')
+        serializer=SimpleEvenementSerializer(evts,many=True)
+        return Response(serializer.data)
+        #return HttpResponse(data)
