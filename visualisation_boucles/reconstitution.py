@@ -342,7 +342,7 @@ def listeblock(request,session_key=None):
                 else:
                     #c'est un redrop, on récupère la dernière version du noeud
                     action+=" %s" % history
-                    newNode=listeBlocks.lastNode(spr.blockId,theTime).copy(theTime,action)
+                    newNode=listeBlocks.lastNode(spr.blockId,theTime,deleted=True).copy(theTime,action)
                     newNode.deleted=False
                     newNode.change=history
                     listeBlocks.append(newNode)
@@ -575,7 +575,7 @@ def listeblock(request,session_key=None):
                     parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
                     listeBlocks.append(parentNode)
                     #on crée le nouveau block (et ajout dans la liste)
-                    newInputNode=createNew(spr)
+                    newInputNode=createNew(spr,theTime,action)
                     newInputNode.change='added'
                     #on récupère et modifie l'input modifié
                     oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
@@ -672,6 +672,10 @@ def listeblock(request,session_key=None):
             
     #on parcours et on affiche les commandes
     commandes=[]
+    print('-----------------------------------------------------------------------------------------')
+    for i in listeBlocks.liste:
+        print(i)
+    print('-----------------------------------------------------------------------------------------')
     for temps in listeBlocks.ticks:
         print('*********************')
         res=[]
@@ -700,8 +704,7 @@ def listeblock(request,session_key=None):
         #le client devra retouver les blocs de débuts (prevBlock=None et parent=None)
         #puis reconstruire
         commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
-    for i in listeBlocks.liste:
-        print(i)
+    
     return Response({"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
@@ -1086,10 +1089,11 @@ class SimpleListeBlockSnap:
             return blocks[0]
         return None
     
-    def lastNode(self,JMLid,thetime,veryLast=False):
+    def lastNode(self,JMLid,thetime,veryLast=False,deleted=False):
         """
         renvoie le dernier block (au sens du temps) de la liste
         max(temps)<=thetime si veryLast, sinon max(temps)<thetime
+        si deleted, on renvoie même si le dernier est effacé
         """
         JMLid="%s" %JMLid
         if veryLast:
@@ -1097,7 +1101,10 @@ class SimpleListeBlockSnap:
         else:
             blocks=[b for b in self.liste if b.JMLid==JMLid and b.time<thetime]
         if len(blocks)>0:
-            return sorted(blocks,key=lambda n: n.time,reverse=True)[0]
+            retour=sorted(blocks,key=lambda n: n.time,reverse=True)[0]
+            if deleted:
+                return retour
+            return None if retour.deleted else retour
         return None
     
     def listeJMLid(self,thetime,veryLast=False):
@@ -1239,7 +1246,7 @@ class SimpleListeBlockSnap:
                 return resultat,nom,''
         
         if block.typeMorph!='CommentMorph':
-            txt=re.findall(r'(%\w+)',block.blockSpec)
+            txt=re.findall(r'(%\w+)',u'%s' % block.blockSpec)
             repl={}
             resultat=[]
             change=''
@@ -1299,7 +1306,7 @@ class SimpleListeBlockSnap:
                 block.blockSpec=item.get('s')
             else:
                 block.blockSpec=item.get('blockSpec')
-            params=re.findall(r'(%\w+)',block.blockSpec)
+            params=re.findall(r'(%\w+)',u'%s' % block.blockSpec)
             rang=0
             for e in params:
                 if e in ['%inputs','%words','%exp','%scriptvars','%parms']:
