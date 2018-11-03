@@ -195,6 +195,11 @@ def listeblock(request,session_key=None):
                         listeBlocks.setFirstBlock(newBlock)
                     
                 listeBlocks.addTick(theTime)
+            if env.type=="DROPEX":
+                #on ajoute l'évenement pour undrop, il sera traité conjointement avec DEL
+                #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
+                #soit il est précédé d'un DROP avec location=None, et il ne restera qu'à mettre deleted=True
+                listeBlocks.recordDrop(env,theTime)
             evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]
@@ -239,14 +244,21 @@ def listeblock(request,session_key=None):
                         newNextBlock.setPrevBlock(None)
                         listeBlocks.append(newNextBlock)                        
                 elif dspr.type=="DROP" or dspr.type=="DEL":
-                    #Un DEL est toujours précédé d'un DROP, il faut traiter les deux d'un coup
+                    #Un DEL est précédé d'un DROP (ou d'un ENV DROPEX), il faut traiter les deux d'un coup
                     #on récupère le block
                     if dspr.type=="DEL":
                         deleted=True
+                        blockId=dspr.blockId
                         s=listeBlocks.undrop()
-                        dspr=EvenementSPR.objects.get(id=s['spr'])
-                        #if dspr.type!="DROP":
-                        #    raise Exception("PAS de drop avant un del!")
+                        if s['type']!="DROPEX" and (s['blockId']!=blockId or s['location'] is not None):
+                            raise Exception("PAS de drop (ou pas le bon) avant un del!")
+                        else:
+                            print("                                     précédé de",s)
+                            if (s['type']!='DROPEX'):
+                                dspr=EvenementSPR.objects.get(id=s['spr'])
+                                deleted=True
+                            else:
+                                deleted=False
                         newNode=listeBlocks.lastNode(dspr.blockId,theTime,deleted=True).copy(theTime,action)
                         newNode.deleted=False
                     else:           
@@ -338,7 +350,21 @@ def listeblock(request,session_key=None):
                             conteneur.setWrapped(contenu)
                         else:
                             conteneur.setWrapped(None)
-                            newNode.unwrap()                       
+                            newNode.unwrap()
+                    elif dspr.location==None:
+                        #on récupère l'ancien node
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        if ancienNode.conteneurBlockId is not None:
+                            newAncienNodeConteneur=listeBlocks.lastNode(ancienNode.conteneurBlockId,theTime).copy(theTime)
+                            newAncienNodeConteneur.setWrapped(newNode)
+                            listeBlocks.append(newAncienNodeConteneur)
+                        else:
+                            newNode.unwrap()
+                        if ancienNode.prevBlockId is not None:
+                            newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
+                            listeBlocks.append(newAncienPrevBlock)                        
+                                              
                 
                 elif dspr.type=="NEWVAL":
                     #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
@@ -468,6 +494,7 @@ def listeblock(request,session_key=None):
                 #""" un DEL est soit précédé d'un DROP, soit d'un DROPEX (en ENV)
                 if (spr.type=="DEL" and evtPrec.type=="DROPEX"):
                     #on ne change rien, c'est comme un drop, il faudra rajouter deleted
+                    action+=" DROPEX"
                     deleted=True
                 else:
                     deleted=False
@@ -509,7 +536,7 @@ def listeblock(request,session_key=None):
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':                    
                         #c'est un bloc ajouté à la suite d'un autre
-                        newNode.change='inserted_%s' % spr.location
+                        newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                         #on recupere le prevblock  avant modif
                         lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
                         #s'il avait un prevBlock, il faut le mettre à None                    
@@ -535,7 +562,7 @@ def listeblock(request,session_key=None):
                     elif spr.location=='top':
                         #c'est un bloc ajouté avant d'un autre
                         #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
-                        newNode.change='inserted_%s' % spr.location
+                        newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                         #on récupère la cible
                         nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
                         newNextBlock=listeBlocks.addSimpleBlock(theTime, 
@@ -598,9 +625,9 @@ def listeblock(request,session_key=None):
                         lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
                         #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
                         if lastPrevBlock is not None:
-                            newNode.change='inserted_%s' % spr.location
+                            newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                             newNode.setPrevBlock(None)
-                            listeBlocks.append(newNode)
+                            #listeBlocks.append(newNode)
                             newLastPrevBlock=lastPrevBlock.copy(theTime)
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.append(newLastPrevBlock)  
@@ -1232,9 +1259,18 @@ class SimpleListeBlockSnap:
     def recordDrop(self,spr,thetime):
         """
         ajoute l'action spr dans ll'historique des drops
+        on ajoute aussi un ENV: si DROPEX
         """
         self.idropped+=1
-        self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime,'block':spr.blockId,'target':spr.targetId,'loc':spr.location})
+        try:
+            self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime,
+                                           'blockId':spr.blockId,
+                                           'targetId':spr.targetId,
+                                           'location':spr.location
+                                           })
+        except AttributeError:
+            #c'est un autre type
+            self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime})
         #print('                                           **********')
         #print('                                            insert',self.idropped,self.dropped[self.idropped],spr.blockId,spr.blockSpec)
         #print('                                           **********')
