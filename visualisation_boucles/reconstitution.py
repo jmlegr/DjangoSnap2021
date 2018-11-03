@@ -94,7 +94,8 @@ def listeblock(request,session_key=None):
         evts=Evenement.objects.filter(session_key=session_key).order_by('time')
         debut=evts[0]
     infos={}
-    eprInfos={}    
+    eprInfos={}  
+    evtTypeInfos={}  
     user=debut.user
     infos['user']=user.username
     infos['date']=debut.creation
@@ -111,6 +112,9 @@ def listeblock(request,session_key=None):
             theTime=0
         theTime=evt.time-dtime        
         evtType=evt.getEvenementType()
+        evtTypeInfos['%s' % theTime]={'evenement':evt.id,
+                                      'evnement_type':evt.type,
+                                      'type':evtType.type}
         history=None #memorise l'état undrop/redrop
         print('---- temps=',theTime, evt.type,evtType)
         if evt.type=='ENV' and evtType.type in ['NEW','LANCE']:
@@ -825,7 +829,9 @@ def listeblock(request,session_key=None):
         #les résultats ne sont pas dans l'ordre!
         #le client devra retouver les blocs de débuts (prevBlock=None et parent=None)
         #puis reconstruire
-        commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
+        commandes.append({'temps':temps,'snap':res,
+                          'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None,
+                          'evt':evtTypeInfos['%s' % temps if '%s' % temps in evtTypeInfos else None]})
     print('-----------------------------------------------------------------------------------------')
     for i in listeBlocks.liste:
         print(i)
