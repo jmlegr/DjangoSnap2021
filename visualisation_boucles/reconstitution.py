@@ -19,6 +19,10 @@ from lxml import etree
 from snap.views import liste
 from snap.reconstitution import listeblock
 
+affprint=False
+def aff(*str):
+    if affprint:
+        print(*str)
 
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
@@ -84,7 +88,7 @@ def listeblock(request,session_key=None):
         return newNode
     
     #liste les derniers débuts de tous les élèves
-    print("session",session_key)
+    aff("session",session_key)
     if session_key.isdigit():
         #on a envoyé une id d'évènement EPR
         epr=EvenementEPR.objects.get(id=session_key)
@@ -116,7 +120,7 @@ def listeblock(request,session_key=None):
                                       'evnement_type':evt.type,
                                       'type':evtType.type}
         history=None #memorise l'état undrop/redrop
-        print('---- temps=',theTime, evt.type,evtType)
+        aff('---- temps=',theTime, evt.type,evtType)
         if evt.type=='ENV' and evtType.type in ['NEW','LANCE']:
             #c'est un nouveau programme vide        
             infos['type']="Nouveau programme vide"
@@ -163,7 +167,7 @@ def listeblock(request,session_key=None):
         if evt.type=='EPR':            
             #epr=evt.evenementepr.all()[0]
             epr=evtType
-            print('EPR',epr)
+            aff('EPR',epr)
             if epr.type in ['START','STOP','REPR','SNP','PAUSE']:                
                 eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}                    
                 if epr.type=='SNP':
@@ -224,7 +228,7 @@ def listeblock(request,session_key=None):
                 action+=" UNDROP"
                 s=listeBlocks.undrop()
                 dspr=EvenementSPR.objects.get(id=s['spr'])
-                print("undrop de ",spr,s['time'])
+                aff("undrop de ",spr,s['time'])
                 if dspr.type=="NEW":
                     #c'était une création insérée
                     #newNode=listeBlocks.getNode(spr.blockId,s['time']).copy(theTime,"UNDROPPED_DEL") 
@@ -257,7 +261,7 @@ def listeblock(request,session_key=None):
                         if s['type']!="DROPEX" and (s['blockId']!=blockId or s['location'] is not None):
                             raise Exception("PAS de drop (ou pas le bon) avant un del!")
                         else:
-                            print("                                     précédé de",s)
+                            aff("                                     précédé de",s)
                             if (s['type']!='DROPEX'):
                                 dspr=EvenementSPR.objects.get(id=s['spr'])
                                 deleted=True
@@ -308,8 +312,8 @@ def listeblock(request,session_key=None):
                     elif dspr.location=='top':
                         #on passe de newNode->...->finscript->target 
                         #à target(sans prev)  et ancienprevdenewnode->newNode->...->finScript
-                        print("                                     --------")
-                        print("                                     ",dspr.targetId)    
+                        aff("                                     --------")
+                        aff("                                     ",dspr.targetId)    
                         target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)                        
                         listeBlocks.append(target)
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
@@ -438,7 +442,7 @@ def listeblock(request,session_key=None):
                 action+=" REDROP"
                 s=listeBlocks.redrop()
                 spr=EvenementSPR.objects.get(id=s['spr'])
-                print("REdrop de ",spr,s['time'])             
+                aff("REdrop de ",spr,s['time'])             
             
             #traitement NEW: il faut inclure les inputs,
             if spr.type=='NEW':
@@ -526,7 +530,7 @@ def listeblock(request,session_key=None):
                         si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
                         sinon c'est un simple déplacement
                         """
-                        print('DROP déjà traité',spr)                
+                        aff('DROP déjà traité',spr)                
                     
                     if history is None:
                         listeBlocks.recordDrop(spr, theTime)
@@ -627,7 +631,7 @@ def listeblock(request,session_key=None):
                             else:
                                 listeBlocks.setNextBlock(newNode,lastContenu)
                         conteneurNode.setWrapped(newNode)
-                        print('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
+                        aff('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
                         listeBlocks.addTick(theTime)
                     elif spr.location is None:
                         #droppé tout seul                                                             
@@ -810,16 +814,16 @@ def listeblock(request,session_key=None):
         for i in listeBlocks.firstBlocks:            
             
             b=listeBlocks.lastNode(i,temps,veryLast=True)
-            print('  traitement ',i,"b",listeBlocks.liste)
+            aff('  traitement ',i,"b",listeBlocks.liste)
             if b is None or b.parentBlockId is not None or (b.deleted and not b.action):
                 res.append({'JMLid':i})
-                print ('pas first')                    
+                aff ('pas first')                    
             else:
-                print('last:',b.time)
+                aff('last:',b.time)
                 resultat,nom,change=listeBlocks.parcoursBlock(i, temps, True)
-                print('    resultat',resultat)
-                print('    nom',nom)
-                print('    change:',change)
+                aff('    resultat',resultat)
+                aff('    nom',nom)
+                aff('    change:',change)
                 #resultat['change']=change 
                 if change:
                     resultat['change']='AAchangeAA '+resultat['change']+"AA"+change  
@@ -831,7 +835,7 @@ def listeblock(request,session_key=None):
         #puis reconstruire
         commandes.append({'temps':temps,'snap':res,
                           'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None,
-                          'evt':evtTypeInfos['%s' % temps if '%s' % temps in evtTypeInfos else None]})
+                          'evt':evtTypeInfos['%s' % temps] if '%s' % temps in evtTypeInfos else None})
     print('-----------------------------------------------------------------------------------------')
     for i in listeBlocks.liste:
         print(i)
@@ -1045,7 +1049,7 @@ class SimpleBlockSnap:
         def replace(init):
             return liste[init] if init in liste else None
         
-        print('trateiemt,n',liste,self.JMLid)
+        aff('trateiemt,n',liste,self.JMLid)
         assert self.JMLid in liste
         blockOrig=self.copy(thetime,action)
         block=self.copy(thetime,action)
@@ -1149,7 +1153,7 @@ class SimpleListeBlockSnap:
         ou un nouveau block
         """
         if block is not None:
-            print('creation',block)
+            aff('creation',block)
             #newb=SimpleBlockSnap(block=block,thetime=thetime)
             """newb=SimpleBlockSnap(block.JMLid,thetime,
                                               blockSpec=block.blockSpec,
@@ -1159,7 +1163,7 @@ class SimpleListeBlockSnap:
                                               rang=block.rang,                                              
                                               action=block.action)"""
             newb=block.copy(thetime,action)
-            print('newb',newb)            
+            aff('newb',newb)            
         else:
             newb=SimpleBlockSnap(JMLid=JMLid,thetime=thetime,
                                               blockSpec=blockSpec,
@@ -1363,14 +1367,14 @@ class SimpleListeBlockSnap:
         #on récupère le block
         block=self.lastNode(JMLid, thetime, veryLast=True)
         if block is None:
-            print('pas de block')
+            aff('pas de block')
             return [],''
         if block.typeMorph=='MultiArgMorph':
             #un multiarg n'est qu'une suite de %s
             block.blockSpec='|%s|'*len(block.inputs)
         nom=block.blockSpec    
-        print('block ',nom)
-        print('inputs ',block.inputs)
+        aff('block ',nom)
+        aff('inputs ',block.inputs)
         #on cherche à remplacer les "%trucs" par les inputs 
         #if block.action=='SPR_DEL' and block.time<thetime:
         if block.deleted and block.time<thetime:               
@@ -1433,7 +1437,7 @@ class SimpleListeBlockSnap:
         les place au temps theTime (0 par défaut)
         Si withScript, on ajoute un block Script par script 
         """
-        print('item',item.tag,item.items())
+        aff('item',item.tag,item.items())
         if item.tag=='block' or item.tag=='custom-block':
             block=SimpleBlockSnap(item.get('JMLid'),theTime,item.get('typemorph'))
             if 'var' in item.attrib:
