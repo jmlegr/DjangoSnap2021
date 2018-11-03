@@ -363,8 +363,14 @@ def listeblock(request,session_key=None):
                         if ancienNode.prevBlockId is not None:
                             newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
                             listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
-                            listeBlocks.append(newAncienPrevBlock)                        
-                                              
+                            listeBlocks.append(newAncienPrevBlock)   
+                        nextNode=ancienNode                     
+                        while nextNode.nextBlockId is not None:
+                            nextNode=listeBlocks.lastNode(nextNode.nextBlockId,theTime,deleted=True).copy(theTime)
+                            listeBlocks.append(nextNode)
+                            nextNode.deleted=False
+                            listeBlocks.setNextBlock(newNode,nextNode)
+                            newNode=nextNode                    
                 
                 elif dspr.type=="NEWVAL":
                     #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
@@ -636,7 +642,7 @@ def listeblock(request,session_key=None):
                             newNode.action+=" DEL"   
                             #on place tous ses next à deleted
                             while newNode.nextBlockId is not None:
-                                newNode=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(evtPrec.evenement.time)
+                                newNode=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(theTime)
                                 newNode.deleted=True
                                 listeBlocks.append(newNode)
                         listeBlocks.addTick(theTime)
