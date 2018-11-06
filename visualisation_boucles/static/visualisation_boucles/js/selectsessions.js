@@ -7,6 +7,9 @@ import {
     getSujet,
     graphSujet
     } from './films.js'
+import {
+    graphProgramme
+    } from './programme.js'
 import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
 
@@ -644,24 +647,32 @@ var lance = function () {
             d3.select("#graphSujet").selectAll("*").remove()
             var z = d3.select("#visualisation-type input:checked").node().value
             var liste = selectedCountChart.dimension().all()
-            let url="",data=[]
+            let url="",data=null,method="POST"
             console.log("z", z, liste)
             //alert("chargement de " + z)
             if (z=="reperes") {
                 url=urls.reperes               
                 data=liste.map(d=>d.session_key)
-            } else {
-                url=urls.visualise
-                data=liste
+                method="POST"
+            } else if (z=="programmes"){
+                url=urls.programmes
+                //data=liste.map(d=>d.session_key)
+                url+=liste.map(d=>d.session_key)[0]
+                method="GET"
             }
             xsend(url, csrf_token, {
                 "type": z,
                 "data": data
-            }, "POST")
+            }, method)
             .then(response => {console.log("sessions",response)                
+                if (z=="reperes") {    
                     let users=d3.map(response,d=>d.evenement.user).keys()
                     console.log('rep',users)
-                    users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                
+                    users.forEach(function(u){graphSujet(u,response,statsGraphSession)})
+                }
+            if (z=="programmes") {
+                graphProgramme(response)
+            }
             })
         })
 

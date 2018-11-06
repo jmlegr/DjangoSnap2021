@@ -19,6 +19,10 @@ from lxml import etree
 from snap.views import liste
 from snap.reconstitution import listeblock
 
+affprint=False
+def aff(*str):
+    if affprint:
+        print(*str)
 
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
@@ -84,7 +88,7 @@ def listeblock(request,session_key=None):
         return newNode
     
     #liste les derniers débuts de tous les élèves
-    print("session",session_key)
+    aff("session",session_key)
     if session_key.isdigit():
         #on a envoyé une id d'évènement EPR
         epr=EvenementEPR.objects.get(id=session_key)
@@ -94,7 +98,8 @@ def listeblock(request,session_key=None):
         evts=Evenement.objects.filter(session_key=session_key).order_by('time')
         debut=evts[0]
     infos={}
-    eprInfos={}    
+    eprInfos={}  
+    evtTypeInfos={}  
     user=debut.user
     infos['user']=user.username
     infos['date']=debut.creation
@@ -106,13 +111,17 @@ def listeblock(request,session_key=None):
     dtime=None
     evtPrec=None
     for evt in evts:
+        print('evt',evt)
         if dtime is None:
             dtime=evt.time
             theTime=0
         theTime=evt.time-dtime        
         evtType=evt.getEvenementType()
+        evtTypeInfos['%s' % theTime]={'evenement':evt.id,
+                                      'evenement_type':evt.type,
+                                      'type':evtType.type}
         history=None #memorise l'état undrop/redrop
-        print('---- temps=',theTime, evt.type,evtType)
+        aff('---- temps=',theTime, evt.type,evtType)
         if evt.type=='ENV' and evtType.type in ['NEW','LANCE']:
             #c'est un nouveau programme vide        
             infos['type']="Nouveau programme vide"
@@ -159,7 +168,7 @@ def listeblock(request,session_key=None):
         if evt.type=='EPR':            
             #epr=evt.evenementepr.all()[0]
             epr=evtType
-            print('EPR',epr)
+            aff('EPR',epr)
             if epr.type in ['START','STOP','REPR','SNP','PAUSE']:                
                 eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}                    
                 if epr.type=='SNP':
@@ -195,6 +204,11 @@ def listeblock(request,session_key=None):
                         listeBlocks.setFirstBlock(newBlock)
                     
                 listeBlocks.addTick(theTime)
+            if env.type=="DROPEX":
+                #on ajoute l'évenement pour undrop, il sera traité conjointement avec DEL
+                #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
+                #soit il est précédé d'un DROP avec location=None, et il ne restera qu'à mettre deleted=True
+                listeBlocks.recordDrop(env,theTime)
             evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]
@@ -215,7 +229,7 @@ def listeblock(request,session_key=None):
                 action+=" UNDROP"
                 s=listeBlocks.undrop()
                 dspr=EvenementSPR.objects.get(id=s['spr'])
-                print("undrop de ",spr,s['time'])
+                aff("undrop de ",spr,s['time'])
                 if dspr.type=="NEW":
                     #c'était une création insérée
                     #newNode=listeBlocks.getNode(spr.blockId,s['time']).copy(theTime,"UNDROPPED_DEL") 
@@ -239,14 +253,21 @@ def listeblock(request,session_key=None):
                         newNextBlock.setPrevBlock(None)
                         listeBlocks.append(newNextBlock)                        
                 elif dspr.type=="DROP" or dspr.type=="DEL":
-                    #Un DEL est toujours précédé d'un DROP, il faut traiter les deux d'un coup
+                    #Un DEL est précédé d'un DROP (ou d'un ENV DROPEX), il faut traiter les deux d'un coup
                     #on récupère le block
                     if dspr.type=="DEL":
                         deleted=True
+                        blockId=dspr.blockId
                         s=listeBlocks.undrop()
-                        dspr=EvenementSPR.objects.get(id=s['spr'])
-                        #if dspr.type!="DROP":
-                        #    raise Exception("PAS de drop avant un del!")
+                        if s['type']!="DROPEX" and (s['blockId']!=blockId or s['location'] is not None):
+                            raise Exception("PAS de drop (ou pas le bon) avant un del!")
+                        else:
+                            aff("                                     précédé de",s)
+                            if (s['type']!='DROPEX'):
+                                dspr=EvenementSPR.objects.get(id=s['spr'])
+                                deleted=True
+                            else:
+                                deleted=False
                         newNode=listeBlocks.lastNode(dspr.blockId,theTime,deleted=True).copy(theTime,action)
                         newNode.deleted=False
                     else:           
@@ -292,8 +313,8 @@ def listeblock(request,session_key=None):
                     elif dspr.location=='top':
                         #on passe de newNode->...->finscript->target 
                         #à target(sans prev)  et ancienprevdenewnode->newNode->...->finScript
-                        print("                                     --------")
-                        print("                                     ",dspr.targetId)    
+                        aff("                                     --------")
+                        aff("                                     ",dspr.targetId)    
                         target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)                        
                         listeBlocks.append(target)
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
@@ -338,7 +359,27 @@ def listeblock(request,session_key=None):
                             conteneur.setWrapped(contenu)
                         else:
                             conteneur.setWrapped(None)
-                            newNode.unwrap()                       
+                            newNode.unwrap()
+                    elif dspr.location==None:
+                        #on récupère l'ancien node
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        if ancienNode.conteneurBlockId is not None:
+                            newAncienNodeConteneur=listeBlocks.lastNode(ancienNode.conteneurBlockId,theTime).copy(theTime)
+                            newAncienNodeConteneur.setWrapped(newNode)
+                            listeBlocks.append(newAncienNodeConteneur)
+                        else:
+                            newNode.unwrap()
+                        if ancienNode.prevBlockId is not None:
+                            newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
+                            listeBlocks.append(newAncienPrevBlock)   
+                        nextNode=ancienNode                     
+                        while nextNode.nextBlockId is not None:
+                            nextNode=listeBlocks.lastNode(nextNode.nextBlockId,theTime,deleted=True).copy(theTime)
+                            listeBlocks.append(nextNode)
+                            nextNode.deleted=False
+                            listeBlocks.setNextBlock(newNode,nextNode)
+                            newNode=nextNode                    
                 
                 elif dspr.type=="NEWVAL":
                     #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
@@ -402,7 +443,7 @@ def listeblock(request,session_key=None):
                 action+=" REDROP"
                 s=listeBlocks.redrop()
                 spr=EvenementSPR.objects.get(id=s['spr'])
-                print("REdrop de ",spr,s['time'])             
+                aff("REdrop de ",spr,s['time'])             
             
             #traitement NEW: il faut inclure les inputs,
             if spr.type=='NEW':
@@ -468,6 +509,7 @@ def listeblock(request,session_key=None):
                 #""" un DEL est soit précédé d'un DROP, soit d'un DROPEX (en ENV)
                 if (spr.type=="DEL" and evtPrec.type=="DROPEX"):
                     #on ne change rien, c'est comme un drop, il faudra rajouter deleted
+                    action+=" DROPEX"
                     deleted=True
                 else:
                     deleted=False
@@ -489,7 +531,7 @@ def listeblock(request,session_key=None):
                         si c'est la suite d'un remplacement, le cas (drop) a déjà été traité,
                         sinon c'est un simple déplacement
                         """
-                        print('DROP déjà traité',spr)                
+                        aff('DROP déjà traité',spr)                
                     
                     if history is None:
                         listeBlocks.recordDrop(spr, theTime)
@@ -509,33 +551,39 @@ def listeblock(request,session_key=None):
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':                    
                         #c'est un bloc ajouté à la suite d'un autre
-                        newNode.change='inserted_%s' % spr.location
-                        #on recupere le prevblock  avant modif
-                        lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
-                        #s'il avait un prevBlock, il faut le mettre à None                    
-                        if lastPrevBlock is not None:
-                            newLastPrevBlock=lastPrevBlock.copy(theTime)
-                            newLastPrevBlock.setNextBlock(None)
-                            listeBlocks.append(newLastPrevBlock)
-                        #on configure le nouveau prevblock
-                        newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
-                        listeBlocks.append(newPrevBlock)
-                        #s'il avait un nextblock, c'est une insertion
-                        if newPrevBlock.nextBlockId is not None:                        
-                            #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
-                            lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
-                            if lastFromNode.JMLid!=newNode.JMLid:
-                                lastFromNode=lastFromNode.copy(theTime)
-                                listeBlocks.append(lastFromNode)
-                            newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
-                            listeBlocks.append(newLastNextBlock)
-                            listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
-                        listeBlocks.setNextBlock(newPrevBlock, newNode)                    
-                        listeBlocks.addTick(theTime)
+                        #on vérifie d'abord s'il n'a pas été remis à sa place
+                        if newNode.prevBlockId=='%s' % spr.targetId:
+                            newNode.change='(%s)reinserted_%s' % (spr.type,spr.location)
+                            #décommenter si on veut prendre en compte quand même cet évènement (hésitation)
+                            #listeBlocks.addTick(theTime)
+                        else:                            
+                            newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
+                            #on recupere le prevblock  avant modif
+                            lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
+                            #s'il avait un prevBlock, il faut le mettre à None                 
+                            if lastPrevBlock is not None:
+                                newLastPrevBlock=lastPrevBlock.copy(theTime)
+                                newLastPrevBlock.setNextBlock(None)
+                                listeBlocks.append(newLastPrevBlock)
+                            #on configure le nouveau prevblock
+                            newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                            listeBlocks.append(newPrevBlock)
+                            #s'il avait un nextblock, c'est une insertion
+                            if newPrevBlock.nextBlockId is not None:                        
+                                #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
+                                lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
+                                if lastFromNode.JMLid!=newNode.JMLid:
+                                    lastFromNode=lastFromNode.copy(theTime)
+                                    listeBlocks.append(lastFromNode)
+                                newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
+                                listeBlocks.append(newLastNextBlock)
+                                listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
+                            listeBlocks.setNextBlock(newPrevBlock, newNode)                    
+                            listeBlocks.addTick(theTime)
                     elif spr.location=='top':
                         #c'est un bloc ajouté avant d'un autre
                         #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
-                        newNode.change='inserted_%s' % spr.location
+                        newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                         #on récupère la cible
                         nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
                         newNextBlock=listeBlocks.addSimpleBlock(theTime, 
@@ -590,7 +638,7 @@ def listeblock(request,session_key=None):
                             else:
                                 listeBlocks.setNextBlock(newNode,lastContenu)
                         conteneurNode.setWrapped(newNode)
-                        print('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
+                        aff('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
                         listeBlocks.addTick(theTime)
                     elif spr.location is None:
                         #droppé tout seul                                                             
@@ -598,9 +646,9 @@ def listeblock(request,session_key=None):
                         lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
                         #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
                         if lastPrevBlock is not None:
-                            newNode.change='inserted_%s' % spr.location
+                            newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                             newNode.setPrevBlock(None)
-                            listeBlocks.append(newNode)
+                            #listeBlocks.append(newNode)
                             newLastPrevBlock=lastPrevBlock.copy(theTime)
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.append(newLastPrevBlock)  
@@ -609,7 +657,7 @@ def listeblock(request,session_key=None):
                             newNode.action+=" DEL"   
                             #on place tous ses next à deleted
                             while newNode.nextBlockId is not None:
-                                newNode=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(evtPrec.evenement.time)
+                                newNode=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(theTime)
                                 newNode.deleted=True
                                 listeBlocks.append(newNode)
                         listeBlocks.addTick(theTime)
@@ -773,16 +821,16 @@ def listeblock(request,session_key=None):
         for i in listeBlocks.firstBlocks:            
             
             b=listeBlocks.lastNode(i,temps,veryLast=True)
-            print('  traitement ',i,"b",listeBlocks.liste)
+            aff('  traitement ',i,"b",listeBlocks.liste)
             if b is None or b.parentBlockId is not None or (b.deleted and not b.action):
                 res.append({'JMLid':i})
-                print ('pas first')                    
+                aff ('pas first')                    
             else:
-                print('last:',b.time)
+                aff('last:',b.time)
                 resultat,nom,change=listeBlocks.parcoursBlock(i, temps, True)
-                print('    resultat',resultat)
-                print('    nom',nom)
-                print('    change:',change)
+                aff('    resultat',resultat)
+                aff('    nom',nom)
+                aff('    change:',change)
                 #resultat['change']=change 
                 if change:
                     resultat['change']='AAchangeAA '+resultat['change']+"AA"+change  
@@ -792,7 +840,9 @@ def listeblock(request,session_key=None):
         #les résultats ne sont pas dans l'ordre!
         #le client devra retouver les blocs de débuts (prevBlock=None et parent=None)
         #puis reconstruire
-        commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
+        commandes.append({'temps':temps,'snap':res,
+                          'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None,
+                          'evt':evtTypeInfos['%s' % temps] if '%s' % temps in evtTypeInfos else None})
     print('-----------------------------------------------------------------------------------------')
     for i in listeBlocks.liste:
         print(i)
@@ -1006,7 +1056,7 @@ class SimpleBlockSnap:
         def replace(init):
             return liste[init] if init in liste else None
         
-        print('trateiemt,n',liste,self.JMLid)
+        aff('trateiemt,n',liste,self.JMLid)
         assert self.JMLid in liste
         blockOrig=self.copy(thetime,action)
         block=self.copy(thetime,action)
@@ -1110,7 +1160,7 @@ class SimpleListeBlockSnap:
         ou un nouveau block
         """
         if block is not None:
-            print('creation',block)
+            aff('creation',block)
             #newb=SimpleBlockSnap(block=block,thetime=thetime)
             """newb=SimpleBlockSnap(block.JMLid,thetime,
                                               blockSpec=block.blockSpec,
@@ -1120,7 +1170,7 @@ class SimpleListeBlockSnap:
                                               rang=block.rang,                                              
                                               action=block.action)"""
             newb=block.copy(thetime,action)
-            print('newb',newb)            
+            aff('newb',newb)            
         else:
             newb=SimpleBlockSnap(JMLid=JMLid,thetime=thetime,
                                               blockSpec=blockSpec,
@@ -1232,9 +1282,18 @@ class SimpleListeBlockSnap:
     def recordDrop(self,spr,thetime):
         """
         ajoute l'action spr dans ll'historique des drops
+        on ajoute aussi un ENV: si DROPEX
         """
         self.idropped+=1
-        self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime,'block':spr.blockId,'target':spr.targetId,'loc':spr.location})
+        try:
+            self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime,
+                                           'blockId':spr.blockId,
+                                           'targetId':spr.targetId,
+                                           'location':spr.location
+                                           })
+        except AttributeError:
+            #c'est un autre type
+            self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime})
         #print('                                           **********')
         #print('                                            insert',self.idropped,self.dropped[self.idropped],spr.blockId,spr.blockSpec)
         #print('                                           **********')
@@ -1315,14 +1374,14 @@ class SimpleListeBlockSnap:
         #on récupère le block
         block=self.lastNode(JMLid, thetime, veryLast=True)
         if block is None:
-            print('pas de block')
+            aff('pas de block')
             return [],''
         if block.typeMorph=='MultiArgMorph':
             #un multiarg n'est qu'une suite de %s
             block.blockSpec='|%s|'*len(block.inputs)
         nom=block.blockSpec    
-        print('block ',nom)
-        print('inputs ',block.inputs)
+        aff('block ',nom)
+        aff('inputs ',block.inputs)
         #on cherche à remplacer les "%trucs" par les inputs 
         #if block.action=='SPR_DEL' and block.time<thetime:
         if block.deleted and block.time<thetime:               
@@ -1365,10 +1424,11 @@ class SimpleListeBlockSnap:
                     i+=1
         else:
             #c'est un CommentMorph
-            change=block.change if block.time==thetime else change
+            change=block.change if block.time==thetime else 'r' #change
         resultat={'JMLid':block.JMLid,
                   'time':thetime,
                   'commande':nom,
+                  'typeMorph':block.typeMorph,
                   'action':block.action if block.time==thetime else '',
                   'change': change,#block.change,
                   'deleted':block.deleted,
@@ -1385,7 +1445,7 @@ class SimpleListeBlockSnap:
         les place au temps theTime (0 par défaut)
         Si withScript, on ajoute un block Script par script 
         """
-        print('item',item.tag,item.items())
+        aff('item',item.tag,item.items())
         if item.tag=='block' or item.tag=='custom-block':
             block=SimpleBlockSnap(item.get('JMLid'),theTime,item.get('typemorph'))
             if 'var' in item.attrib:
@@ -1476,7 +1536,9 @@ class SimpleListeBlockSnap:
                     child=self.addFromXML(b,theTime=theTime)
                     if prevblock is not None:
                         self.setNextBlock(prevblock,child)
-                    block.addWrapped(block=child,rang=rang)                
+                    else:
+                        block.setWrapped(child)
+                        #block.addWrapped(block=child,rang=rang)                                    
                     prevblock=child                
                     rang+=1
                 #block.addWrappedBlock(child)
