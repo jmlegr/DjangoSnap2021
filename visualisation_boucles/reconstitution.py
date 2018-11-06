@@ -111,13 +111,14 @@ def listeblock(request,session_key=None):
     dtime=None
     evtPrec=None
     for evt in evts:
+        print('evt',evt)
         if dtime is None:
             dtime=evt.time
             theTime=0
         theTime=evt.time-dtime        
         evtType=evt.getEvenementType()
         evtTypeInfos['%s' % theTime]={'evenement':evt.id,
-                                      'evnement_type':evt.type,
+                                      'evenement_type':evt.type,
                                       'type':evtType.type}
         history=None #memorise l'état undrop/redrop
         aff('---- temps=',theTime, evt.type,evtType)
@@ -550,29 +551,35 @@ def listeblock(request,session_key=None):
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':                    
                         #c'est un bloc ajouté à la suite d'un autre
-                        newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
-                        #on recupere le prevblock  avant modif
-                        lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
-                        #s'il avait un prevBlock, il faut le mettre à None                    
-                        if lastPrevBlock is not None:
-                            newLastPrevBlock=lastPrevBlock.copy(theTime)
-                            newLastPrevBlock.setNextBlock(None)
-                            listeBlocks.append(newLastPrevBlock)
-                        #on configure le nouveau prevblock
-                        newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
-                        listeBlocks.append(newPrevBlock)
-                        #s'il avait un nextblock, c'est une insertion
-                        if newPrevBlock.nextBlockId is not None:                        
-                            #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
-                            lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
-                            if lastFromNode.JMLid!=newNode.JMLid:
-                                lastFromNode=lastFromNode.copy(theTime)
-                                listeBlocks.append(lastFromNode)
-                            newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
-                            listeBlocks.append(newLastNextBlock)
-                            listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
-                        listeBlocks.setNextBlock(newPrevBlock, newNode)                    
-                        listeBlocks.addTick(theTime)
+                        #on vérifie d'abord s'il n'a pas été remis à sa place
+                        if newNode.prevBlockId=='%s' % spr.targetId:
+                            newNode.change='(%s)reinserted_%s' % (spr.type,spr.location)
+                            #décommenter si on veut prendre en compte quand même cet évènement (hésitation)
+                            #listeBlocks.addTick(theTime)
+                        else:                            
+                            newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
+                            #on recupere le prevblock  avant modif
+                            lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)                    
+                            #s'il avait un prevBlock, il faut le mettre à None                 
+                            if lastPrevBlock is not None:
+                                newLastPrevBlock=lastPrevBlock.copy(theTime)
+                                newLastPrevBlock.setNextBlock(None)
+                                listeBlocks.append(newLastPrevBlock)
+                            #on configure le nouveau prevblock
+                            newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                            listeBlocks.append(newPrevBlock)
+                            #s'il avait un nextblock, c'est une insertion
+                            if newPrevBlock.nextBlockId is not None:                        
+                                #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
+                                lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
+                                if lastFromNode.JMLid!=newNode.JMLid:
+                                    lastFromNode=lastFromNode.copy(theTime)
+                                    listeBlocks.append(lastFromNode)
+                                newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
+                                listeBlocks.append(newLastNextBlock)
+                                listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
+                            listeBlocks.setNextBlock(newPrevBlock, newNode)                    
+                            listeBlocks.addTick(theTime)
                     elif spr.location=='top':
                         #c'est un bloc ajouté avant d'un autre
                         #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
@@ -1417,10 +1424,11 @@ class SimpleListeBlockSnap:
                     i+=1
         else:
             #c'est un CommentMorph
-            change=block.change if block.time==thetime else change
+            change=block.change if block.time==thetime else 'r' #change
         resultat={'JMLid':block.JMLid,
                   'time':thetime,
                   'commande':nom,
+                  'typeMorph':block.typeMorph,
                   'action':block.action if block.time==thetime else '',
                   'change': change,#block.change,
                   'deleted':block.deleted,
@@ -1528,7 +1536,9 @@ class SimpleListeBlockSnap:
                     child=self.addFromXML(b,theTime=theTime)
                     if prevblock is not None:
                         self.setNextBlock(prevblock,child)
-                    block.addWrapped(block=child,rang=rang)                
+                    else:
+                        block.setWrapped(child)
+                        #block.addWrapped(block=child,rang=rang)                                    
                     prevblock=child                
                     rang+=1
                 #block.addWrappedBlock(child)
