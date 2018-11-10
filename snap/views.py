@@ -1037,7 +1037,11 @@ def return_fichier(request):
         # wrapper = FileWrapper(open('media/documents/sierpinski-programme1.xml'))
         wrapper = eleve.prg.file
         # content_type = mimetypes.guess_type(filename)[0]
-        response = HttpResponse(wrapper, content_type='text/xml')
+        try:
+            response = HttpResponse(wrapper, content_type='text/xml')
+        except FileNotFoundError:
+            #le fichier n'existe plus
+            return HttpResponse(json.dumps({'success': False, 'id':request.user.username}), content_type="application/json", status=status.HTTP_404_NOT_FOUND)
         # response['Content-Length'] = os.path.getsize(filename)
         response['Content-Disposition'] = "attachment; filename=%s" % 'gi'
         return response

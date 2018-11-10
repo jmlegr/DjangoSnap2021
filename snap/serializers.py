@@ -99,6 +99,12 @@ class EvenementENVSerializer(serializers.ModelSerializer):
         evt = Evenement.objects.create(user=self.context['request'].user,
                                        session_key=self.context['request'].session.session_key,
                                        **evt_data)
+        if 'type' in validated_data and validated_data['type']=='LOBA':
+            #on recherche l'id du programme de base
+            prg=Eleve.objects.get(user=self.context['request'].user).prg
+            if prg is not None:
+                env=EvenementENV.objects.create(evenement=evt,detail=prg.nom,valueInt=prg.id,**validated_data)
+                return env
         env=EvenementENV.objects.create(evenement=evt,**validated_data)
         return env
 

@@ -70,6 +70,16 @@ class Evenement(models.Model):
         res['time']=self.time
         return res
     
+    def getEvenementType(self):
+        """
+        renvoi le sous evenement (de type ENV, SPR ou EPR)
+        """
+        if self.type==self.ENVIRONNEMENT: return self.environnement.all()[0]
+        elif self.type==self.ETAT_PROGRAMME: return self.evenementepr.all()[0]
+        elif self.type==self.STRUCTURE_PROGRAMME: return self.evenementspr.all()[0]
+        else:
+            raise KeyError(u'Type evenement inconnu (%s)' % self.type)
+        
     def __str__(self):
         return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
     class Meta:
@@ -85,7 +95,7 @@ class EvenementENV(models.Model):
         ('MENU', 'Clic Menu'),
         ('PARAM','Clic Menu paramètres'),
         ('NEW','Nouveau programme vide'),
-        ('LOBA','Chargement programme de Base'),
+        ('LOBA','Chargement programme de Base'), #nom dans detail, id dans valueInt (à la création)
         ('LOVER','Chargement d\'une version sauvegardée'), # id dans detail 
         ('IMPORT','Importation fichier local'), # normalement suivi d'un EPR  LOAD (pas encore) ou/et SPR OPEN
         ('EXPORT','Exportation fichier local'),        
@@ -102,8 +112,8 @@ class EvenementENV(models.Model):
         ('AFFBL','Affichage Blocs'), # category  detail?
         ('AFFVAR','Affichage ou non Variable'), #avec nom en option et valeur en bool   
         ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression 
-        ('UNDROP','Undrop'), #origine dans detail
-        ('REDROP','Redrop'),   
+        #('UNDROP','Undrop'), #origine dans detail
+        #('REDROP','Redrop'),   
         ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) 
         ('POPUP','Ouverture popup'),
         ('AUTRE','(Non identifié)'),
@@ -257,6 +267,8 @@ class EvenementSPR(models.Model):
         ('DROPVAL','Déplacement et insertion d\'une entrée'), #déplacement + remplacement d'une entrée existante (id remplacée dans détailAction
         ('ERR','Erreur'), #erreur détectée, précision dans détail
         ('OPEN','Ouverture de Scripts'),
+        ('UNDROP','Undrop'), #origine dans detail
+        ('REDROP','Redrop'),  
         ('AUTRE','(Non identifié'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementspr')

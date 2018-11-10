@@ -1,0 +1,422 @@
+{% load static %}
+<script src="{% static 'snap/js/jquery-3.2.1.min.js' %}"></script> 
+<script src="{% static 'snap/js/jquery-ui-1.12.1.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'snap/js/jquery-ui.css' %}">
+ 
+ <style type="text/css">
+ .tippy-popper[x-placement^=top] .tippy-tooltip.light-theme .tippy-arrow {
+ border-top:8px solid #fff;
+ border-right:8px solid transparent;
+ border-left:8px solid transparent
+}
+.tippy-popper[x-placement^=bottom] .tippy-tooltip.light-theme .tippy-arrow {
+ border-bottom:8px solid #fff;
+ border-right:8px solid transparent;
+ border-left:8px solid transparent
+}
+.tippy-popper[x-placement^=left] .tippy-tooltip.light-theme .tippy-arrow {
+ border-left:8px solid #fff;
+ border-top:8px solid transparent;
+ border-bottom:8px solid transparent
+}
+.tippy-popper[x-placement^=right] .tippy-tooltip.light-theme .tippy-arrow {
+ border-right:8px solid #fff;
+ border-top:8px solid transparent;
+ border-bottom:8px solid transparent
+}
+.tippy-tooltip.light-theme {
+ color:#26323d;
+ box-shadow:0 0 20px 4px rgba(154,161,177,.15),0 4px 80px -8px rgba(36,40,47,.25),0 4px 4px -2px rgba(91,94,105,.15);
+ background-color:#fff
+}
+.tippy-tooltip.light-theme .tippy-backdrop {
+ background-color:#fff
+}
+.tippy-tooltip.light-theme .tippy-roundarrow {
+ fill:#fff
+}
+.tippy-tooltip.light-theme[data-animatefill] {
+ background-color:transparent
+}
+ table tbody tr:hover {
+    background-color: orange;
+    cursor: pointer;
+}
+.actions {
+    fill:black;
+}
+.actions.tippy-active {
+fill:orange;
+}
+
+.drops.motion {
+    fill:blue;
+}
+.drops.control {
+    fill:orange
+}
+.drops.tippy-active {
+  fill: red;
+}
+.toolTip {
+position: absolute;
+ z-index: 10;
+    visibility: hidden;
+min-width: 80px;
+height: auto;
+background: none repeat scroll 0 0 gainsboro;
+border-radius: 5px;
+border: 2px solid #6F257F;
+padding: 14px;
+text-align: center;
+display: inline-block;
+}
+
+.imagetooltip {
+background: none repeat scroll 0 0 lavender;
+pointer-events: none;
+}
+.block {
+font-size:10;
+}
+.block:hover {
+background-color: yellow;
+}
+.tippy-backdrop {
+  width: 640px !important;
+  }
+.tp {
+    font-size:10;
+    display: block;
+    margin-top: 0em;
+    margin-bottom: 0.1em;
+    margin-left: 0;
+    margin-right: 0;
+}
+.tp.hasimage {
+    text-decoration: underline;
+    text-decoration-color: blue;
+    cursor: pointer;
+}
+</style>
+<body>
+<h1>Visualisation de l'apparition des boucles</h1>
+<h3>Sélection du programme de base</h3>
+
+  <label for="progbase">Choisir un programme de base: </label>
+  <select  list="listeProgBases" id="selectProgBase"></select>
+  <datalist id="listeProgBases">  
+  </datalist>
+  <input type="submit" id="envoiProgBase">
+  
+  <div id="session">
+  <label for="session">Choisir une session: </label>
+  <select  list="listeSessions" id="sessions"></select>
+  <datalist id="listeSessions">  
+  </datalist>
+  <input type="submit" id="envoiSession">
+  </div>
+<div class="ui-widget" style="margin-top:2em; font-family:Arial">
+  Result:
+  <div id="log" style="height: 400px; overflow: auto;" class="ui-widget-content"></div>
+  <svg id="mysvg"></svg>
+</div>
+
+<div class="ui-widget" style="margin-top:2em; font-family:Arial">
+  Actions:
+  <div id="actions" style="height: 200px; overflow: auto;" class="ui-widget-content"></div>
+</div>
+<div id="test" data-tippy-content="<p>1</p><p>1</p><p>1</p><p>1</p><p>5</p>">un test</div>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://unpkg.com/tippy.js@3/dist/tippy.all.min.js"></script>
+<script type="text/javascript">
+  $( document ).ready(function() {      
+    //console.log( "ready!" );
+    $("#session").hide();
+    function log( message ) {
+          $( "<div>" ).text( message ).prependTo( "#log" );
+          $( "#log" ).scrollTop( 0 );
+        }
+    $.getJSON('progs', function(data) {
+       //console.log(data);       
+       $.each(data,function (key,prg){
+           $('#selectProgBase').append("<option value='"+prg.id+"'"+
+               "title='"+prg.description+"'"+
+               ">"+prg.nom+"</option>");
+       }) ;
+       
+       
+    });
+    $("#envoiProgBase").button().click(function(e) {
+     $.getJSON('progs/'+$("#selectProgBase").val()+"/sessions", function(data) {
+         //console.log(data);
+         $("#session").show();
+         $.each(data,function (key,session){
+               //console.log('user:',user.id,'-',user.eleve?user.eleve.classe:'prof');
+               $('#sessions').append("<option value='"+session.evenement.id+"'>"+(new Date(session.evenement.creation)).toUTCString()+"("+session.evenement.user+")"+"</option>");               
+           }) ;
+         
+     })
+    
+    });
+    $("#selectProgBase").change(function() {
+    log("change"+$("#selectProgBase").val())}
+    );
+    $("#envoiSession").button().click(function(e) {
+       //console.log("clic"+$("#sessions").val());
+       $.get('actions/'+$("#sessions").val(), function(data){
+       console.log("recept",data,d3.select("actions"));
+       var index=0; //index horizontal, change si drop/new
+       var vindex=0; //index vertical pour non drop/new
+       var duplicInfos=null; //infos de duplication
+       var otherData=[];
+       var newData=[],
+           newNodes=null;
+       data.forEach(function(d){
+	   //on rajoute unchamps pour accès direct à l'évènement spr/epr/env
+	   switch (d.type){
+           case "EPR": d.infos=d.evenementepr[0]; break;
+           case "SPR": d.infos=d.evenementspr[0]; break;
+           case "ENV": d.infos=d.environnement[0]; break;
+           default: d.infos=null;
+	   }
+	   //enregistrement des infos de duplication
+	   if (d.type=="ENV" && d.environnement[0].type=="DUPLIC") {
+	       duplicInfos=d.environnement[0].detail.split(";").length;
+	   } 
+	   //changement d'index si drop/new
+	   if (d.type=="SPR" && (d.evenementspr[0].type=="DROP" || d.evenementspr[0].type=="NEW")) {
+		  d.index=index;
+		  index+=1;
+		  if (duplicInfos != null) {
+		      d.duplicInfos=duplicInfos;
+		      duplicInfos=null;
+		  }
+		  vindex=0;
+		  if (newNodes!=null) {
+		      newData.push(newNodes);
+		      newNodes=null;
+		  }
+		  newData.push(d);		  
+	    }
+	   else {
+	       //changement de vindex sinon
+	       d.index=index;
+	       d.vindex=vindex;
+	       vindex+=1;
+	       if (newNodes==null) {
+		      newNodes=[d];
+	       } else {
+		      newNodes.push(d);
+	       }
+	   }
+	   });
+       if (newNodes!=null) newData.push(newNodes);
+       console.log('nexdata',newData);
+       var drops=d3.select("#mysvg")
+                .selectAll(".drops")
+                .data(newData.filter(e=>!Array.isArray(e)),function(e){return e.id;})
+       drops.enter().append("rect")
+            .attr("class",d=>"drops "+d.infos.category)            
+            .attr("width",18)
+            .attr("height",10)
+            .attr("x",function(d){return d.index*20})
+            .attr("data-tippy-content",function(d){
+        	    var tooltip=d3.select("#tippytooltipDrop")
+        	    var t=tooltip.selectAll(".drop").data([d],function(e){return e.id});
+        	    t.enter().append("div").attr("class","drop")
+                     .append("p").text(e=>e.infos.type+": "+e.duplicInfos+" bloc"+(e.duplicInfos>1?"s":""))
+                     .append("p").text(e=>e.infos.blockSpec+`(id:${e.infos.blockId})`)                  
+                t.exit().remove();   
+             return tooltip.html()
+            })
+       drops.exit().remove()
+       tippy(".drops",{placement:"bottom",size:'tiny',interactive:false,
+        //trigger:"click",
+        animation:'fade',      
+        onShow(tip){
+       //tip.setContent(d3.select("#tippytooltip").html())
+        //tip.setContent("<p>1</p><p>1</p><p>1</p><p>1</p><p>5</p>")
+       }})
+       
+       var actions=d3.select("#mysvg")
+                .selectAll(".actions")
+                .data(newData.filter(e=>Array.isArray(e)),function(e){return e.id;})
+       actions.enter().append("circle")
+            .attr("class","actions")
+            .attr("r",d=>Math.min(8,2+d.length))
+            .attr("cx",function(d,i){return i*20})
+            .attr("cy",function(d){return 5})            
+            .attr("data-tippy-content",function(d){
+        	   var tooltip=d3.select("#tippytooltip");
+        	   var t=tooltip.selectAll(".tp").data(d);
+               t.enter().append("p").attr("class",e=>"tp "+(e.image.length>0?"hasimage":""))
+                        .attr("nb",(e,i)=>i) //index pour retrouver la donnée
+                     .html(e=>e.type+":"+e.infos.type)
+               t.text(e=>e.type+":"+e.infos.type)
+               t.exit().remove(); 
+               console.log(tooltip)
+        	   return tooltip.html()
+            })
+            actions.exit().remove();
+       tippy(".actions",{placement:"top",size:'tiny',interactive:true,
+	    //trigger:"click",
+	    distance:5,
+	    delay:[100,100],
+	    animation:'fade',      
+	    onShown(tip) {
+		       
+	           s=tippy('.hasimage',{
+	                   theme:'light',                 
+	                   placement:'right',
+	                   delay:200,
+	                   arrow:true,
+	                   arrowType: 'round',
+	                   size: 'large',
+	                   duration: 500,
+	                   animation: 'perspective',
+	                   async onShow(ttip) {                     
+	                       if ( state.isFetching || !state.canFetch) return
+	                       state.isFetching = true
+	                       state.canFetch = false
+	                       try {
+	                	     var image=tip.reference.__data__[ttip.reference.getAttribute("nb")].image[0].image
+	                         const response = await fetch(image)
+	                         const blob = await response.blob()
+	                         const url = URL.createObjectURL(blob)
+	                         if (ttip.state.isVisible) {
+	                           const img = new Image()
+	                           img.width = 300
+	                           img.height = 300
+	                           img.src = url
+	                           ttip.setContent(img)
+	                         }
+	                       } catch (e) {
+	                         ttip.setContent(`Fetch failed. ${e}`)
+	                       } finally {
+	                         state.isFetching = false
+	                       }
+	                     },
+	                     onHidden(ttip) {
+	                       state.canFetch = true
+	                       //ttip.setContent("juste une image")
+	                     }
+	                     
+	                   })
+	       }, 
+       })
+       
+       
+       var blocks=d3.select("#actions")
+        .selectAll(".block")
+        .data(data, function(e){return e.id;}) 
+       blocks
+        .enter().append("p")
+            .attr("class","block")
+            .attr("data-tippy-content",function(d){
+        	    var retour="tooltip de"+d.id+d.infos.type+"-"+(d.image.length>0?"<div class='uneimage' >IMAGE</div>":'pas image');        	   
+        	    return retour})
+            .text(function(d) {
+                switch (d.type){
+                case "EPR": return "état  :"+d.evenementepr[0].type; break;
+                case "SPR": var spr=d.evenementspr[0];
+                            return "statut:"+spr.type+"("+spr.typeMorph+","+spr.blockSpec+")"
+                                     +(d.index==null?"-":d.index)+(d.duplicInfos==null?"/":d.duplicInfos); 
+                            break;
+                case "ENV": return "env.  :"+d.environnement[0].type; break;
+                default: return "inconnu";
+                }
+            })
+         const INITIAL_CONTENT = 'Loading...'
+
+             const state = {
+	   isFetching: false,
+	   canFetch: true
+	    }
+      
+       tippy(".block",{	   
+	   //trigger:"click",
+       delay: 100,
+	   arrow: false,
+	   arrowType: 'round',
+	   size: 'large',
+	   duration: 500,
+	   animation: 'scale',
+	   placement:'top-start',
+	   interactive:true,
+	   onShown(tip) {
+	       var noimage=tip.reference.__data__.image.length==0
+	           if (!noimage) {
+	               var image=tip.reference.__data__.image[0].image
+	               s=tippy('.uneimage',{
+	        	   theme:'light',	              
+	               content:"belle image"+image,
+	               placement:'right',
+	               delay:200,
+	               arrow:true,
+	               arrowType: 'round',
+	               size: 'large',
+	               duration: 500,
+	               animation: 'perspective',
+	               async onShow(tip) {	                   
+	                   if ( state.isFetching || !state.canFetch) return
+	                   state.isFetching = true
+	                   state.canFetch = false
+	                   try {
+	                     const response = await fetch(image)
+	                     const blob = await response.blob()
+	                     const url = URL.createObjectURL(blob)
+	                     if (tip.state.isVisible) {
+	                       const img = new Image()
+	                       img.width = 300
+	                       img.height = 300
+	                       img.src = url
+	                       tip.setContent(img)
+	                     }
+	                   } catch (e) {
+	                     tip.setContent(`Fetch failed. ${e}`)
+	                   } finally {
+	                     state.isFetching = false
+	                   }
+	                 },
+	                 onHidden(tip) {
+	                   state.canFetch = true
+	                   tip.setContent(INITIAL_CONTENT)
+	                 }
+	               })
+	           }
+	           
+	   },
+	  
+
+	 })
+
+
+       blocks.text(function(d) {
+           switch (d.type){
+           case "EPR": return "UPDATEétat  :"+d.evenementepr[0].type; break;
+           case "SPR": return "UPDATEstatut:"+d.evenementspr[0].type; break;
+           case "ENV": return "UPDATEenv.  :"+d.environnement[0].type; break;
+           default: return "UPDATEinconnu";
+           }
+       });
+      blocks.exit().remove();
+       //$("#actions").html(data);
+       },'json')   
+      
+    });
+  
+ });
+  
+  
+
+</script>
+
+<div id="tooltip" class="toolTip"><p>ici tooltip</p></div>
+<div id="tippytooltip" class="toolTip"><strong>Actions intermédiaires</strong>
+</div>
+<div id="tippytooltipDrop" class="toolTip"><strong>Blocks:</strong>
+</div>
+<div id="imagetooltip" class="toolTip imagetooltip"><svg width=300 height=300><image></image></svg></div>
+</body>
