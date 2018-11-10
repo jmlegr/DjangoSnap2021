@@ -233,7 +233,7 @@ def listeblock(request,session_key=None):
                 if dspr.type=="NEW":
                     #c'était une création insérée
                     #newNode=listeBlocks.getNode(spr.blockId,s['time']).copy(theTime,"UNDROPPED_DEL") 
-                    newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action)
+                    newNode=listeBlocks.lastNode(dspr.blockId,theTime,deleted=True).copy(theTime,action)
                     newNode.deleted=True
                     newNode.change="undrop delete"
                     listeBlocks.append(newNode)
@@ -268,7 +268,7 @@ def listeblock(request,session_key=None):
                                 deleted=True
                             else:
                                 deleted=False
-                        newNode=listeBlocks.lastNode(dspr.blockId,theTime,deleted=True).copy(theTime,action)
+                        newNode=listeBlocks.lastNode(dspr.blockId,theTime, deleted=not deleted).copy(theTime,action)
                         newNode.deleted=False
                     else:           
                         deleted=False         
@@ -283,10 +283,11 @@ def listeblock(request,session_key=None):
                         ancienTarget=listeBlocks.lastNode(dspr.targetId,s['time'],veryLast=deleted)
                         nextNode=listeBlocks.lastNode(ancienTarget.nextBlockId,theTime)
                         if nextNode is not None:
-                            nextNode=nextNode.copy(theTime)
+                            nextNode=nextNode.copy(theTime)   
                             listeBlocks.append(nextNode)
                             finScript=listeBlocks.lastNode(nextNode.prevBlockId,theTime).copy(theTime)
                             if finScript.JMLid!=newNode.JMLid:
+                                finScript.deleted=False
                                 listeBlocks.append(finScript)
                             else:
                                 finScript=newNode
@@ -295,6 +296,7 @@ def listeblock(request,session_key=None):
                         ancienNode=listeBlocks.lastNode(dspr.blockId,s['time'],veryLast=deleted)                        
                         if ancienNode.prevBlockId is not None:
                             ancienPrevNode=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            ancienPrevNode.deleted=False
                             listeBlocks.append(ancienPrevNode)
                             listeBlocks.setPrevBlock(newNode,ancienPrevNode)
                         else:
@@ -320,7 +322,7 @@ def listeblock(request,session_key=None):
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
                         newPrev=listeBlocks.lastNode(ancienNode.prevBlockId,theTime)
                         if newPrev is not None:
-                            newPrev=newPrev.copy(theTime)
+                            newPrev=newPrev.copy(theTime)                            
                             listeBlocks.append(newPrev)
                         listeBlocks.setPrevBlock(newNode,newPrev)
                         finScript=listeBlocks.lastNode(target.prevBlockId,theTime).copy(theTime)                        
@@ -370,7 +372,7 @@ def listeblock(request,session_key=None):
                         else:
                             newNode.unwrap()
                         if ancienNode.prevBlockId is not None:
-                            newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime,deleted=True).copy(theTime)
                             listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
                             listeBlocks.append(newAncienPrevBlock)   
                         nextNode=ancienNode                     
@@ -656,10 +658,10 @@ def listeblock(request,session_key=None):
                             newNode.deleted=True
                             newNode.action+=" DEL"   
                             #on place tous ses next à deleted
-                            while newNode.nextBlockId is not None:
-                                newNode=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(theTime)
-                                newNode.deleted=True
-                                listeBlocks.append(newNode)
+                            #while newNode.nextBlockId is not None:
+                            #    newNode=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(theTime)
+                            #    newNode.deleted=True
+                            #    listeBlocks.append(newNode)
                         listeBlocks.addTick(theTime)
                                                     
             elif spr.type=='VAL':
@@ -822,7 +824,7 @@ def listeblock(request,session_key=None):
             
             b=listeBlocks.lastNode(i,temps,veryLast=True)
             aff('  traitement ',i,"b",listeBlocks.liste)
-            if b is None or b.parentBlockId is not None or (b.deleted and not b.action):
+            if b is None or b.parentBlockId is not None or (b.deleted and not b.action) or b.prevBlockId is not None:
                 res.append({'JMLid':i})
                 aff ('pas first')                    
             else:
@@ -1186,10 +1188,11 @@ class SimpleListeBlockSnap:
 
     def lastFromBlock(self,thetime,block):
         """
-        pour un ensemble de blocks aillant block comme block de tête,
+        pour un ensemble de blocks ayant block comme block de tête,
         cherche  le block de fin
         """
         while block.nextBlockId is not None:
+            assert (block.nextBlockId != block.JMLid), "erreur nextBlock %s " % block
             block=self.lastNode(block.nextBlockId,thetime)
         return block
     
