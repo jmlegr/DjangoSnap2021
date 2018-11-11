@@ -1,0 +1,95 @@
+{% load static %}
+<h1>vouzou</h1>
+<script type="text/javascript">
+var csrf_token="{{ csrf_token }}";
+</script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter2/1.4.6/crossfilter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dc/3.0.8/dc.min.js"></script>
+<script src="https://unpkg.com/tippy.js@3/dist/tippy.all.min.js"></script>
+ 
+ -->
+ <script src="{% static 'visualisation_boucles/js/d3.min.js' %}"></script>
+<script src="{% static 'visualisation_boucles/js/crossfilter.min.js' %}"></script>
+<script src="{% static 'visualisation_boucles/js/dc.min.js' %}"></script>
+<script src="{% static 'visualisation_boucles/js/tippy.all.min.js' %}"></script>
+<!--  
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.1/dc.min.css">
+<link rel="stylesheet" href="{% static 'visualisation_boucles/js/selectsessions.css' %}">
+-->
+<link rel="stylesheet" href="{% static 'visualisation_boucles/js/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'visualisation_boucles/js/dc.min.css' %}">
+<link rel="stylesheet" href="{% static 'visualisation_boucles/js/selectsessions.css' %}">
+<body>
+<div id="classeDate" class="dc-chart"></div>
+
+<div id = "selectedClasse" class = "dc-data-count" style = "float: right; padding:1em;">
+    <span class = "filter-count"></span>
+      /
+    <span class = "total-count"></span> 
+      affichés(s) | 
+    <span class="reset" style="visibility: visible;">
+        <a id="resetClasseAnchor">aucun</a> | 
+        <a id="selectAllClasseAnchor" >tous</a>
+    </span>
+</div>
+<div id="selectProgramme" class = "dc-data-count"></div>
+<div id="filterProgramme"  class = "dc-data-count"></div>
+<div id="selectedLines"  class = "dc-data-count" style = "padding:1em;">
+    <span class = "filter-count"></span> 
+    sélectionné(s) 
+    <span class="reset" style="visibility: visible;">
+        <a id="resetSessionsAnchor">aucun</a> | 
+        <a id="selectAllSessionsAnchor">tous</a>
+    </span>
+</div>
+            
+ <div id="visualisation-type" style="clear: both; float: left">
+    <div><label><input type=radio name="operation" value="programmes" checked="true">&nbsp;programme</label></div>
+    <div><label><input type=radio name="operation" value="reperes">&nbsp;reperes</label></div>
+</div>
+
+<div style="float: left">
+      <button class="btn" id="visualiser">visualiser</button>
+</div>
+<span id="graphSujet" class="dc-chart" style="float:right"></span>
+<div id="tableSessions" class="dc-chart">
+    <table class='table table-hover table-striped table-bordered' id='dc-table-graph'>
+        <thead>
+            <tr class='table-header'>
+              <!-- Programmatically insert table headers here -->
+            </tr>
+        </thead>
+    </table>
+</div>
+<div id="piechart" class="dc-chart" style="float:right"></div>
+<div id="tippytooltip" class="toolTip"><strong>Détails</strong>
+</div>
+<div id="overlayDiv" style="overflow: auto;">
+ok
+
+</div>
+
+</body>
+
+<script type="module" src="{% static 'visualisation_boucles/js/main.js' %}"></script>
+<script type="text/javascript">
+(function() {
+    // your page initialization code here
+    // the DOM will be available here
+//alert("charge"+data)
+console.log("lancement")
+d3.timeFormatLocale({
+  "dateTime": "%A, le %e %B %Y, %X",
+  "date": "%d/%m/%Y",
+  "time": "%H:%M:%S",
+  "periods": ["AM", "PM"],
+  "days": ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"],
+  "shortDays": ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."],
+  "months": ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"],
+  "shortMonths": ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."]
+})
+
+ })();
+ </script>

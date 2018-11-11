@@ -363,7 +363,7 @@ def listeblock(request,id=None):
                     resultat['change']='change '+resultat['change']
                 res.append(resultat)
         commandes.append({'temps':temps,'snap':res,'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None})
-    """
+    
     return Response({"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
@@ -383,6 +383,7 @@ def listeblock(request,id=None):
                      #'actions':[a.toD3() for a in actions]
                      "infos":infos,
                      })
+    """
                             
 """
 ********************************************************
