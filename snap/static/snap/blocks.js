@@ -179,12 +179,32 @@ var ScriptFocusMorph;
 
 /**
  * Modification JML (duff,  31 déc. 2017)
+ * 11/11/2018: ajout idObjMap
  **/
 ///ajout unique id
-var objIdMap=new WeakMap, objectCount = 0;
+var objIdMap=new WeakMap, idObjMap=new Map, objectCount = 0;
 function objectId(object){
-  if (!objIdMap.has(object)) objIdMap.set(object,++objectCount);
+  if (!objIdMap.has(object)) {
+      //console.log('<<objects',object.JMLid)
+      //on cherche une id libre
+      while (idObjMap.has(++objectCount)) {
+          //console.log('recherche',objectCount)
+      }
+      //console.log('>>objects',object.JMLid,objectCount,object)
+      objIdMap.set(object,objectCount);
+      idObjMap.set(objectCount,object)
+  }
   return objIdMap.get(object);
+}
+function setIdObject(object,id) {
+   //console.log("set",id)
+   objIdMap.set(object,id)
+   idObjMap.set(id,object)
+}
+function initIdMaps() {
+    objIdMap=new WeakMap();
+    idObjMap=new Map()
+    objectCount = 0;
 }
 /**
  * Fin Modification JML
@@ -2669,7 +2689,7 @@ BlockMorph.prototype.userMenu = function () {
             //dup.JMLid=objectId(dup);
             //replace=myself.JMLid+"-"+dup.JMLid+";"; //chaine de remplacement
             replace="";
-            dup.allChildren().filter(function (block) {        	
+            dup.allChildren().forEach(function (block) {        	
                 if (block instanceof SyntaxElementMorph) {
                     //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
                     replace+=block.JMLid+"-";                    
