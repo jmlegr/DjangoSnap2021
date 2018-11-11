@@ -111,11 +111,12 @@ def listeblock(request,session_key=None):
     dtime=None
     evtPrec=None
     for evt in evts:
-        print('evt',evt)
+        print('evt',evt,evt.type,evt.id)
         if dtime is None:
             dtime=evt.time
             theTime=0
         theTime=evt.time-dtime        
+        
         evtType=evt.getEvenementType()
         evtTypeInfos['%s' % theTime]={'evenement':evt.id,
                                       'evenement_type':evt.type,
@@ -197,7 +198,10 @@ def listeblock(request,session_key=None):
                     c=e.split('-')
                     listeReplace[c[0]]=c[1]                
                 for b in listeReplace:
-                    newBlock,copiedBlock=listeBlocks.lastNode(b,theTime).duplic(listeReplace,theTime,action)                    
+                    bc=listeBlocks.lastNode(b,theTime)
+                    if bc is None:
+                        print("pas bon")
+                    newBlock,copiedBlock=bc.duplic(listeReplace,theTime,action)                    
                     listeBlocks.append(copiedBlock)
                     listeBlocks.append(newBlock)
                     if newBlock.parentBlockId is None:
@@ -268,7 +272,7 @@ def listeblock(request,session_key=None):
                                 deleted=True
                             else:
                                 deleted=False
-                        newNode=listeBlocks.lastNode(dspr.blockId,theTime, deleted=not deleted).copy(theTime,action)
+                        newNode=listeBlocks.lastNode(dspr.blockId,theTime, deleted=True).copy(theTime,action)
                         newNode.deleted=False
                     else:           
                         deleted=False         
@@ -295,7 +299,7 @@ def listeblock(request,session_key=None):
                             finScript=newNode
                         ancienNode=listeBlocks.lastNode(dspr.blockId,s['time'],veryLast=deleted)                        
                         if ancienNode.prevBlockId is not None:
-                            ancienPrevNode=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            ancienPrevNode=listeBlocks.lastNode(ancienNode.prevBlockId,theTime,deleted=not deleted).copy(theTime)
                             ancienPrevNode.deleted=False
                             listeBlocks.append(ancienPrevNode)
                             listeBlocks.setPrevBlock(newNode,ancienPrevNode)
@@ -547,6 +551,7 @@ def listeblock(request,session_key=None):
                     #on vérifie si le block déplacé n'était pas contenu
                     if newNode.conteneurBlockId is not None:
                         lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
+                        lastConteneur.change="youyou"
                         lastConteneur.setWrapped(None)
                         newNode.unwrap()
                         listeBlocks.append(lastConteneur)
@@ -569,11 +574,15 @@ def listeblock(request,session_key=None):
                                 listeBlocks.append(newLastPrevBlock)
                             #on configure le nouveau prevblock
                             newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                            newPrevBlock.change="yaya"
                             listeBlocks.append(newPrevBlock)
                             #s'il avait un nextblock, c'est une insertion
                             if newPrevBlock.nextBlockId is not None:                        
                                 #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
                                 lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
+                                print(lastFromNode.JMLid,newNode.JMLid,(lastFromNode.JMLid!=newNode.JMLid),('%s' % lastFromNode.JMLid!='%s' % newNode.JMLid))
+                                assert (lastFromNode.JMLid==newNode.JMLid or '%s' % lastFromNode.JMLid!='%s' % newNode.JMLid),\
+                                    "Pas le bon formt lst%s new%s" %(type(lastFromNode.JMLid),type(newNode.JMLid))
                                 if lastFromNode.JMLid!=newNode.JMLid:
                                     lastFromNode=lastFromNode.copy(theTime)
                                     listeBlocks.append(lastFromNode)
@@ -824,7 +833,7 @@ def listeblock(request,session_key=None):
             
             b=listeBlocks.lastNode(i,temps,veryLast=True)
             aff('  traitement ',i,"b",listeBlocks.liste)
-            if b is None or b.parentBlockId is not None or (b.deleted and not b.action) or b.prevBlockId is not None:
+            if b is None or b.parentBlockId is not None or (b.deleted and not b.action):# or b.prevBlockId is not None:
                 res.append({'JMLid':i})
                 aff ('pas first')                    
             else:
@@ -993,8 +1002,8 @@ class SimpleBlockSnap:
         !!!ne met pas à jour l'ancien contenu!!! 
         """
         if block is not None:
-            self.wrappedBlockId=block.JMLid
-            block.conteneurBlockId=self.JMLid
+            self.wrappedBlockId='%s' % block.JMLid
+            block.conteneurBlockId='%s' % self.JMLid
             block.prevBlockId=None
         else:
             self.wrappedBlockId=None
@@ -1011,7 +1020,7 @@ class SimpleBlockSnap:
         !!! ne met pas à jour l'ancien conteneur!!!
         """
         if block is not None:
-            self.conteneurBlockId=block.JMLid
+            self.conteneurBlockId='%s' % block.JMLid
             block.setWrapped(self)
         else:
             self.conteneurBlockId=None
@@ -1068,6 +1077,7 @@ class SimpleBlockSnap:
         block.parentBlockId=replace(block.parentBlockId)
         block.lastModifBlockId=None
         block.conteneurBlockId=replace(block.conteneurBlockId)
+        block.wrappedBlockId=replace(block.wrappedBlockId)
         for i in block.inputs:
             block.inputs[i]=replace(block.inputs[i])
         for i in block.wrapped:
@@ -1081,11 +1091,11 @@ class SimpleBlockSnap:
         fixe le nextblock ,
         et ajuste le prevBlock de block
         """
-        change=(self.nextBlockId!=block)
+        change=(self.nextBlockId!=block.JMLid  if block is not None else block)
         if change: self.change+=' nextchange'
         if block is not None:
-            self.nextBlockId=block.JMLid
-            block.prevBlockId=self.JMLid
+            self.nextBlockId='%s' % block.JMLid
+            block.prevBlockId='%s' % self.JMLid
             if change: block.change+=' prevchange'
         else:
             self.nextBlockId=None            
@@ -1096,11 +1106,11 @@ class SimpleBlockSnap:
         fixe le prevBlock ,
         et ajuste le nextblock de block
         """
-        change=(self.prevBlockId!=block)
+        change=(self.prevBlockId!=block.JMLid if block is not None else block)
         if change: self.change+=' prevchange'
         if block is not None:
-            self.prevBlockId=block.JMLid
-            block.nextBlockId=self.JMLid
+            self.prevBlockId='%s' % block.JMLid
+            block.nextBlockId='%s' % self.JMLid
             if change: block.change+=' nextchange'
         else:
             self.prevBlockId=None        
@@ -1147,6 +1157,11 @@ class SimpleListeBlockSnap:
     
     def append(self,block):
         """ ajoute un block dans la liste """
+        #on vérifie s'il a déjà été ajouté
+        ancBlocks=[b for b in self.liste if b.JMLid==block.JMLid and b.time==block.time]
+        if len(ancBlocks)>0:
+            print("ouilleleou")
+        #assert (len(ancBlocks)==0), "Block déjà existant %s à %s" % (block.JMLid,block.time)            
         self.liste.append(block)
                 
     def addSimpleBlock(self,thetime,block=None,
@@ -1191,9 +1206,15 @@ class SimpleListeBlockSnap:
         pour un ensemble de blocks ayant block comme block de tête,
         cherche  le block de fin
         """
+        p=0
         while block.nextBlockId is not None:
+            print(".",block.nextBlockId,block.JMLid)
             assert (block.nextBlockId != block.JMLid), "erreur nextBlock %s " % block
             block=self.lastNode(block.nextBlockId,thetime)
+            p+=1
+            if p>10:
+                print("ouille")
+        print('---')
         return block
     
     def setFirstBlock(self,block):
@@ -1251,7 +1272,7 @@ class SimpleListeBlockSnap:
                 return retour
             return None if retour.deleted else retour
         return None
-    
+            
     def listeJMLid(self,thetime,veryLast=False):
         """
         Renvoie la liste des JMLid existant avant ou au temps thetime

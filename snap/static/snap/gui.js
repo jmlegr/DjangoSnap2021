@@ -3044,7 +3044,8 @@ IDE_Morph.prototype.projectMenu = function () {
 					alert( "Programme non existant" );
 				    }
 				},
-				success: function upon_success(xml) {                                    
+				success: function upon_success(xml) {   
+				    initIdMaps()
 				    var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
 				    sendEvenement('EPR',{type:'LOAD',detail:name});
 				    // sendEvt({type:"LOAD",click:false,detail:name},url='env/');
@@ -3094,7 +3095,9 @@ IDE_Morph.prototype.projectMenu = function () {
 				    url: "fichier/" + file_id,
 				    dataType: "xml",
 				    success: function upon_success(xml) {
+				        
 					var name=xml.getElementsByTagName('project')[0].attributes['name'].value;
+					initIdMaps()
 					sendEvenement('EPR',{type:'LOAD',detail:file_id});
 
 					// console.log('xml
@@ -4321,6 +4324,9 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
 	if (isNaN(block.JMLid)) {
 	    console.log('NAN Trouvé sur',block.constructor.name)
 	    block.JMLid=objectId(block)
+	} else {
+	    //on enregistre le JMLid
+	    setIdObject(block,block.JMLid)
 	}
 	block.JMLdroppedId=block.JMLid
 	//console.log('>',block.JMLid,block,block.inputs?block.inputs():'pasinputs',block.nextBlock?block.nextBlock():'--',block.constructor.name);
@@ -4404,6 +4410,7 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
     }
     // console.log('scripts:',scripts);
     // console.info(JSON.stringify(scripts));
+    console.log("idmap",idObjMap)
     sendEvenement('SPR',{type:'OPEN',scripts:scripts});
 }
 /*
@@ -5114,7 +5121,8 @@ IDE_Morph.prototype.createNewProject = function () {
 		     */
 		    // function () {myself.newProject(); }
 		    function () {
-		sendEvenement('ENV',{type:'NEW'});            
+		sendEvenement('ENV',{type:'NEW'});   
+		initIdMaps()
 		myself.newProject(); 
 	    }
 	    /**
