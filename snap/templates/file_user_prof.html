@@ -5,26 +5,62 @@
               integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
               crossorigin="anonymous"></script>
               <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<h3>Liste des fichiers de {{user.username}}</h3>
-<table align="left">
-{% for file in files %}
-<tr>
-<td><input type="radio" id={{file.id}} name="file" value="{{file.id}}" ></td>
-<td> <div>
-        <b>{{file.user.username}} - {{file.description}}</b> 
-    </div>
-    <div>
-        <span style="font-size:70%">({{file.uploaded_at}})</span>
-    </div>
-</td>
-</tr>
-{% endfor %}
-</table>
+ <script src="{% static 'visualisation_boucles/js/d3.min.js' %}"></script>
+<script src="{% static 'visualisation_boucles/js/crossfilter.min.js' %}"></script>
+<script src="{% static 'visualisation_boucles/js/dc.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'visualisation_boucles/js/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'visualisation_boucles/js/dc.min.css' %}">
+<h3>Fichiers sauvegardés ({{user.username}})</h3>
+
+<div id="selectClasse">    
+</div>
+<div id="selectEleve">   
+</div>
+<div id="selectFic">   
+</div>
 <script>
-<!--
-$( "input[name=file]:radio" ).change(function(){
-	console.log('change',$(this).attr('id'));
-	console.log('_>',$( "input[name=file]:checked" ).val());
-	})
--->
+var selectClasse=dc.selectMenu("#selectClasse"),
+    selectEleve=dc.selectMenu("#selectEleve"),
+    selectFic=dc.selectMenu("#selectFic");
+    
+var data=[
+
+{% for file in files%}
+{ 'classe':"{{file.user.eleve.classe.nom}}",
+    'user':"{{file.user.username}}",
+    'nom': "{{file.description}}", 
+    'date':"{{file.uploaded_at}}",
+    'id':"{{file.id}}"
+    
+},
+{%endfor%}
+]
+var sepFic="_-_"
+var ndx=crossfilter(data), ngdx=crossfilter(data)    
+    classeDim=ndx.dimension(d=>d.classe),
+    eleveDim=ndx.dimension(d=>d.user),
+    ficDim=ndx.dimension(d=>d.id+sepFic+d.nom+sepFic+d.date)
+ 
+selectClasse
+   .dimension(classeDim)
+   .group(classeDim.group())
+   //.promptText("toutes les classes")
+   .numberVisible(16)
+   .title(d=>(d.key==''?"(aucune)":d.key)+" ("+d.value+")")
+selectEleve
+   .dimension(eleveDim)
+   .group(eleveDim.group())
+   .numberVisible(16)
+   .title(d=>d.key+" ("+d.value+")")
+selectFic
+   .dimension(ficDim)
+   .group(ficDim.group())
+   .title(function(d) {
+       let s=d.key.split(sepFic)
+       return s[1]+" ("+s[2]+")"
+   })
+   .numberVisible(16)
+    .controlsUseVisibility(true)
+
+dc.renderAll()
 </script>
