@@ -3081,11 +3081,14 @@ IDE_Morph.prototype.projectMenu = function () {
 		    // autoOpen: false,
 		    title:"Charger un programme",
 		    height: 400,
-		    width: 350,
+		    width: 600,
 		    modal: true,
 		    buttons: {    			       
 			"Charger":function () {
-			    file_id=$("input[name=file]:checked" ).val();
+                //file_id=$("input[name=file]:checked" ).val();
+			    //console.log("filtre",ficDim.top(5),ndx.allFiltered())
+			    //ficDim est les dimension contenant le fichier choisi
+			    file_id=ficDim.top(1)[0].id
 			    if (file_id) {
 				// envoi de l'evenement
 				sendEvenement('ENV',{type:'LOVER',detail:file_id});
@@ -4410,7 +4413,7 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
     }
     // console.log('scripts:',scripts);
     // console.info(JSON.stringify(scripts));
-    console.log("idmap",idObjMap)
+    //console.log("idmap",idObjMap)
     sendEvenement('SPR',{type:'OPEN',scripts:scripts});
 }
 /*
