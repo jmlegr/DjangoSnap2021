@@ -54,17 +54,31 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
     let links = []
     const width = 150,
         height = 150;
-    const dy=(height-10)/nodes.length 
+    const dy=(height-15)/(nodes.length-1)
+    
+    let dtime=null
     //construction des liens
     nodes.forEach(function (node, index) {
+        if (index==0) {
+            dtime=node.evenement.time   
+            node.dtime=0
+            
+        }
+        node.elapsedTime=Math.round((node.evenement.time-dtime)/1000)
+        //console.log(index,node.elapsedTime)
         node.id = node.evenement.id
-        node.fy=index*dy-height/2+10
+        //node.fy=index*dy-height/2+10
+        node.y=index*dy-height/2+10
         node.x=0
-        if (index > 0) links.push({
-            source: nodes[index - 1],
-            target: node,
-            type: "next"
-        })
+        if (index > 0) {
+            let prev=nodes[index - 1]
+            node.dtime=node.elapsedTime-prev.elapsedTime
+            links.push({
+                source: prev,
+                target: node,
+                type: "next"
+            })
+        }
         if (node.type == "SAVE") {
             node.sujet = getSujet(user, node, nodes)
             links.push({
@@ -111,7 +125,7 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
     })
     //on ajoute le temps
     links.forEach(function (l) {
-        l.temps = Math.round((new Date(l.target.evenement.creation) - new Date(l.source.evenement.creation)) / 1000)
+        l.temps = Math.round((new Date(l.target.evenement.time) - new Date(l.source.evenement.time)) / 1000)        
     })
     //console.log("user", user, nodes, links, reperes)
     
@@ -218,7 +232,9 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
                                             data.snapshot.image.lastIndexOf('_')+1)
                                     +"</p>":"")
                     +"<p>"+data.type+" <i>"+(data.detail?data.detail:"")+"<i></p>"
-                    +"<p><strong>"+data.sujet+"</strong> id "+data.id+"<p>"
+                    +"<p><strong>"+data.sujet+"</strong> id "+data.id+"</p>"
+                    +"<p>"+formatSecondsToHMS(data.elapsedTime)+"</p>"
+                    +"<p>+"+formatSecondsToHMS(data.dtime)+"</p>"
             },
             onShown(tip) {
                 
@@ -290,12 +306,12 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
 
     function forceSimulation(nodes, links) {
         return d3.forceSimulation(nodes)
-            //.force("y", d3.forceY().y(d => nodes.indexOf(d) * 20))
-            .force("x", d3.forceX().strength(d => d.type == "NEW" || (d.type == "LOAD" && d.detail == undefined) ? 0.5 : 0.1))
+            .force("y", d3.forceY().y(d => nodes.indexOf(d)*dy-height/2+10).strength(0.9))
+            //.force("x", d3.forceX().strength(d => d.type == "NEW" || (d.type == "LOAD" && d.detail == undefined) ? 0.5 : 0.1))
             .force("link", d3.forceLink(links)
                     .id(d => d.id)
-                    .distance(d=>d.type=="next"?dy:dy*2)
-                    .strength(d=>d.type=="next"?0.8:0.1))
+                    .distance(d=>d.type=="next"?dy+d.temps/10:dy)
+                    .strength(d=>d.type=="next"?0.9:0.0))
             //.force("charge", d3.forceManyBody())
             //.force("center", d3.forceCenter())
             .force("collide", d3.forceCollide(10));
