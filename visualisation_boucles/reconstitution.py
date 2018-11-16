@@ -961,7 +961,17 @@ class SimpleBlockSnap:
     def changeValue(self,value):
         self.contenu=value
         self.change+=" changed"
-        
+    
+    def getNom(self):
+        if self.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+            nom= "%s" % self.contenu if self.contenu is not None else None
+        elif self.typeMorph in['ReporterBlockMorph',]:
+            nom= "<%s>" %self.blockSpec
+        else:
+            nom= "%s" % self.blockSpec        
+        #return '(%s_%s)%s' %(self.JMLid,self.time,nom)
+        return '%s' %(nom)
+    
     def getValue(self,toHtml=False):
         if self.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
             nom= "%s" % self.contenu if self.contenu is not None else None

@@ -81,7 +81,9 @@ class Evenement(models.Model):
             raise KeyError(u'Type evenement inconnu (%s)' % self.type)
         
     def __str__(self):
-        return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
+        #return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
+        return '(%s) %s n°%s %s' % (self.user,self.get_type_display(),self.numero,self.getEvenementType().type)
+    
     class Meta:
         ordering=('-creation',)
 
