@@ -25,10 +25,18 @@ const affActions=function(data,div="actionsDiv") {
             let evenement="("+d.numero+")"
             switch (d.type){
                 case "EPR": evenement+="état  :"+d.data.type; break;
-                case "SPR": evenement+="statut:"+d.data.type+"("+d.data.typeMorph+","+d.data.blockSpec+")"
-                                 +(d.hindex==null?"-":d.hindex)+(d.duplicInfos==null?"/":d.duplicInfos); 
+                case "SPR": evenement+="statut:"+d.data.type//+"("+d.data.typeMorph+","
+                                +d.data.blockSpec+")"
+                                +(d.data.blockId?" block:"+d.data.blockId:"")
+                                +(d.data.targetId?" target:"+d.data.targetId:"")
+                                +(d.data.detail?" detail"+d.data.detail:"")                                        
+                                 //+(d.hindex==null?"-":d.hindex)
+                                 +(d.duplicInfos==null?"/":d.duplicInfos); 
+                            
                         break;
-                case "ENV": evenement+="env.  :"+d.data.type; break;
+                case "ENV": evenement+="env.  :"+d.data.type
+                                        +(d.data.detail?" detail"+d.data.detail:"")
+                            break;
                 default: "inconnu";            
             }
             return  evenement

@@ -4770,9 +4770,11 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
     	//console.info('userdestroyjustthis script'+JSON.stringify(this,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
         scripts.clearDropInfo();
         scripts.lastDroppedBlock = this;
+        scripts.lastDroppedBlock.JMLfrom='DropDel'
         scripts.recordDrop(this.situation());
         scripts.dropRecord.lastNextBlock = nb;
         scripts.dropRecord.action = 'delete';
+        scripts.dropRecord.JMLfrom='justhis'
         var donnee=new scripts.donnee(scripts.dropRecord);
         //console.info('userdestroyjustthis script'+JSON.stringify(donnee));
         
@@ -6983,9 +6985,17 @@ ScriptsMorph.prototype.donnee = function(record) {
 	    }
 	    switch (record.action) {
 		   case 'creation': data['type']='NEW'; break;
-		   case 'delete': data['type']='DEL'; break;
+		   case 'delete': data['type']='DEL'; 
+		                   if (record.lastDroppedBlock.JMLfrom) {
+		                       data['detail']=record.lastDroppedBlock.JMLfrom
+                           }		                  
+		                  break;
 		   case 'deplacement':
-		   case null: data['type']='DROP'; break;
+		   case null: data['type']='DROP';
+		           if (record.lastDroppedBlock.JMLfrom && record.lastDroppedBlock.JMLfrom=='DropDel') {
+		               data['detail']=record.lastDroppedBlock.JMLfrom
+		           }
+		               break;
 		   case 'valeur': {
 		       data['type']='VAL'; 
 		       data['detail']=record.detailAction;
@@ -7167,8 +7177,8 @@ ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
     	record.lastDroppedBlock.JMLid=objectId(record.lastDroppedBlock);
     	record.lastDroppedBlock.JMLdroppedId=objectId(record.lastDroppedBlock);
      	record.action="creation";
+     	
      }
-    
     /**
      * Fin Modification JML
      **/

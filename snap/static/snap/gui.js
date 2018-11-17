@@ -1242,7 +1242,8 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 	    sendEvenement(type='ENV',
 		    data={type:'DROPEX',detail:"block",
 		    valueChar:droppedMorph.selector,
-		    valueInt:droppedMorph.id
+		    //valueInt:droppedMorph.id
+		    valueInt:droppedMorph.JMLid
 	    });
 	    droppedMorph.JMLfrom='DropBlock';
 	    /**
