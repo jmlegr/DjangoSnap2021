@@ -7145,6 +7145,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    //this.lastDroppedBlock.inputs=inputs;  
     	    //console.log('data',data)
     	    sendEvenement('SPR',data);
+    	    record.lastDroppedBlock.JMLfrom=null
     	    //sendJsonData(this);
 	}
     
