@@ -1780,7 +1780,7 @@ SpriteMorph.prototype.variableBlock = function (varName) {
 
 SpriteMorph.prototype.blockTemplates = function (category) {
     var blocks = [], myself = this, varNames, button,
-        cat = category || 'motion', txt,
+        cat = category || 'motion', txt,    
         inheritedVars = this.inheritedVariableNames();
 
     function block(selector, isGhosted) {
@@ -7003,7 +7003,7 @@ StageMorph.prototype.editScripts = function () {
 
 StageMorph.prototype.blockTemplates = function (category) {
     var blocks = [], myself = this, varNames, button,
-        cat = category || 'motion', txt;
+        cat = category || 'motion', txt;        
 
     function block(selector) {
         if (myself.hiddenPrimitives[selector]) {

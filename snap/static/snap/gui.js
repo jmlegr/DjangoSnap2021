@@ -225,7 +225,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.globalVariables = new VariableFrame();
     this.currentSprite = new SpriteMorph(this.globalVariables);
     this.sprites = new List([this.currentSprite]);
-    this.currentCategory = 'motion';
+    this.currentCategory = 'motion'; //this.currentCategory = 'motion';
     this.currentTab = 'scripts';
     this.projectName = '';
     this.projectNotes = '';
@@ -1147,7 +1147,7 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
     // assumes that the logo pane has already been created
     // needs the categories pane for layout
     var myself = this;
-
+    
     if (this.palette) {
 	this.palette.destroy();
     }
@@ -1283,6 +1283,7 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 
     this.palette.setWidth(this.logo.width());
     this.add(this.palette);
+    //console.log("palette",this.palette,forSearching)
     return this.palette;
 };
 
