@@ -2732,6 +2732,27 @@ BlockMorph.prototype.userMenu = function () {
                     ide = myself.parentThatIsA(IDE_Morph),
                     blockEditor = myself.parentThatIsA(BlockEditorMorph);
                 if (nb) {nb.destroy(); }
+                /**
+                 * Modification JML (duff,  1 déc. 2018)
+                 **/
+                replace="";
+                cpy.allChildren().forEach(function (block) {            
+                    if (block instanceof SyntaxElementMorph) {
+                        //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
+                        replace+=block.JMLid+"-";                    
+                        block.JMLid=objectId(block);
+                        block.JMLdroppedId=block.JMLid; //on considère qu'ils sont déjà droppés
+                        replace+=block.JMLid+";";
+                    }
+                });
+                sendEvenement('ENV',{type:'DUPLIC',click:true,
+            detail:replace, 
+            valueInt:myself.JMLid,
+            valueBool:true});
+                /**
+                 * Fin Modification JML
+                 **/
+
                 cpy.pickUp(world);
                 if (!ide && blockEditor) {
                     ide = blockEditor.target.parentThatIsA(IDE_Morph);

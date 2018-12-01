@@ -116,7 +116,7 @@ class EvenementENV(models.Model):
         ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression 
         #('UNDROP','Undrop'), #origine dans detail
         #('REDROP','Redrop'),   
-        ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) 
+        ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) , valueBool=vrai si un seul bloc
         ('POPUP','Ouverture popup'),
         ('AUTRE','(Non identifié)'),
         )
