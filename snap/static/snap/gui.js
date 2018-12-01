@@ -2199,7 +2199,7 @@ IDE_Morph.prototype.stopAllScripts = function () {
      */
     sendEvenement(type='ENV',data={type:'STOP',detail:'button',valueChar:'all'});
     var ide = this.parentThatIsA(IDE_Morph);
-    //ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
+    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
 
     /**
      * Fin Modification JML
@@ -3030,11 +3030,17 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Charger le programme de la séance',
 	    function () {
+	        if (jml.SpriteEditorAtLoad) {
+	            var ide = myself.parentThatIsA(IDE_Morph);
+	            var img=ide.spriteEditor.fullImageClassic()
+	            ide.uploadCanvas(img,'LOBA');
+	        }
 		this.confirm(
 			'Remplacer le projet actuel par le programme de base?',
 			'Charger le programme',
 			function () {
 			    // envoi de l'evemenent
+			    
 			    sendEvenement('ENV',{type:'LOBA'})
 			    // requete du fichier
 			    $.ajax({
@@ -3077,6 +3083,11 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Charger un de mes programmes...',
 	    function() {
+	        if (jml.SpriteEditorAtLoad) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'LOVER');
+            }
 		var dialog=$( '#trucdialog' );    			
 		dialog.html('<b>En attente....</b>');
 		dialog.dialog({
@@ -3150,6 +3161,11 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Sauvegarder le programme...',
 	    function () {
+	        if (jml.SpriteEditorAtSave) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'SAVE');
+            }
 		if (myself.projectName) {
 		    myself.exportProjectToDjango(myself.projectName, shiftClicked);
 		} else {                    
@@ -3182,6 +3198,11 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Import...',
 	    function () {
+	        if (jml.SpriteEditorAtLoad) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'IMPORT');
+            }
 		var inp = document.createElement('input');
 		if (myself.filePicker) {
 		    document.body.removeChild(myself.filePicker);
@@ -3229,6 +3250,11 @@ IDE_Morph.prototype.projectMenu = function () {
 			'Export project...') + ' ' + localize('(in a new window)'
 			),
 			function () {
+		    if (jml.SpriteEditorAtSave) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'EXPORT');
+            }
 		    if (myself.projectName) {
 			myself.exportProject(myself.projectName, shiftClicked);
 		    } else {
@@ -3245,7 +3271,11 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    shiftClicked ?
 		    'Export project as plain text...' : 'Export project...',
-		    function () {
+		    function () { if (jml.SpriteEditorAtSave) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'EXPORT');
+            }
 			if (myself.projectName) {
 			    myself.exportProject(myself.projectName, shiftClicked);
 			} else {
@@ -4744,7 +4774,9 @@ IDE_Morph.prototype.saveFileAs = function (
  * Modification JML (duff, 17 févr. 2018)
  */
 IDE_Morph.prototype.uploadCanvas = function (canvas,detail='') {
-    sendEvenement('EPR',{type:'SNP',image64:canvas.toDataURL(),detail:detail});
+    if (jml.userGroup!='prof') {
+        sendEvenement('EPR',{type:'SNP',image64:canvas.toDataURL(),detail:detail});
+        }
 }
 /**
  * Fin Modification JML
@@ -5118,6 +5150,18 @@ IDE_Morph.prototype.setPaletteWidth = function (newWidth) {
 
 IDE_Morph.prototype.createNewProject = function () {
     var myself = this;
+    /**
+     * Modification JML (duff,  1 déc. 2018)
+     **/
+    if (jml.SpriteEditorAtLoad) {
+        var ide = myself.parentThatIsA(IDE_Morph);
+        var img=ide.spriteEditor.fullImageClassic()
+        ide.uploadCanvas(img,'NEW');
+    }
+    /**
+     * Fin Modification JML
+     **/
+
     this.confirm(
 	    'Replace the current project with a new one?',
 		    'New Project',
