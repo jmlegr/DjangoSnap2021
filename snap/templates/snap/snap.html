@@ -26,6 +26,9 @@
 		  jml.SnapAtStart= false
 		  jml.SpriteEditorAtLoad=true
 		  jml.SpriteEditorAtSave=true
+          jml.isProf=function () {
+              return (userGroup=="prof")
+          }
 		  //console.info("csrf"+csrf_token,"grup",userGroup);
 		//Test envoi
 		function sendAjaxData(data) {
