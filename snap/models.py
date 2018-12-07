@@ -188,6 +188,7 @@ class EvenementEPR(SnapProcess):
         ('NEW','Nouveau programme vide'),
         ('LOAD','Programme chargé'), # id dans detail si LOVER, nom du prg de base si LOBA
         ('SAVE','Programme sauvegardé'),
+        ('SAVEO','Sauvegarde automatique'), # time(bigint)  dans detail
         ('START','Lancement'),
         ('STOP','Arrêt'), #arrêt manuel
         ('FIN','Terminaison'),
@@ -373,6 +374,7 @@ class InfoReceived(models.Model):
 
 
 class Document(models.Model):
+    autosave=models.BooleanField(default=False)
     description = models.CharField(max_length=255, blank=True)
     user=models.ForeignKey(User,null=True,on_delete=models.CASCADE)
     document = models.FileField(upload_to=user_directory_path)

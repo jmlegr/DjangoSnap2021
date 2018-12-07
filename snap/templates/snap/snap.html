@@ -23,9 +23,10 @@
 		  
 		  const jml={};
 		  jml.userGroup=userGroup
-		  jml.SnapAtStart= false
-		  jml.SpriteEditorAtLoad=true
+		  jml.SnapAtStart= true
+		  jml.SpriteEditorAtLoad=false
 		  jml.SpriteEditorAtSave=true
+		  jml.autoSave=true
           jml.isProf=function () {
               return (userGroup=="prof")
           }
@@ -87,7 +88,7 @@
 		</script>
 		<script type="text/javascript">
 		//ajout JML
-		var UploadXML = function(xml,name,projectNotes='',base=false) {
+		var UploadXML = function(xml,name,projectNotes='',base=false,autoSave=false) {
 		    var form = new FormData();
 		  
 		    // getCookie: https://docs.djangoproject.com/en/dev/ref/csrf/#acquiring-the-token-if-csrf-use-sessions-is-false
@@ -99,6 +100,8 @@
 		    } else {
 			 form.append('description',name);
 		    }
+		    form.append('autosave',autoSave)
+		    
 		    var blob = new Blob([xml], { type: "text/xml"});
 		    form.append('document',blob,userName+"_"+name.replace(/\W+/g,"_")+".xml");
 		    
@@ -117,7 +120,7 @@
 		        },
 		        success: function (response) {
 		            //$('.upload-progress').hide();
-		            sendEvenement('EPR',{type:'SAVE',detail:response.id});
+		            sendEvenement('EPR',{type:autoSave?'SAVEO':'SAVE',detail:response.id});
 		            //console.log('reponse',response);		            
 		        },
 		        error: function(response) {
