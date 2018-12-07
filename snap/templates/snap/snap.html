@@ -143,33 +143,41 @@
             default: url='evenement/'; break;            
             }
         }
-        
-        $.ajax({
-            url: url,
-            type: 'POST',
-            headers:{"X-CSRFToken":"{{ csrf_token }}"},
-            data: JSON.stringify(json),
-            async: true,
-            cache: false,
-            contentType: 'application/json',
-            dataType: 'json',
-	    timeout: 180000,
-            //processData: true,
-            beforeSend: function() {
-                console.log('Uploading...',json);
-                //console.log('Uploading...');
-                //$('.upload-progress').show();
-                },
-            success: function (response) {
-            //$('.upload-progress').hide();
-                console.log('reponse recue, id=',response.id);                    
-                },
-            error: function(response) {
-                console.log("error", response);
-                alert('oups, quelque chose n\'a pas fonctionné\n'+response.responseText);
-                $('.upload-progress').hide();
-            }
-         }); 
+        function sendRequest(secs=3,nb=60) {
+	        $.ajax({
+	            url: url,
+	            type: 'POST',
+	            headers:{"X-CSRFToken":"{{ csrf_token }}"},
+	            data: JSON.stringify(json),
+	            async: true,
+	            cache: false,
+	            contentType: 'application/json',
+	            dataType: 'json',
+		    timeout: 180000,
+	            //processData: true,
+	            beforeSend: function() {
+	                console.log('Uploading...',json);
+	                //console.log('Uploading...');
+	                //$('.upload-progress').show();
+	                },
+	            success: function (response) {
+	            //$('.upload-progress').hide();
+	                console.log('reponse recue, id=',response.id);                    
+	                },
+	            error: function(response) {
+	                //console.log("error", response);
+	                if (nb>0) {
+	                    console.log('erreur de réception. envoi encore dans ',secs,'s, reste ',nb-1,' essai(s)')
+	                    setTimeout(()=>{
+	                        sendRequest(secs,nb-1)},secs*1000)
+	                } else {
+	                    alert('oups, quelque chose n\'a pas fonctionné\n'+response.responseText);
+	                }
+	                $('.upload-progress').hide();
+	            }
+	         });
+        }
+        sendRequest()
         return false;
         {% else %}
         console.log("Prof ou admin connecté");
