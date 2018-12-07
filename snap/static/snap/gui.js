@@ -3101,7 +3101,12 @@ IDE_Morph.prototype.projectMenu = function () {
                 //file_id=$("input[name=file]:checked" ).val();
 			    //console.log("filtre",ficDim.top(5),ndx.allFiltered())
 			    //ficDim est les dimension contenant le fichier choisi
-			    file_id=ficDim.top(1)[0].id
+			    if (jml.isProf()) {
+			        file_id=ficDim.top(1)[0].id			        
+			    } else {
+			        file_id=$("input[name=file]:checked" ).val();
+			    }
+			    
 			    if (file_id) {
 				// envoi de l'evenement
 				sendEvenement('ENV',{type:'LOVER',detail:file_id});
