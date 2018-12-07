@@ -663,6 +663,38 @@ def listeblock(request,session_key=None):
                             newLastPrevBlock=lastPrevBlock.copy(theTime)
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.append(newLastPrevBlock)  
+                            if spr.detail=="DropDel":
+                                #si c'est un drop précédent un del (dropdel), seul le bloc est déplacé, 
+                                #il faut mettre à jour prevblock et nextblock
+                                nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
+                                if nextBlock is not None:
+                                    newNextBlock=nextBlock.copy(theTime)
+                                    listeBlocks.append(newNextBlock)
+                                    newLastPrevBlock.setNextBlock(newNextBlock)
+                        else:
+                            #c'est un bloc de tête, on vérifie s'il n'était pas wrapped
+                            lastParentBlock=listeBlocks.lastNode(newNode.parentBlockId, theTime)
+                            if lastParentBlock is not None:
+                                newLastParentBlock=lastParentBlock.copy(theTime)
+                                newLastParentBlock.removeWrapped()
+                                listeBlocks.append(newLastParentBlock)                                  
+                                if spr.detail=="DropDel":
+                                    #si c'est un drop précédent un del (dropdel), seul le bloc est déplacé, 
+                                    #il faut mettre à jour le contenu et nextblock
+                                    nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
+                                    if nextBlock is not None:
+                                        newNextBlock=nextBlock.copy(theTime)
+                                        newNextBlock.setPrevBlock(None)
+                                        listeBlocks.append(newNextBlock)
+                                        newNextBlock.setWrapped(newLastParentBlock)                                        
+                            elif spr.detail=="DropDel":
+                                #on met à jour l'éventuel nextblock en cas de dropdel
+                                nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
+                                if nextBlock is not None:
+                                    newNextBlock=nextBlock.copy(theTime)
+                                    newNextBlock.setPrevBlock(None)
+                                    listeBlocks.append(newNextBlock)
+                                    
                         if deleted:
                             newNode.deleted=True
                             newNode.action+=" DEL"   
@@ -1024,6 +1056,12 @@ class SimpleBlockSnap:
         """
         self.conteneurBlockId=None
     
+    def removeWrapped(self):
+        """
+        supprime le contenu (pas de maj)
+        """
+        self.wrappedBlockId=None
+        
     def setConteneur(self,block):
         """ 
         met le block comme conteneur de self
