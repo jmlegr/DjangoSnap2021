@@ -225,7 +225,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.globalVariables = new VariableFrame();
     this.currentSprite = new SpriteMorph(this.globalVariables);
     this.sprites = new List([this.currentSprite]);
-    this.currentCategory = 'motion';
+    this.currentCategory = 'motion'; //this.currentCategory = 'motion';
     this.currentTab = 'scripts';
     this.projectName = '';
     this.projectNotes = '';
@@ -1147,7 +1147,7 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
     // assumes that the logo pane has already been created
     // needs the categories pane for layout
     var myself = this;
-
+    
     if (this.palette) {
 	this.palette.destroy();
     }
@@ -1242,7 +1242,8 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 	    sendEvenement(type='ENV',
 		    data={type:'DROPEX',detail:"block",
 		    valueChar:droppedMorph.selector,
-		    valueInt:droppedMorph.id
+		    //valueInt:droppedMorph.id
+		    valueInt:droppedMorph.JMLid
 	    });
 	    droppedMorph.JMLfrom='DropBlock';
 	    /**
@@ -1282,6 +1283,7 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 
     this.palette.setWidth(this.logo.width());
     this.add(this.palette);
+    //console.log("palette",this.palette,forSearching)
     return this.palette;
 };
 
@@ -2197,7 +2199,7 @@ IDE_Morph.prototype.stopAllScripts = function () {
      */
     sendEvenement(type='ENV',data={type:'STOP',detail:'button',valueChar:'all'});
     var ide = this.parentThatIsA(IDE_Morph);
-    //ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
+    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOPbutton');
 
     /**
      * Fin Modification JML
@@ -3028,11 +3030,17 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Charger le programme de la séance',
 	    function () {
+	        if (jml.SpriteEditorAtLoad) {
+	            var ide = myself.parentThatIsA(IDE_Morph);
+	            var img=ide.spriteEditor.fullImageClassic()
+	            ide.uploadCanvas(img,'LOBA');
+	        }
 		this.confirm(
 			'Remplacer le projet actuel par le programme de base?',
 			'Charger le programme',
 			function () {
 			    // envoi de l'evemenent
+			    
 			    sendEvenement('ENV',{type:'LOBA'})
 			    // requete du fichier
 			    $.ajax({
@@ -3075,17 +3083,25 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Charger un de mes programmes...',
 	    function() {
+	        if (jml.SpriteEditorAtLoad) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'LOVER');
+            }
 		var dialog=$( '#trucdialog' );    			
 		dialog.html('<b>En attente....</b>');
 		dialog.dialog({
 		    // autoOpen: false,
 		    title:"Charger un programme",
 		    height: 400,
-		    width: 350,
+		    width: 600,
 		    modal: true,
 		    buttons: {    			       
 			"Charger":function () {
-			    file_id=$("input[name=file]:checked" ).val();
+                //file_id=$("input[name=file]:checked" ).val();
+			    //console.log("filtre",ficDim.top(5),ndx.allFiltered())
+			    //ficDim est les dimension contenant le fichier choisi
+			    file_id=ficDim.top(1)[0].id
 			    if (file_id) {
 				// envoi de l'evenement
 				sendEvenement('ENV',{type:'LOVER',detail:file_id});
@@ -3145,6 +3161,11 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Sauvegarder le programme...',
 	    function () {
+	        if (jml.SpriteEditorAtSave) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'SAVE');
+            }
 		if (myself.projectName) {
 		    myself.exportProjectToDjango(myself.projectName, shiftClicked);
 		} else {                    
@@ -3177,6 +3198,11 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    'Import...',
 	    function () {
+	        if (jml.SpriteEditorAtLoad) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'IMPORT');
+            }
 		var inp = document.createElement('input');
 		if (myself.filePicker) {
 		    document.body.removeChild(myself.filePicker);
@@ -3224,6 +3250,11 @@ IDE_Morph.prototype.projectMenu = function () {
 			'Export project...') + ' ' + localize('(in a new window)'
 			),
 			function () {
+		    if (jml.SpriteEditorAtSave) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'EXPORT');
+            }
 		    if (myself.projectName) {
 			myself.exportProject(myself.projectName, shiftClicked);
 		    } else {
@@ -3240,7 +3271,11 @@ IDE_Morph.prototype.projectMenu = function () {
     menu.addItem(
 	    shiftClicked ?
 		    'Export project as plain text...' : 'Export project...',
-		    function () {
+		    function () { if (jml.SpriteEditorAtSave) {
+                var ide = myself.parentThatIsA(IDE_Morph);
+                var img=ide.spriteEditor.fullImageClassic()
+                ide.uploadCanvas(img,'EXPORT');
+            }
 			if (myself.projectName) {
 			    myself.exportProject(myself.projectName, shiftClicked);
 			} else {
@@ -4410,7 +4445,7 @@ IDE_Morph.prototype.initIds = function(sendScripts=true) {
     }
     // console.log('scripts:',scripts);
     // console.info(JSON.stringify(scripts));
-    console.log("idmap",idObjMap)
+    //console.log("idmap",idObjMap)
     sendEvenement('SPR',{type:'OPEN',scripts:scripts});
 }
 /*
@@ -4739,7 +4774,9 @@ IDE_Morph.prototype.saveFileAs = function (
  * Modification JML (duff, 17 févr. 2018)
  */
 IDE_Morph.prototype.uploadCanvas = function (canvas,detail='') {
-    sendEvenement('EPR',{type:'SNP',image64:canvas.toDataURL(),detail:detail});
+    if (jml.userGroup!='prof') {
+        sendEvenement('EPR',{type:'SNP',image64:canvas.toDataURL(),detail:detail});
+        }
 }
 /**
  * Fin Modification JML
@@ -5113,6 +5150,18 @@ IDE_Morph.prototype.setPaletteWidth = function (newWidth) {
 
 IDE_Morph.prototype.createNewProject = function () {
     var myself = this;
+    /**
+     * Modification JML (duff,  1 déc. 2018)
+     **/
+    if (jml.SpriteEditorAtLoad) {
+        var ide = myself.parentThatIsA(IDE_Morph);
+        var img=ide.spriteEditor.fullImageClassic()
+        ide.uploadCanvas(img,'NEW');
+    }
+    /**
+     * Fin Modification JML
+     **/
+
     this.confirm(
 	    'Replace the current project with a new one?',
 		    'New Project',

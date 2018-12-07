@@ -268,7 +268,9 @@ ThreadManager.prototype.startProcess = function (
     	    processes:liste
     	    });    
     var ide = top.parentThatIsA(IDE_Morph);    
-    ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
+    if (jml.SnapAtStart) { 
+        ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
+    }
     /**
      * Fin Modification JML
      **/

@@ -181,7 +181,7 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
                 snaps=SnapSnapShot.objects.filter(evenement__user=e.evenement.user,
                                               evenement__session_key=e.evenement.session_key,
                                               evenement__time__lt=e.evenement.time
-                                              ).order_by('-evenement__time')
+                                              ).select_related('evenement').order_by('-evenement__time')
                 e.snapshot=snaps[0]
                 #print("snap",snaps[0])
                 

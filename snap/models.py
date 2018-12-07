@@ -81,7 +81,9 @@ class Evenement(models.Model):
             raise KeyError(u'Type evenement inconnu (%s)' % self.type)
         
     def __str__(self):
-        return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
+        #return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
+        return '(%s) %s n°%s %s' % (self.user,self.get_type_display(),self.numero,self.getEvenementType().type)
+    
     class Meta:
         ordering=('-creation',)
 
@@ -114,7 +116,7 @@ class EvenementENV(models.Model):
         ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression 
         #('UNDROP','Undrop'), #origine dans detail
         #('REDROP','Redrop'),   
-        ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) 
+        ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) , valueBool=vrai si un seul bloc
         ('POPUP','Ouverture popup'),
         ('AUTRE','(Non identifié)'),
         )

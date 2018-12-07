@@ -2732,6 +2732,27 @@ BlockMorph.prototype.userMenu = function () {
                     ide = myself.parentThatIsA(IDE_Morph),
                     blockEditor = myself.parentThatIsA(BlockEditorMorph);
                 if (nb) {nb.destroy(); }
+                /**
+                 * Modification JML (duff,  1 déc. 2018)
+                 **/
+                replace="";
+                cpy.allChildren().forEach(function (block) {            
+                    if (block instanceof SyntaxElementMorph) {
+                        //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
+                        replace+=block.JMLid+"-";                    
+                        block.JMLid=objectId(block);
+                        block.JMLdroppedId=block.JMLid; //on considère qu'ils sont déjà droppés
+                        replace+=block.JMLid+";";
+                    }
+                });
+                sendEvenement('ENV',{type:'DUPLIC',click:true,
+            detail:replace, 
+            valueInt:myself.JMLid,
+            valueBool:true});
+                /**
+                 * Fin Modification JML
+                 **/
+
                 cpy.pickUp(world);
                 if (!ide && blockEditor) {
                     ide = blockEditor.target.parentThatIsA(IDE_Morph);
@@ -4770,9 +4791,11 @@ CommandBlockMorph.prototype.userDestroyJustThis = function () {
     	//console.info('userdestroyjustthis script'+JSON.stringify(this,['lastDroppedBlock','blockSpec','action','cachedInput','children','text']));
         scripts.clearDropInfo();
         scripts.lastDroppedBlock = this;
+        scripts.lastDroppedBlock.JMLfrom='DropDel'
         scripts.recordDrop(this.situation());
         scripts.dropRecord.lastNextBlock = nb;
         scripts.dropRecord.action = 'delete';
+        scripts.dropRecord.JMLfrom='justhis'
         var donnee=new scripts.donnee(scripts.dropRecord);
         //console.info('userdestroyjustthis script'+JSON.stringify(donnee));
         
@@ -6983,9 +7006,17 @@ ScriptsMorph.prototype.donnee = function(record) {
 	    }
 	    switch (record.action) {
 		   case 'creation': data['type']='NEW'; break;
-		   case 'delete': data['type']='DEL'; break;
+		   case 'delete': data['type']='DEL'; 
+		                   if (record.lastDroppedBlock.JMLfrom) {
+		                       data['detail']=record.lastDroppedBlock.JMLfrom
+                           }		                  
+		                  break;
 		   case 'deplacement':
-		   case null: data['type']='DROP'; break;
+		   case null: data['type']='DROP';
+		           if (record.lastDroppedBlock.JMLfrom && record.lastDroppedBlock.JMLfrom=='DropDel') {
+		               data['detail']=record.lastDroppedBlock.JMLfrom
+		           }
+		               break;
 		   case 'valeur': {
 		       data['type']='VAL'; 
 		       data['detail']=record.detailAction;
@@ -7135,6 +7166,7 @@ ScriptsMorph.prototype.donnee = function(record) {
     	    //this.lastDroppedBlock.inputs=inputs;  
     	    //console.log('data',data)
     	    sendEvenement('SPR',data);
+    	    record.lastDroppedBlock.JMLfrom=null
     	    //sendJsonData(this);
 	}
     
@@ -7167,8 +7199,8 @@ ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
     	record.lastDroppedBlock.JMLid=objectId(record.lastDroppedBlock);
     	record.lastDroppedBlock.JMLdroppedId=objectId(record.lastDroppedBlock);
      	record.action="creation";
+     	
      }
-    
     /**
      * Fin Modification JML
      **/
