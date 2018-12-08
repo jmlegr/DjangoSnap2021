@@ -120,7 +120,8 @@ def listeblock(request,session_key=None):
         evtType=evt.getEvenementType()
         evtTypeInfos['%s' % theTime]={'evenement':evt.id,
                                       'evenement_type':evt.type,
-                                      'type':evtType.type}
+                                      'type':evtType.type,
+                                      'detail':evtType.detail}
         history=None #memorise l'état undrop/redrop
         aff('---- temps=',theTime, evt.type,evtType)
         if evt.type=='ENV' and evtType.type in ['NEW','LANCE']:
@@ -555,6 +556,8 @@ def listeblock(request,session_key=None):
                         lastConteneur.setWrapped(None)
                         newNode.unwrap()
                         listeBlocks.append(lastConteneur)
+                    else:
+                        lastConteneur=None
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':                    
                         #c'est un bloc ajouté à la suite d'un autre
@@ -673,11 +676,9 @@ def listeblock(request,session_key=None):
                                     newLastPrevBlock.setNextBlock(newNextBlock)
                         else:
                             #c'est un bloc de tête, on vérifie s'il n'était pas wrapped
-                            lastParentBlock=listeBlocks.lastNode(newNode.parentBlockId, theTime)
-                            if lastParentBlock is not None:
-                                newLastParentBlock=lastParentBlock.copy(theTime)
-                                newLastParentBlock.removeWrapped()
-                                listeBlocks.append(newLastParentBlock)                                  
+                            if lastConteneur is not None:
+                                #si c'est un simple drop, c'est déjà traité,
+                                #sinon, il faut mettre le next du bloc enlevé dans le conteneur                           
                                 if spr.detail=="DropDel":
                                     #si c'est un drop précédent un del (dropdel), seul le bloc est déplacé, 
                                     #il faut mettre à jour le contenu et nextblock
@@ -686,7 +687,7 @@ def listeblock(request,session_key=None):
                                         newNextBlock=nextBlock.copy(theTime)
                                         newNextBlock.setPrevBlock(None)
                                         listeBlocks.append(newNextBlock)
-                                        newNextBlock.setWrapped(newLastParentBlock)                                        
+                                        lastConteneur.setWrapped(newNextBlock)                                        
                             elif spr.detail=="DropDel":
                                 #on met à jour l'éventuel nextblock en cas de dropdel
                                 nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
