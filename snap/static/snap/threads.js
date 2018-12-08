@@ -261,12 +261,27 @@ ThreadManager.prototype.startProcess = function (
      **/
     var click=isClicked?isClicked:false
     liste="";
-    this.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
-    sendEvenement('EPR',{type:'START',receiver:receiver.name,
+    this.processes.forEach(function(p){
+        liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","        
+        });
+    if (top.JMLdroppedId) {
+        //c'est un block déjà droppé, pas de soucis
+        sendEvenement('EPR',{type:'START',receiver:receiver.name,
     	    topBlockId:top.JMLid, topBlockSelector:top.selector,
     	    click:click,
     	    processes:liste
-    	    });    
+    	    });
+    } else {
+        //c'est un drop palette, on rajoute le blockSpec dans detail
+        // pour la re-création: si le topBlockId n'existe pas, c'est que c'est un block de la palette,
+        // on ne mettra que le nom (detail si existant, sinon topBlockSelector)
+        sendEvenement('EPR',{type:'START',receiver:receiver.name,
+            topBlockId:top.JMLid, topBlockSelector:top.selector,
+            click:click,
+            detail:top.blockSpec,
+            processes:liste
+            });
+    }
     var ide = top.parentThatIsA(IDE_Morph);    
     if (jml.SnapAtStart) { 
         ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
