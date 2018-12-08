@@ -1017,7 +1017,8 @@ def model_form_upload(request):
                 #c'est un document sauvegardé            
                 instance=Document(description=form.cleaned_data['description'],
                               user=request.user,
-                              document=form.cleaned_data['document'])
+                              document=form.cleaned_data['document'],
+                              autosave=form.cleaned_data['autosave'])
             instance.save()                
             return HttpResponse(json.dumps({'success': True,'id':instance.id}), content_type="application/json")
         else:
@@ -1063,7 +1064,7 @@ def return_files(request):
                 .select_related('user','user__eleve','user__eleve__classe').order_by('-uploaded_at')
         return render(request,'file_user_prof.html',{'files':fics});
     else:
-        fics=Document.objects.filter(user=request.user).order_by('-uploaded_at')
+        fics=Document.objects.filter(user=request.user,autosave=False).order_by('-uploaded_at')
         return render(request,'file_user.html',{'files':fics});
     
 

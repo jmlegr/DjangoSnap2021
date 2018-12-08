@@ -23,9 +23,10 @@
 		  
 		  const jml={};
 		  jml.userGroup=userGroup
-		  jml.SnapAtStart= false
-		  jml.SpriteEditorAtLoad=true
+		  jml.SnapAtStart= true
+		  jml.SpriteEditorAtLoad=false
 		  jml.SpriteEditorAtSave=true
+		  jml.autoSave=true
           jml.isProf=function () {
               return (userGroup=="prof")
           }
@@ -87,7 +88,7 @@
 		</script>
 		<script type="text/javascript">
 		//ajout JML
-		var UploadXML = function(xml,name,projectNotes='',base=false) {
+		var UploadXML = function(xml,name,projectNotes='',base=false,autoSave=false) {
 		    var form = new FormData();
 		  
 		    // getCookie: https://docs.djangoproject.com/en/dev/ref/csrf/#acquiring-the-token-if-csrf-use-sessions-is-false
@@ -99,6 +100,8 @@
 		    } else {
 			 form.append('description',name);
 		    }
+		    form.append('autosave',autoSave)
+		    
 		    var blob = new Blob([xml], { type: "text/xml"});
 		    form.append('document',blob,userName+"_"+name.replace(/\W+/g,"_")+".xml");
 		    
@@ -117,7 +120,7 @@
 		        },
 		        success: function (response) {
 		            //$('.upload-progress').hide();
-		            sendEvenement('EPR',{type:'SAVE',detail:response.id});
+		            sendEvenement('EPR',{type:autoSave?'SAVEO':'SAVE',detail:response.id});
 		            //console.log('reponse',response);		            
 		        },
 		        error: function(response) {
@@ -153,7 +156,7 @@
             default: url='evenement/'; break;            
             }
         }
-        function sendRequest(secs=3,nb=60) {
+        function sendRequest(secs=3,nb=100) {
 	        $.ajax({
 	            url: url,
 	            type: 'POST',
@@ -177,9 +180,10 @@
 	            error: function(response) {
 	                //console.log("error", response);
 	                if (nb>0) {
-	                    console.log('erreur de réception. envoi encore dans ',secs,'s, reste ',nb-1,' essai(s)')
+	                    let temp=secs/2*(1+Math.random())*1000; //un peu d'aléatoire en cas de surcharge
+	                    //console.log('erreur de réception. envoi encore dans ',temp,'s, reste ',nb-1,' essai(s)')
 	                    setTimeout(()=>{
-	                        sendRequest(secs,nb-1)},secs*1000)
+	                        sendRequest(secs,nb-1)},temp)
 	                } else {
 	                    alert('oups, quelque chose n\'a pas fonctionné\n'+response.responseText);
 	                }

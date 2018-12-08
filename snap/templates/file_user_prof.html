@@ -30,7 +30,8 @@ var data=[
     'user':"{{file.user.username}}",
     'nom': "{{file.description}}", 
     'date':"{{file.uploaded_at}}",
-    'id':"{{file.id}}"
+    'id':"{{file.id}}",
+    'autosave':("{{file.autosave}}"=="True")
     
 },
 {%endfor%}
@@ -39,7 +40,7 @@ var sepFic="_-_"
 var ndx=crossfilter(data), ngdx=crossfilter(data)    
     classeDim=ndx.dimension(d=>d.classe),
     eleveDim=ndx.dimension(d=>d.user),
-    ficDim=ndx.dimension(d=>d.id+sepFic+d.nom+sepFic+d.date)
+    ficDim=ndx.dimension(d=>d.id+sepFic+d.nom+sepFic+d.date+sepFic+d.autosave)
  
 selectClasse
    .dimension(classeDim)
@@ -57,7 +58,7 @@ selectFic
    .group(ficDim.group())
    .title(function(d) {
        let s=d.key.split(sepFic)
-       return s[1]+" ("+s[2]+")"
+       return s[1]+" ("+(s[3]=="true"?"auto, ":"")+s[2]+")"
    })
    .numberVisible(16)
     .controlsUseVisibility(true)

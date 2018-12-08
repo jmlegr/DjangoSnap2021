@@ -3035,6 +3035,12 @@ IDE_Morph.prototype.projectMenu = function () {
 	            var img=ide.spriteEditor.fullImageClassic()
 	            ide.uploadCanvas(img,'LOBA');
 	        }
+	        if (jml.autoSave) {
+	            myself.exportProjectToDjango(myself.projectName?myself.projectName:'autosave', shiftClicked,base=false,autoSave=true);
+	        }
+	        
+	            
+	        
 		this.confirm(
 			'Remplacer le projet actuel par le programme de base?',
 			'Charger le programme',
@@ -3087,6 +3093,9 @@ IDE_Morph.prototype.projectMenu = function () {
                 var ide = myself.parentThatIsA(IDE_Morph);
                 var img=ide.spriteEditor.fullImageClassic()
                 ide.uploadCanvas(img,'LOVER');
+            }
+	        if (jml.autoSave) {
+	            myself.exportProjectToDjango(myself.projectName?myself.projectName:'autosave', shiftClicked,base=false,autoSave=true);
             }
 		var dialog=$( '#trucdialog' );    			
 		dialog.html('<b>En attente....</b>');
@@ -3207,6 +3216,9 @@ IDE_Morph.prototype.projectMenu = function () {
                 var ide = myself.parentThatIsA(IDE_Morph);
                 var img=ide.spriteEditor.fullImageClassic()
                 ide.uploadCanvas(img,'IMPORT');
+            }
+	        if (jml.autoSave) {
+	            myself.exportProjectToDjango(myself.projectName?myself.projectName:'autosave', shiftClicked,base=false,autoSave=true);
             }
 		var inp = document.createElement('input');
 		if (myself.filePicker) {
@@ -3892,19 +3904,23 @@ IDE_Morph.prototype.rawSaveProject = function (name) {
 /**
  * Modification JML (duff, 31 déc. 2017)
  */
-IDE_Morph.prototype.exportProjectToDjango = function (name, plain,base=false) {
+IDE_Morph.prototype.exportProjectToDjango = function (name, plain,base=false,autoSave=false) {
     // Export project XML, saving a file to disk
     // newWindow requests displaying the project in a new tab.
     var menu, str, dataPrefix;
-
+    
     if (name) {
-	this.setProjectName(name);
+	if (!autoSave) this.setProjectName(name);
 	dataPrefix = 'data:text/' + plain ? 'plain,' : 'xml,';
 	try {
 	    // console.log('envoi',base,this.projectNotes)
-	    menu = this.showMessage('Sauvegarde en cours');
+	    if (autoSave) {
+	        menu = this.showMessage('Sauvegarde AUTO en cours');
+	    } else {
+	        menu = this.showMessage('Sauvegarde en cours');    }	        
+	    
 	    str = this.serializer.serialize(this.stage);
-	    UploadXML(str,name,this.projectNotes,base);            
+	    UploadXML(str,name,this.projectNotes,base=base,autoSave=autoSave);            
 	    menu.destroy();
 	    this.showMessage('Sauvegardé!', 1);
 	} catch (err) {
@@ -5162,6 +5178,9 @@ IDE_Morph.prototype.createNewProject = function () {
         var ide = myself.parentThatIsA(IDE_Morph);
         var img=ide.spriteEditor.fullImageClassic()
         ide.uploadCanvas(img,'NEW');
+    }
+    if (jml.autoSave) {
+        myself.exportProjectToDjango(myself.projectName?myself.projectName:'autosave', false,base=false,autoSave=true);        
     }
     /**
      * Fin Modification JML
