@@ -47,7 +47,10 @@ const graphProgramme=function(donnees,div="graphSujet") {
                 newData[t.JMLid]=parcoursCommande(c.snap,[],t,0)
                 let divCom=divG.append("div").attr("class","tete").html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
                 let enter=divCom.selectAll(".commande").data(newData[t.JMLid])
-                enter.enter().append("p").attr("class","command").html(d=>'...'.repeat(d.index)+d.commande)
+                enter.enter().append("p")
+                    .attr("class",d=>"command "+(d.action?'action':''))
+                    .attr("title",d=>d.action)
+                    .html(d=>'...'.repeat(d.index)+d.commande)
             })
             console.log(newData)
     }

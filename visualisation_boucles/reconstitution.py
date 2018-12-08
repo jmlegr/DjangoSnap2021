@@ -205,10 +205,10 @@ def listeblock(request,session_key=None):
                     newBlock,copiedBlock=bc.duplic(listeReplace,theTime,action)                    
                     listeBlocks.append(copiedBlock)
                     listeBlocks.append(newBlock)
-                    if newBlock.parentBlockId is None:
-                        listeBlocks.setFirstBlock(newBlock)
+                    #if newBlock.parentBlockId is None:
+                    #    listeBlocks.setFirstBlock(newBlock)
                     
-                listeBlocks.addTick(theTime)
+                #listeBlocks.addTick(theTime)
             if env.type=="DROPEX":
                 #on ajoute l'évenement pour undrop, il sera traité conjointement avec DEL
                 #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
@@ -514,6 +514,8 @@ def listeblock(request,session_key=None):
             
             elif spr.type=='DROP' or spr.type=="DEL":
                 #""" un DEL est soit précédé d'un DROP, soit d'un DROPEX (en ENV)
+                #un DROPEX tout seul est un drop de la palette vers la palette
+                #c'est une hésitation, mais pour l'instant on fait comme s'il ne sétait rien passé
                 if (spr.type=="DEL" and evtPrec.type=="DROPEX"):
                     #on ne change rien, c'est comme un drop, il faudra rajouter deleted
                     action+=" DROPEX"
@@ -529,6 +531,9 @@ def listeblock(request,session_key=None):
                     newNode.deleted=True
                     listeBlocks.recordDrop(spr, theTime)
                 else:  
+                    if evtPrec.type=='DUPLIC':
+                        #c'est suite à une duplication, on le précise
+                        action+=' DUPLIC'
                     if spr.location:
                         action+=' '+spr.location
                     if spr.typeMorph=='ReporterBlockMorph':
@@ -597,6 +602,7 @@ def listeblock(request,session_key=None):
                     elif spr.location=='top':
                         #c'est un bloc ajouté avant d'un autre
                         #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
+                        listeBlocks.setFirstBlock(newNode)
                         newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                         #on récupère la cible
                         nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
@@ -655,7 +661,8 @@ def listeblock(request,session_key=None):
                         aff('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
                         listeBlocks.addTick(theTime)
                     elif spr.location is None:
-                        #droppé tout seul                                                             
+                        #droppé tout seul, il devient bloc de tête
+                        listeBlocks.setFirstBlock(newNode)                                              
                         #on recupere le prevblock avant modif
                         lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
                         #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
