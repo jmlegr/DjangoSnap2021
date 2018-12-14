@@ -154,9 +154,12 @@ def listeblock(request,session_key=None):
                 infos['type']='Programme sauvegardé: %s' % p.description
                 infos['tooltip']=p.uploaded_at
                 #on reconstruit a partir du xml
-            tree=etree.parse(f.path)
-            root=tree.getroot()
-            scripts=root.find('stage/sprites/sprite/scripts').findall('script')
+            try:
+                tree=etree.parse(f.path)            
+                root=tree.getroot()
+                scripts=root.find('stage/sprites/sprite/scripts').findall('script')
+            except:
+                scripts=[]
           
             for s in scripts:
                 listeBlocks.addFromXML(s,theTime=theTime)
