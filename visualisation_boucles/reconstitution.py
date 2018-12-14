@@ -139,10 +139,12 @@ def listeblock(request,session_key=None):
         elif evt.type=='ENV' and evtType.type in ['LOBA','LOVER']:
             #c'est un chargement de fichier
             #TODO: traiter import
-            for i in listeBlocks.lastNodes(theTime):
-                newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
-                newi.deleted=True
-            listeBlocks.addTick(theTime-1)
+            if len(listeBlocks.lastNodes(theTime))>0:
+                listeBlocks.lastNodes(theTime)
+                for i in listeBlocks.lastNodes(theTime):
+                    newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
+                    newi.deleted=True
+            
             if evtType.type=='LOBA':
                 p=ProgrammeBase.objects.get(id=evtType.valueInt) #detail contient le nom
                 f=p.file
@@ -721,9 +723,11 @@ def listeblock(request,session_key=None):
                 #on cherche l'input modifié (par le rang ou par le detail)
                 if spr.location is None:
                     #c'est un CommentBlock (sans input). La valuer est blockSpec
-                    inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    #si le commentaire est trop long (blockSpec limité à 50 car), le complément est dans detail
+                    detail=spr.detail.split('(longBlockSpec)')
+                    inputNode=listeBlocks.lastNode(detail[0],theTime).copy(theTime,action)
                     inputNode.changeValue(spr.blockSpec)
-                    inputNode.blockSpec=spr.blockSpec
+                    inputNode.blockSpec=detail[1] if (len(detail)>1) else spr.blockSpec
                     inputNode.action='VAL'                    
                     inputNode.change='changed'
                     listeBlocks.append(inputNode)  

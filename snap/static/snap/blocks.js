@@ -7073,6 +7073,11 @@ ScriptsMorph.prototype.donnee = function(record) {
 	            if (typeof record.lastDroppedBlock.contents == 'function') data['blockSpec']=record.lastDroppedBlock.contents().text
 	            else data['blockSpec']=record.lastDroppedBlock.contents.text
 	        } else data['blockSpec']=null
+	        //on s'assure que ce n'est pas trop long (jml.maxSizeBlockSpec car)
+	        if (data['blockSpec'].length>jml.maxSizeBlockSpec) {
+	            data['detail']=data['detail']+jml.longBlockSpec+data['blockSpec']
+	            data['blockSpec']=data['blockSpec'].substring(0,jml.maxSizeBlockSpec-3)+'...'
+	        }
 	    }
 		
 	    
