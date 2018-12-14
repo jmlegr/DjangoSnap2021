@@ -390,9 +390,10 @@ def listeblock(request,session_key=None):
                             nextNode=listeBlocks.lastNode(nextNode.nextBlockId,theTime,deleted=True).copy(theTime)
                             listeBlocks.append(nextNode)
                             nextNode.deleted=False
+                            nextNode.conteneurBlockId=None
                             listeBlocks.setNextBlock(newNode,nextNode)
-                            newNode=nextNode                    
-                
+                            newNode=nextNode                   
+                            if deleted: break
                 elif dspr.type=="NEWVAL":
                     #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
                     if dspr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -1374,6 +1375,7 @@ class SimpleListeBlockSnap:
         self.idropped+=1
         try:
             self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime,
+                                               'detail':spr.detail,
                                            'blockId':spr.blockId,
                                            'targetId':spr.targetId,
                                            'location':spr.location
