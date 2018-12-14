@@ -95,3 +95,7 @@ p.command {
 p.action {
 	font-style: italic;
 }
+p.CommentMorph {
+	font-style: normal;
+	color: cadetblue;
+}

@@ -7063,15 +7063,18 @@ ScriptsMorph.prototype.donnee = function(record) {
 	    data['blockId']=record.lastDroppedBlock.JMLid;
 	    data['selector']=record.lastDroppedBlock.selector;
 	    if (record.lastDroppedBlock.blockSpec) {
-		data['blockSpec']=record.lastDroppedBlock.blockSpec;
+	        data['blockSpec']=record.lastDroppedBlock.blockSpec;
 	    } else {
-		//si pas de blockSpec précisé, on récupère un contenu, s'il y a 
-		// par exemple en cas de CommentBlockMorph
-		data['blockSpec']=record.lastDroppedBlock.getContent?
-					record.lastDroppedBlock.getContent():
-					record.lastDroppedBlock.contents?
-						record.lastDroppedBlock.contents().text:null
+	        //si pas de blockSpec précisé, on récupère un contenu, s'il y a 
+	        // par exemple en cas de CommentBlockMorph
+	        if (record.lastDroppedBlock.getContent) {
+	            data['blockSpec']=record.lastDroppedBlock.getContent()
+	        } else if (record.lastDroppedBlock.contents) {
+	            if (typeof record.lastDroppedBlock.contents == 'function') data['blockSpec']=record.lastDroppedBlock.contents().text
+	            else data['blockSpec']=record.lastDroppedBlock.contents.text
+	        } else data['blockSpec']=null
 	    }
+		
 	    
 	    data['category']=record.lastDroppedBlock.category  ;
 	    if (record.lastDroppedBlock.parent) { 
