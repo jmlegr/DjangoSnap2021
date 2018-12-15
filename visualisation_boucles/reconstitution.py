@@ -526,7 +526,23 @@ def listeblock(request,session_key=None):
                         listeBlocks.append(lastContenu)
                         newNode.setNextBlock(lastContenu)
                     conteneurNode.setWrapped(newNode)                   
-                     
+                elif spr.location=='wrap':
+                    #c'est un conteneur qui vient englober les blocks à partir de targetId 
+                    #(et qui aura comme prevBlock parentId)
+                    
+                    #on recherche le parent
+                    if newNode.prevBlockId is not None:
+                        newPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime).copy(theTime)
+                        newPrevBlock.setNextBlock(newNode)
+                        listeBlocks.append(newPrevBlock)
+                    #on se passe du cslot
+                    #cslot=listeBlocks.lastNode(newNode.inputs['0'],theTime,veryLast=True)
+                    #on met à jour la cible
+                    target=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                    target.setPrevBlock(None)
+                    target.setConteneur(newNode)
+                    listeBlocks.append(target)
+                    
                                  
                 listeBlocks.addTick(theTime)
             
