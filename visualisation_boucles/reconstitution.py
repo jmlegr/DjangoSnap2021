@@ -210,15 +210,26 @@ def listeblock(request,session_key=None):
                     newBlock,copiedBlock=bc.duplic(listeReplace,theTime,action)                    
                     listeBlocks.append(copiedBlock)
                     listeBlocks.append(newBlock)
+                    listeBlocks.setFirstBlock(newBlock)
                     #if newBlock.parentBlockId is None:
                     #    listeBlocks.setFirstBlock(newBlock)
-                    
+                #listeBlocks.recordDrop(env,theTime)   
                 #listeBlocks.addTick(theTime)
-            if env.type=="DROPEX":
-                #on ajoute l'évenement pour undrop, il sera traité conjointement avec DEL
-                #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
-                #soit il est précédé d'un DROP avec location=None, et il ne restera qu'à mettre deleted=True
-                listeBlocks.recordDrop(env,theTime)
+            if env.type=='DROPEX':
+                if evtPrec.type=='DUPLIC':
+                    #il faut tratier la suppression; pas besoin de vérfier, DUPLIC ne peut pas être tout seul
+                    newBlock=listeBlocks.lastNode(env.valueInt, theTime)
+                    newBlock.deleted=True
+                elif evtPrec.type=='UNDROP' and evtPrec.blockId==env.valueInt:
+                    #c'est un undrop+dropex, (donc annulation d'un duplic)
+                    newBlock=listeBlocks.lastNode(env.valueInt, theTime)
+                    newBlock.deleted=True
+                else:
+                    #on ajoute l'évenement pour undrop, il sera traité conjointement avec DEL
+                    #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
+                    #soit il est précédé d'un DROP avec location=None, et il ne restera qu'à mettre deleted=True                
+                    listeBlocks.recordDrop(env,theTime)              
+                  
             evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]
@@ -238,6 +249,7 @@ def listeblock(request,session_key=None):
                 history="UNDROP"
                 action+=" UNDROP"
                 s=listeBlocks.undrop()
+                
                 dspr=EvenementSPR.objects.get(id=s['spr'])
                 aff("undrop de ",spr,s['time'])
                 if dspr.type=="NEW":
@@ -283,7 +295,7 @@ def listeblock(request,session_key=None):
                     else:           
                         deleted=False         
                         newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action)
-                    #on traite le déplacement                 
+                    #on traite le déplacement                                          
                     listeBlocks.append(newNode)
                     if dspr.location=='bottom':
                         #on passe de target->newNode->...->finscript->nextnode (où nextnode.id=ancienTarget.next)
@@ -448,13 +460,12 @@ def listeblock(request,session_key=None):
                     #on change l'input
                     parentNode.addInput(newInputNode)
                 
-                
                 listeBlocks.addTick(theTime)               
-                    #soucis; faut il oprendre la derniere modification? la modif faite au temps du drop?
+                        #soucis; faut il oprendre la derniere modification? la modif faite au temps du drop?
             elif spr.type=="REDROP":
                 history="REDROP"
                 action+=" REDROP"
-                s=listeBlocks.redrop()
+                s=listeBlocks.redrop()                
                 spr=EvenementSPR.objects.get(id=s['spr'])
                 aff("REdrop de ",spr,s['time'])             
             
@@ -540,6 +551,7 @@ def listeblock(request,session_key=None):
                     if evtPrec.type=='DUPLIC':
                         #c'est suite à une duplication, on le précise
                         action+=' DUPLIC'
+                        #spr.type=spr.type+'_DUPLIC'
                     if spr.location:
                         action+=' '+spr.location
                     if spr.typeMorph=='ReporterBlockMorph':
@@ -556,7 +568,8 @@ def listeblock(request,session_key=None):
                     else:
                         action+=" %s" % history
                     #On récupère le block et on le recopie
-                    newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                    newNode=listeBlocks.lastNode(spr.blockId, theTime,deleted=True).copy(theTime,action)
+                    newNode.deleted=False
                     #si ni le prevBlock ni le nextblock (ni wrapp?) ne change, c'est un simplement déplacement non pris en compte
                     #pour l'instant on le fait quand même                
                     listeBlocks.append(newNode)
@@ -1390,6 +1403,7 @@ class SimpleListeBlockSnap:
         #on efface le reste de la liste
         for j in range(self.idropped+1,len(self.dropped)):            
             self.dropped.pop()
+        pass
         #print([print(i) for i in self.dropped])   
     def undrop(self):
         """
