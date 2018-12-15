@@ -331,7 +331,8 @@ def listeblock(request,session_key=None):
                         else:
                             newNode.unwrap()
                         
-                        listeBlocks.setNextBlock(finScript,None)
+                        if finScript.JMLid!=newNode.JMLid:
+                            listeBlocks.setNextBlock(finScript,None)
                         listeBlocks.setNextBlock(target,nextNode)
                         
                     elif dspr.location=='top':
