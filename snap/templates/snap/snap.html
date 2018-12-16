@@ -30,6 +30,8 @@
           jml.isProf=function () {
               return (userGroup=="prof")
           }
+		  jml.maxSizeBlockSpec=50
+		  jml.longBlockSpec="(longBlockSpec)" //separateur ajouté dans detail en cas de blockSpec trop long
 		  //console.info("csrf"+csrf_token,"grup",userGroup);
 		//Test envoi
 		function sendAjaxData(data) {
@@ -227,14 +229,25 @@
 		<script type="text/javascript" src="{% static "snap/sha512.js" %}"></script>
 		<script type="text/javascript" src="{% static "snap/FileSaver.min.js" %}"></script>
 		<script type="text/javascript">
-			var world;
+			var world,ide;
 			window.onload = function () {
 				world = new WorldMorph(document.getElementById('world'));
                 world.worldCanvas.focus();
-				new IDE_Morph().openIn(world);
+				ide=new IDE_Morph()
+				ide.openIn(world);
 				sendEvenement('ENV',{type:'LANCE'});
 				loop();
 			};
+			window.addEventListener("beforeunload", function (event) {
+			    // Cancel the event as stated by the standard.
+			    event.preventDefault();
+			    //console.log('youpi',ide)
+			    if (jml.autoSave) {
+                ide.exportProjectToDjango(ide.projectName?ide.projectName:'autosave', false,base=false,autoSave=true);
+                }
+			    // Chrome requires returnValue to be set.
+			    event.returnValue = '';
+			  });
 			function loop() {
         requestAnimationFrame(loop);
 				world.doOneCycle();

@@ -120,7 +120,8 @@ def listeblock(request,session_key=None):
         evtType=evt.getEvenementType()
         evtTypeInfos['%s' % theTime]={'evenement':evt.id,
                                       'evenement_type':evt.type,
-                                      'type':evtType.type}
+                                      'type':evtType.type,
+                                      'detail':evtType.detail}
         history=None #memorise l'état undrop/redrop
         aff('---- temps=',theTime, evt.type,evtType)
         if evt.type=='ENV' and evtType.type in ['NEW','LANCE']:
@@ -138,10 +139,12 @@ def listeblock(request,session_key=None):
         elif evt.type=='ENV' and evtType.type in ['LOBA','LOVER']:
             #c'est un chargement de fichier
             #TODO: traiter import
-            for i in listeBlocks.lastNodes(theTime):
-                newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
-                newi.deleted=True
-            listeBlocks.addTick(theTime-1)
+            if len(listeBlocks.lastNodes(theTime))>0:
+                listeBlocks.lastNodes(theTime)
+                for i in listeBlocks.lastNodes(theTime):
+                    newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
+                    newi.deleted=True
+            
             if evtType.type=='LOBA':
                 p=ProgrammeBase.objects.get(id=evtType.valueInt) #detail contient le nom
                 f=p.file
@@ -153,9 +156,12 @@ def listeblock(request,session_key=None):
                 infos['type']='Programme sauvegardé: %s' % p.description
                 infos['tooltip']=p.uploaded_at
                 #on reconstruit a partir du xml
-            tree=etree.parse(f.path)
-            root=tree.getroot()
-            scripts=root.find('stage/sprites/sprite/scripts').findall('script')
+            try:
+                tree=etree.parse(f.path)            
+                root=tree.getroot()
+                scripts=root.find('stage/sprites/sprite/scripts').findall('script')
+            except:
+                scripts=[]
           
             for s in scripts:
                 listeBlocks.addFromXML(s,theTime=theTime)
@@ -204,15 +210,26 @@ def listeblock(request,session_key=None):
                     newBlock,copiedBlock=bc.duplic(listeReplace,theTime,action)                    
                     listeBlocks.append(copiedBlock)
                     listeBlocks.append(newBlock)
-                    if newBlock.parentBlockId is None:
-                        listeBlocks.setFirstBlock(newBlock)
-                    
-                listeBlocks.addTick(theTime)
-            if env.type=="DROPEX":
-                #on ajoute l'évenement pour undrop, il sera traité conjointement avec DEL
-                #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
-                #soit il est précédé d'un DROP avec location=None, et il ne restera qu'à mettre deleted=True
-                listeBlocks.recordDrop(env,theTime)
+                    listeBlocks.setFirstBlock(newBlock)
+                    #if newBlock.parentBlockId is None:
+                    #    listeBlocks.setFirstBlock(newBlock)
+                #listeBlocks.recordDrop(env,theTime)   
+                #listeBlocks.addTick(theTime)
+            if env.type=='DROPEX':
+                if evtPrec.type=='DUPLIC':
+                    #il faut tratier la suppression; pas besoin de vérfier, DUPLIC ne peut pas être tout seul
+                    newBlock=listeBlocks.lastNode(env.valueInt, theTime)
+                    newBlock.deleted=True
+                elif evtPrec.type=='UNDROP' and evtPrec.blockId==env.valueInt:
+                    #c'est un undrop+dropex, (donc annulation d'un duplic)
+                    newBlock=listeBlocks.lastNode(env.valueInt, theTime)
+                    newBlock.deleted=True
+                else:
+                    #on ajoute l'évenement pour undrop, il sera traité conjointement avec DEL
+                    #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
+                    #soit il est précédé d'un DROP avec location=None, et il ne restera qu'à mettre deleted=True                
+                    listeBlocks.recordDrop(env,theTime)              
+                  
             evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]
@@ -232,6 +249,7 @@ def listeblock(request,session_key=None):
                 history="UNDROP"
                 action+=" UNDROP"
                 s=listeBlocks.undrop()
+                
                 dspr=EvenementSPR.objects.get(id=s['spr'])
                 aff("undrop de ",spr,s['time'])
                 if dspr.type=="NEW":
@@ -277,7 +295,7 @@ def listeblock(request,session_key=None):
                     else:           
                         deleted=False         
                         newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action)
-                    #on traite le déplacement                 
+                    #on traite le déplacement                                          
                     listeBlocks.append(newNode)
                     if dspr.location=='bottom':
                         #on passe de target->newNode->...->finscript->nextnode (où nextnode.id=ancienTarget.next)
@@ -313,7 +331,8 @@ def listeblock(request,session_key=None):
                         else:
                             newNode.unwrap()
                         
-                        listeBlocks.setNextBlock(finScript,None)
+                        if finScript.JMLid!=newNode.JMLid:
+                            listeBlocks.setNextBlock(finScript,None)
                         listeBlocks.setNextBlock(target,nextNode)
                         
                     elif dspr.location=='top':
@@ -384,9 +403,10 @@ def listeblock(request,session_key=None):
                             nextNode=listeBlocks.lastNode(nextNode.nextBlockId,theTime,deleted=True).copy(theTime)
                             listeBlocks.append(nextNode)
                             nextNode.deleted=False
+                            nextNode.conteneurBlockId=None
                             listeBlocks.setNextBlock(newNode,nextNode)
-                            newNode=nextNode                    
-                
+                            newNode=nextNode                   
+                            if deleted: break
                 elif dspr.type=="NEWVAL":
                     #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
                     if dspr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -441,13 +461,12 @@ def listeblock(request,session_key=None):
                     #on change l'input
                     parentNode.addInput(newInputNode)
                 
-                
                 listeBlocks.addTick(theTime)               
-                    #soucis; faut il oprendre la derniere modification? la modif faite au temps du drop?
+                        #soucis; faut il oprendre la derniere modification? la modif faite au temps du drop?
             elif spr.type=="REDROP":
                 history="REDROP"
                 action+=" REDROP"
-                s=listeBlocks.redrop()
+                s=listeBlocks.redrop()                
                 spr=EvenementSPR.objects.get(id=s['spr'])
                 aff("REdrop de ",spr,s['time'])             
             
@@ -507,12 +526,30 @@ def listeblock(request,session_key=None):
                         listeBlocks.append(lastContenu)
                         newNode.setNextBlock(lastContenu)
                     conteneurNode.setWrapped(newNode)                   
-                     
+                elif spr.location=='wrap':
+                    #c'est un conteneur qui vient englober les blocks à partir de targetId 
+                    #(et qui aura comme prevBlock parentId)
+                    
+                    #on recherche le parent
+                    if newNode.prevBlockId is not None:
+                        newPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime).copy(theTime)
+                        newPrevBlock.setNextBlock(newNode)
+                        listeBlocks.append(newPrevBlock)
+                    #on se passe du cslot
+                    #cslot=listeBlocks.lastNode(newNode.inputs['0'],theTime,veryLast=True)
+                    #on met à jour la cible
+                    target=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                    target.setPrevBlock(None)
+                    target.setConteneur(newNode)
+                    listeBlocks.append(target)
+                    
                                  
                 listeBlocks.addTick(theTime)
             
             elif spr.type=='DROP' or spr.type=="DEL":
                 #""" un DEL est soit précédé d'un DROP, soit d'un DROPEX (en ENV)
+                #un DROPEX tout seul est un drop de la palette vers la palette
+                #c'est une hésitation, mais pour l'instant on fait comme s'il ne sétait rien passé
                 if (spr.type=="DEL" and evtPrec.type=="DROPEX"):
                     #on ne change rien, c'est comme un drop, il faudra rajouter deleted
                     action+=" DROPEX"
@@ -528,6 +565,10 @@ def listeblock(request,session_key=None):
                     newNode.deleted=True
                     listeBlocks.recordDrop(spr, theTime)
                 else:  
+                    if evtPrec.type=='DUPLIC':
+                        #c'est suite à une duplication, on le précise
+                        action+=' DUPLIC'
+                        #spr.type=spr.type+'_DUPLIC'
                     if spr.location:
                         action+=' '+spr.location
                     if spr.typeMorph=='ReporterBlockMorph':
@@ -544,7 +585,8 @@ def listeblock(request,session_key=None):
                     else:
                         action+=" %s" % history
                     #On récupère le block et on le recopie
-                    newNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
+                    newNode=listeBlocks.lastNode(spr.blockId, theTime,deleted=True).copy(theTime,action)
+                    newNode.deleted=False
                     #si ni le prevBlock ni le nextblock (ni wrapp?) ne change, c'est un simplement déplacement non pris en compte
                     #pour l'instant on le fait quand même                
                     listeBlocks.append(newNode)
@@ -555,6 +597,8 @@ def listeblock(request,session_key=None):
                         lastConteneur.setWrapped(None)
                         newNode.unwrap()
                         listeBlocks.append(lastConteneur)
+                    else:
+                        lastConteneur=None
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':                    
                         #c'est un bloc ajouté à la suite d'un autre
@@ -594,6 +638,7 @@ def listeblock(request,session_key=None):
                     elif spr.location=='top':
                         #c'est un bloc ajouté avant d'un autre
                         #NOTE: a priori, cela arrive seulement dans le cas où ou insère en tête de script
+                        listeBlocks.setFirstBlock(newNode)
                         newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                         #on récupère la cible
                         nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
@@ -652,7 +697,8 @@ def listeblock(request,session_key=None):
                         aff('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
                         listeBlocks.addTick(theTime)
                     elif spr.location is None:
-                        #droppé tout seul                                                             
+                        #droppé tout seul, il devient bloc de tête
+                        listeBlocks.setFirstBlock(newNode)                                              
                         #on recupere le prevblock avant modif
                         lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
                         #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
@@ -663,6 +709,36 @@ def listeblock(request,session_key=None):
                             newLastPrevBlock=lastPrevBlock.copy(theTime)
                             newLastPrevBlock.setNextBlock(None)
                             listeBlocks.append(newLastPrevBlock)  
+                            if spr.detail=="DropDel":
+                                #si c'est un drop précédent un del (dropdel), seul le bloc est déplacé, 
+                                #il faut mettre à jour prevblock et nextblock
+                                nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
+                                if nextBlock is not None:
+                                    newNextBlock=nextBlock.copy(theTime)
+                                    listeBlocks.append(newNextBlock)
+                                    newLastPrevBlock.setNextBlock(newNextBlock)
+                        else:
+                            #c'est un bloc de tête, on vérifie s'il n'était pas wrapped
+                            if lastConteneur is not None:
+                                #si c'est un simple drop, c'est déjà traité,
+                                #sinon, il faut mettre le next du bloc enlevé dans le conteneur                           
+                                if spr.detail=="DropDel":
+                                    #si c'est un drop précédent un del (dropdel), seul le bloc est déplacé, 
+                                    #il faut mettre à jour le contenu et nextblock
+                                    nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
+                                    if nextBlock is not None:
+                                        newNextBlock=nextBlock.copy(theTime)
+                                        newNextBlock.setPrevBlock(None)
+                                        listeBlocks.append(newNextBlock)
+                                        lastConteneur.setWrapped(newNextBlock)                                        
+                            elif spr.detail=="DropDel":
+                                #on met à jour l'éventuel nextblock en cas de dropdel
+                                nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
+                                if nextBlock is not None:
+                                    newNextBlock=nextBlock.copy(theTime)
+                                    newNextBlock.setPrevBlock(None)
+                                    listeBlocks.append(newNextBlock)
+                                    
                         if deleted:
                             newNode.deleted=True
                             newNode.action+=" DEL"   
@@ -678,9 +754,11 @@ def listeblock(request,session_key=None):
                 #on cherche l'input modifié (par le rang ou par le detail)
                 if spr.location is None:
                     #c'est un CommentBlock (sans input). La valuer est blockSpec
-                    inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    #si le commentaire est trop long (blockSpec limité à 50 car), le complément est dans detail
+                    detail=spr.detail.split('(longBlockSpec)')
+                    inputNode=listeBlocks.lastNode(detail[0],theTime).copy(theTime,action)
                     inputNode.changeValue(spr.blockSpec)
-                    inputNode.blockSpec=spr.blockSpec
+                    inputNode.blockSpec=detail[1] if (len(detail)>1) else spr.blockSpec
                     inputNode.action='VAL'                    
                     inputNode.change='changed'
                     listeBlocks.append(inputNode)  
@@ -1024,6 +1102,12 @@ class SimpleBlockSnap:
         """
         self.conteneurBlockId=None
     
+    def removeWrapped(self):
+        """
+        supprime le contenu (pas de maj)
+        """
+        self.wrappedBlockId=None
+        
     def setConteneur(self,block):
         """ 
         met le block comme conteneur de self
@@ -1321,6 +1405,7 @@ class SimpleListeBlockSnap:
         self.idropped+=1
         try:
             self.dropped.insert(self.idropped,{'spr':spr.id,'type':spr.type,'time':thetime,
+                                               'detail':spr.detail,
                                            'blockId':spr.blockId,
                                            'targetId':spr.targetId,
                                            'location':spr.location
@@ -1335,6 +1420,7 @@ class SimpleListeBlockSnap:
         #on efface le reste de la liste
         for j in range(self.idropped+1,len(self.dropped)):            
             self.dropped.pop()
+        pass
         #print([print(i) for i in self.dropped])   
     def undrop(self):
         """
