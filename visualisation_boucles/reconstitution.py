@@ -257,23 +257,38 @@ def listeblock(request,session_key=None):
                     #newNode=listeBlocks.getNode(spr.blockId,s['time']).copy(theTime,"UNDROPPED_DEL") 
                     newNode=listeBlocks.lastNode(dspr.blockId,theTime,deleted=True).copy(theTime,action)
                     newNode.deleted=True
-                    newNode.change="undrop delete"
+                    newNode.change="undrop new"
                     listeBlocks.append(newNode)
                     if newNode.conteneurBlockId is not None:
                         lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
                         lastConteneur.setWrapped(None)
                         newNode.unwrap()
                         listeBlocks.append(lastConteneur)
+                    else:
+                        lastConteneur=None
                     if newNode.prevBlockId is not None:
                         newPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime).copy(theTime)
-                        newPrevBlock.change="uninsert"
+                        newPrevBlock.change="uninsert"                        
                         newPrevBlock.setNextBlock(None)
-                        listeBlocks.append(newPrevBlock)                        
+                        listeBlocks.append(newPrevBlock)
+                    else:
+                        newPrevBlock=None                        
                     if newNode.nextBlockId is not None:
                         newNextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime).copy(theTime)
                         newNextBlock.change="uninsert"
-                        newNextBlock.setPrevBlock(None)
-                        listeBlocks.append(newNextBlock)                        
+                        newNextBlock.setPrevBlock(newPrevBlock)
+                        newNextBlock.setConteneur(lastConteneur)
+                        listeBlocks.append(newNextBlock)
+                    else:
+                        newNextBlock=None
+                    if newNode.wrappedBlockId is not None:
+                        #c'est un bloc contenant (donc ajouté avec wrap)
+                        newNextBlock=listeBlocks.lastNode(newNode.wrappedBlockId,theTime).copy(theTime)
+                        if newPrevBlock is not None:
+                            newPrevBlock.setNextBlock(newNextBlock)
+                        newNextBlock.unwrap()
+                        listeBlocks.append(newNextBlock)
+                                                
                 elif dspr.type=="DROP" or dspr.type=="DEL":
                     #Un DEL est précédé d'un DROP (ou d'un ENV DROPEX), il faut traiter les deux d'un coup
                     #on récupère le block
