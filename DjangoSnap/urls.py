@@ -35,6 +35,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('snap/',include('snap.urls')),
     path('boucles/',include('visualisation_boucles.urls')),
+    path('celery/',include('rendu_celery.urls')),
     path('login/',snap.views.login_redirect),
     path('logout/',snap.views.logout_view,name='logout'),
     path(r'',auth_views.LoginView.as_view()),

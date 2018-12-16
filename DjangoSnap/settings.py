@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'visualisation_boucles.apps.VisualisationBouclesConfig',
     'snap.apps.SnapConfig', 
+    'rendu_celery',
     'rest_framework',
     'silk',
 ]
@@ -185,3 +186,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL='/media/'
 MEDIA_ROOT=os.path.join(BASE_DIR, 'media')
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+CELERY_RESULT_BACKEND ='amqp://'
+BROKER_URL = 'amqp://guest:guest@localhost//'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
