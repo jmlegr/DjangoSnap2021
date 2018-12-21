@@ -642,6 +642,8 @@ var lance = function () {
             })     
     }
     
+    var reconstruction=false, //vrai si on est en train de calculer la reconstruction du prg
+        task_id
     d3.select("#visualiser")
         .on("click", function () {
             //on supprime les graphes
@@ -664,7 +666,32 @@ var lance = function () {
             if (z=="programmes") {
                 var tr=0
                 var willstop = 0;
-                var task_id=null
+                if (reconstruction) {
+                    //on relance, donc on annule la tache précédente
+                    xsend('tolisteblock_cancel/'+task_id+'/',csrf_token)
+                    .then(response=>{
+                        willstop = 2
+                        console.log("cancel on relance:",result)
+                    })
+                    
+                }
+                task_id=null
+                reconstruction=true
+                var retour=null
+                
+                /* bouton d'annulation */
+                var poll_cancel= function() {
+                    xsend('tolisteblock_cancel/'+task_id+'/',csrf_token)
+                        .then(response=>{
+                            willstop = 2
+                            console.log("cancel:",result)
+                        })
+                    }
+                
+                d3.select('#cancelBtn').on('click',function() {
+                    console.log('cancel')
+                    poll_cancel()
+                })
                 var poll=function() {
                     tr+=1
                     console.log('tr',tr,task_id)
@@ -711,6 +738,7 @@ var lance = function () {
                 }, method).then(response=>{
                     console.log('recept(',response)
                     task_id=response.task_id
+                    willstop=0
                     var refreshIntervalId = setInterval(function() {
                         poll()
                       if(willstop >= 1){

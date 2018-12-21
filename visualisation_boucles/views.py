@@ -21,7 +21,6 @@ from celery.result import AsyncResult
 
 from django.urls.base import reverse
 from visualisation_boucles.tasks import add
-from visualisation_boucles.forms import AddForm
 # Create your views here.
 def choixbase(request):
     """

@@ -23,6 +23,7 @@ from visualisation_boucles.tasks import add
 from django.http.response import HttpResponseRedirect, HttpResponse
 from django.urls.base import reverse
 import json
+from DjangoSnap.celery import app
 
 affprint=False
 def aff(*str):
@@ -53,10 +54,19 @@ def listesnaps(request,session_key=None):
 
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
+def listeblock_cancel(request,task_id=None):
+    data = 'Fail'
+    app.control.revoke(task_id,terminate=True )
+    data = "Cancelled"
+    return Response(data)
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
 def listeblock_state(request,task_id=None):
     """ A view to report the progress to the user """
     data = 'Fail'
     task = AsyncResult(task_id)
+    print(task.state,task.result)
     if task.state=='REVOKED':
         data={'state':task.state}
     else:

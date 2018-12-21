@@ -21,7 +21,7 @@ urlpatterns = [
     path('toliste$',reconstitution.celery_listeblock,name='celery_listeblock'),
     path('add',views.celery_add,name='celery_add'),
     path('tolisteblock_state/<str:task_id>/',reconstitution.listeblock_state,name='listeblock_state'),
-    path('poll_cancel', views.poll_cancel,name='poll_cancel'),
+    path('tolisteblock_cancel/<str:task_id>/', reconstitution.listeblock_cancel,name='listeblock_cancel'),
     ]
 
 urlpatterns += [
