@@ -69,7 +69,7 @@ pointer-events: none;
     width: 90%;
     height: 90%;
     background-color: #bbbbda;
-    z-index:999;
+    z-index:998;
     visibility: hidden;
 }
 
@@ -99,3 +99,22 @@ p.CommentMorph {
 	font-style: normal;
 	color: cadetblue;
 }
+
+.progress {
+   width:75%;
+   background:yellow;
+  }
+  #bar {
+   height:15px;
+   width:0%;
+   background:tomato;
+   text-align:right;
+  }
+  .taskProgress {
+    width:250px;
+    z-index:999;
+    background-color: lightblue;
+    position:absolute; 
+    top:140px;
+    left:40px;
+  }

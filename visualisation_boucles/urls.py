@@ -16,7 +16,12 @@ router.register(r'sessions',views.SimpleSessionViewset,base_name='sessions')
 urlpatterns = [
     path('base',views.choixbase,name='choixprg_base'),
     path('select',views.selectSessions),
-    path('toliste/<str:session_key>/',reconstitution.listeblock),
+    #path('toliste/<str:session_key>/',reconstitution.listeblock),
+    path('toliste/<str:session_key>/',reconstitution.celery_listeblock,name='celery_listeblock'),
+    path('toliste$',reconstitution.celery_listeblock,name='celery_listeblock'),
+    path('add',views.celery_add,name='celery_add'),
+    path('tolisteblock_state/<str:task_id>/',reconstitution.listeblock_state,name='listeblock_state'),
+    path('poll_cancel', views.poll_cancel,name='poll_cancel'),
     ]
 
 urlpatterns += [

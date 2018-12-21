@@ -70,7 +70,21 @@ var csrf_token="{{ csrf_token }}";
 ok
 
 </div>
-
+<div id="testcelery">
+<div class="taskProgress" id="addProgress" style="visibility:hidden" >
+    <p>
+    Your Task is <span id="user-count">en attente de lancement</span>!
+    </p>
+    <div class="status"></div>
+    <div class="progress">
+        <div id="bar"></div>
+    </div>    
+    <div id="result">en attente</div>
+    <button id="cancelBtn">cancel</button>    
+    <!-- <input id="returnBtn" type=button value="Previous Page" style="visibility:hidden; margin-top:10px;"onClick="javascript:history.go(-1);">
+     -->
+</div>
+</div>
 </body>
 
 <script type="module" src="{% static 'visualisation_boucles/js/main.js' %}"></script>

@@ -1,5 +1,6 @@
 import {
     xsend,
+    ysend,
     urls
 } from './xsend.js'
 import {
@@ -660,20 +661,81 @@ var lance = function () {
                 url+=liste.map(d=>d.session_key)[0]
                 method="GET"
             }
-            xsend(url, csrf_token, {
-                "type": z,
-                "data": data
-            }, method)
-            .then(response => {console.log("sessions",response)                
-                if (z=="reperes") {    
-                    let users=d3.map(response,d=>d.evenement.user).keys()
-                    console.log('rep',users)
-                    users.forEach(function(u){graphSujet(u,response,statsGraphSession)})
-                }
             if (z=="programmes") {
-                graphProgramme(response)
+                var tr=0
+                var willstop = 0;
+                var task_id=null
+                var poll=function() {
+                    tr+=1
+                    console.log('tr',tr,task_id)
+                    if (task_id==null) url=urls.programmes+liste.map(d=>d.session_key)[0]
+                    else url='tolisteblock_state/'+task_id+"/"
+                    xsend(url, csrf_token, {
+                        "type": z,
+                        "data": {'task_id':task_id}
+                    }, method)
+                    .then(response => {
+                        console.log("sessions",response)
+                        if (response.task_id) task_id=response.task_id
+                        if (response.data.state=="SUCCESS") {
+                            let result=response.data.result
+                            willstop = 1;                            
+                            d3.select("#user-count").text("DONE");
+                            d3.select('#bar')
+                                .style('width','100%')
+                                .text(100 + '%');
+                            //d3.select('#returnBtn').style('visibility','visible');
+                            d3.select('#cancelBtn').style('visibility','hidden');
+                            d3.select('#result').text('reçu:'+result.x+'+'+result.y+'='+result.resultat)
+                           } else if (response.data.state!="REVOKED") {
+                             let result=response.data.result                            
+                             
+                             d3.select('#bar')
+                                 .style('width', result.process_percent + '%')
+                                 .text(result.process_percent + '%');
+                             d3.select('#result').text('i:'+result.i)
+                             d3.select("#user-count").text("PROCRESSING");
+                           } else {
+                               d3.select("#user-count").text("CANCELLED");                      
+                               //d3.select('#returnBtn').style('visibility','visible');
+                               d3.select('#cancelBtn').style('visibility','hidden');
+                           }
+                        })
+                }
+                
+                d3.select("#addProgress").style('visibility','visible')
+                d3.select('#cancelBtn').style('visibility','visible');
+                xsend(url, csrf_token, {
+                    "type": z,
+                    "data": {'task_id':task_id}
+                }, method).then(response=>{
+                    console.log('recept(',response)
+                    task_id=response.task_id
+                    var refreshIntervalId = setInterval(function() {
+                        poll()
+                      if(willstop >= 1){
+                        clearInterval(refreshIntervalId);  
+                        d3.select("#addProgress").style('visibility', 'hidden');
+                      } 
+                    },200);
+                })
+               
+                //graphProgramme(response)
+            } else {
+                xsend(url, csrf_token, {
+                    "type": z,
+                    "data": data
+                }, method)
+                .then(response => {console.log("sessions",response)                
+                    if (z=="reperes") {    
+                        let users=d3.map(response,d=>d.evenement.user).keys()
+                        console.log('rep',users)
+                        users.forEach(function(u){graphSujet(u,response,statsGraphSession)})
+                    }
+                
+                })    
             }
-            })
+            
         })
 
     d3.select("#selectAllClasseAnchor").on("click", function () {
