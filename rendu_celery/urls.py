@@ -15,6 +15,7 @@ router = DefaultRouter()
 urlpatterns = [
     path('add',views.celery_add,name='celery_add'),
     path('poll_state', views.poll_state,name='poll_state'),
+    path('poll_cancel', views.poll_cancel,name='poll_cancel'),
     ]
 
 urlpatterns += [

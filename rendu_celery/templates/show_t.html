@@ -1,7 +1,7 @@
 {% load static %}
 <style>
   .progress {
-   width:50%;
+   width:75%;
    background:yellow;
   }
   .bar {
@@ -10,25 +10,33 @@
    background:tomato;
    text-align:right;
   }
+  .taskProgress {
+    width:250px;
+    background-color: lightblue;
+    position:absolute; 
+    top:40px;
+    left:40px;
+  }
  </style>
 <body>
-
-<p>
-  Your Task is <span id="user-count"></span>!
-</p>
-
-<div class="status"></div>
-   {% if task_id %}
-   <div class="progress">
-    <div class="bar"></div>
-   </div>
-   {% endif %}
+<p> et des </p>
+<p>trucs bizarrze</p>
+<div class="taskProgress" id="addProgress">
+    <p>
+    Your Task is <span id="user-count">en attente de lancement</span>!
+    </p>
+    <div class="status"></div>
+    {% if task_id %}
+    <div class="progress">
+        <div class="bar"></div>
+    </div>
+    {% endif %}
+    {% if task_id %}
+    <div class="result">en attente</div>
+    <button id="cancelBtn">cancel</button>
+    {% endif %}
+    <input id="returnBtn" type=button value="Previous Page" style="visibility:hidden; margin-top:10px;"onClick="javascript:history.go(-1);">
 </div>
-{% if task_id %}
-<div class="result">en attente</div>
-{% endif %}
-<input id="returnBtn" type=button value="Previous Page" style="visibility:hidden; margin-top:10px;"onClick="javascript:history.go(-1);">
-
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
 <script src="{% static 'visualisation_boucles/js/d3.min.js' %}"></script>
 <script type="text/javascript">
@@ -39,7 +47,29 @@
 
    
   (function(){
-      
+    console.log('willstio',willstop)
+    var poll_cancel= function() {
+        $.ajax({
+                url:'poll_cancel',
+                type: 'POST',
+                data: {
+                    task_id: "{{task_id}}",
+                    csrfmiddlewaretoken: "{{csrf_token}}",
+                    },
+                success: function(result) {
+                    willstop = 2
+                    console.log("cancel:",result) 
+                    /*document.getElementById("user-count").textContent=result;
+                    document.getElementById('returnBtn').style.visibility = 'visible';
+                    document.getElementById('cancelBtn').style.visibility = 'hidden';
+                    */
+                    }
+        })
+    }
+    $('#cancelBtn').on('click',function() {
+        console.log('cancel')
+        poll_cancel()
+    })
     var poll = function(){
       var json_dump = "{{ data }}";
       var task_id = "{{task_id}}";
@@ -53,30 +83,38 @@
             task_id: task_id,
             csrfmiddlewaretoken: "{{csrf_token}}",
         },
-        success: function(result) {
-                    if (result.process_percent == null || result.process_percent == undefined) {
+        success: function(data) {            
+                      if (data.state=="SUCCESS") {
+                        result=data.result
                         willstop = 1;
                         document.getElementById("user-count").textContent="DONE";
                         jQuery('.bar').css({'width': 100 + '%'});
                         jQuery('.bar').html(100 + '%');
                         document.getElementById('returnBtn').style.visibility = 'visible';
+                        document.getElementById('cancelBtn').style.visibility = 'hidden';
                         jQuery('.result').html('reçu:'+result.x+'+'+result.y+'='+result.resultat)
-                       } else {
+                       } else if (data.state!="REVOKED") {
+                         result=data.result
                          jQuery('.bar').css({'width': result.process_percent + '%'});
                          jQuery('.bar').html(result.process_percent + '%');
                          jQuery('.result').html('i:'+result.i)
                          document.getElementById("user-count").textContent="PROCRESSING";
-                       };
-                    }
+                       } else {
+                           document.getElementById("user-count").textContent="CANCELLED";                      
+                           document.getElementById('returnBtn').style.visibility = 'visible';
+                           document.getElementById('cancelBtn').style.visibility = 'hidden';
+                       }
+        }
       });
     };
 
     var refreshIntervalId = setInterval(function() {
-      poll();
-      if(willstop == 1){
-        clearInterval(refreshIntervalId);
-      }
-    },100);
+        poll()
+      if(willstop >= 1){
+        clearInterval(refreshIntervalId);  
+        $("#addProgress").css('visibility', 'hidden');
+      } 
+    },200);
 
 
   })();
