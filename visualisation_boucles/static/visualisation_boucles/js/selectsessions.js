@@ -664,6 +664,7 @@ var lance = function () {
                 method="GET"
             }
             if (z=="programmes") {
+                var delay=200
                 var tr=0
                 var willstop = 0;                
                 //task_id=null
@@ -684,7 +685,7 @@ var lance = function () {
                 })
                 var poll=function() {
                     tr+=1
-                    console.log('tr',tr,task_id)
+                    console.log('tr',tr,task_id,reconstruction)
                     d3.select("#addProgress").style('visibility','visible')
                     d3.select('#cancelBtn').style('visibility','visible');
                     if (task_id==null) url=urls.programmes+liste.map(d=>d.session_key)[0]
@@ -713,7 +714,7 @@ var lance = function () {
                                  .style('width', result.process_percent + '%')
                                  .text(result.process_percent + '%');
                              d3.select('#result').text('i:'+result.i)
-                             d3.select("#user-count").text("PROCRESSING");
+                             d3.select("#user-count").text(task_id+" PROCRESSING");
                            } else {
                                willstop = 2;     
                                d3.select("#user-count").text("CANCELLED");                      
@@ -723,11 +724,12 @@ var lance = function () {
                         })
                 }
                 var reconstruit=function() {
+                    reconstruction=true;
                     return xsend(url, csrf_token, {
                         "type": z,
                         "data": {'task_id':task_id}
                     }, method).then(response=>{
-                        console.log('recept(',response)
+                        console.log('recept(',response)                    
                         task_id=response.task_id
                         willstop=0
                         var refreshIntervalId = setInterval(function() {
@@ -737,15 +739,31 @@ var lance = function () {
                                 task_id=null
                                 d3.select("#addProgress").style('visibility', 'hidden');
                             } 
-                        },200);
+                        },delay);
                     })
                 }
                 
                 if (task_id==null) {
-                    reconstruit()
+                    if (!reconstruction) reconstruit()
+                    else {
+                        //une reconstruction est déjà lancée mais on n'a pas encore la task_id
+                        d3.select('#cancelBtn').style('visibility','hidden');
+                        var refreshTask=setInterval(function(){
+                            if (task_id!=null) {
+                                clearInterval(refreshTask)
+                                poll_cancel().then(response=>{
+                                    task_id=null;
+                                    reconstruction=false;
+                                    reconstruit()})
+                            }
+                        },delay)
+                    }
                 } else {
                     //c'est un nouveau lancement, on commence par annuler
-                    poll_cancel().then(response=>{task_id=null; reconstruit()})
+                    poll_cancel().then(response=>{
+                            task_id=null; 
+                            reconstruction=false;
+                            reconstruit()})
                 }
                 
                

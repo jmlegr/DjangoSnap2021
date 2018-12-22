@@ -57,7 +57,7 @@ def listesnaps(request,session_key=None):
 @renderer_classes((JSONRenderer,))
 def listeblock_cancel(request,task_id=None):
     data = 'Fail'
-    app.control.revoke(task_id,terminate=True,signal='SIGUSR1' )
+    app.control.revoke(task_id,terminate=True) #,signal='SIGUSR1' )
     data = "Cancelled"
     return Response(data)
 
