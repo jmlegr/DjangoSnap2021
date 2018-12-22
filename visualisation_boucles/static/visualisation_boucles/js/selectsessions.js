@@ -665,23 +665,13 @@ var lance = function () {
             }
             if (z=="programmes") {
                 var tr=0
-                var willstop = 0;
-                if (reconstruction) {
-                    //on relance, donc on annule la tache précédente
-                    xsend('tolisteblock_cancel/'+task_id+'/',csrf_token)
-                    .then(response=>{
-                        willstop = 2
-                        console.log("cancel on relance:",result)
-                    })
-                    
-                }
-                task_id=null
-                reconstruction=true
+                var willstop = 0;                
+                //task_id=null
                 var retour=null
                 
                 /* bouton d'annulation */
                 var poll_cancel= function() {
-                    xsend('tolisteblock_cancel/'+task_id+'/',csrf_token)
+                    return xsend('tolisteblock_cancel/'+task_id+'/',csrf_token)
                         .then(response=>{
                             willstop = 2
                             console.log("cancel:",result)
@@ -695,6 +685,8 @@ var lance = function () {
                 var poll=function() {
                     tr+=1
                     console.log('tr',tr,task_id)
+                    d3.select("#addProgress").style('visibility','visible')
+                    d3.select('#cancelBtn').style('visibility','visible');
                     if (task_id==null) url=urls.programmes+liste.map(d=>d.session_key)[0]
                     else url='tolisteblock_state/'+task_id+"/"
                     xsend(url, csrf_token, {
@@ -723,30 +715,40 @@ var lance = function () {
                              d3.select('#result').text('i:'+result.i)
                              d3.select("#user-count").text("PROCRESSING");
                            } else {
+                               willstop = 2;     
                                d3.select("#user-count").text("CANCELLED");                      
                                //d3.select('#returnBtn').style('visibility','visible');
                                d3.select('#cancelBtn').style('visibility','hidden');
                            }
                         })
                 }
+                var reconstruit=function() {
+                    return xsend(url, csrf_token, {
+                        "type": z,
+                        "data": {'task_id':task_id}
+                    }, method).then(response=>{
+                        console.log('recept(',response)
+                        task_id=response.task_id
+                        willstop=0
+                        var refreshIntervalId = setInterval(function() {
+                            poll()
+                            if(willstop >= 1 ){
+                                clearInterval(refreshIntervalId);  
+                                task_id=null
+                                d3.select("#addProgress").style('visibility', 'hidden');
+                            } 
+                        },200);
+                    })
+                }
                 
-                d3.select("#addProgress").style('visibility','visible')
-                d3.select('#cancelBtn').style('visibility','visible');
-                xsend(url, csrf_token, {
-                    "type": z,
-                    "data": {'task_id':task_id}
-                }, method).then(response=>{
-                    console.log('recept(',response)
-                    task_id=response.task_id
-                    willstop=0
-                    var refreshIntervalId = setInterval(function() {
-                        poll()
-                      if(willstop >= 1){
-                        clearInterval(refreshIntervalId);  
-                        d3.select("#addProgress").style('visibility', 'hidden');
-                      } 
-                    },200);
-                })
+                if (task_id==null) {
+                    reconstruit()
+                } else {
+                    //c'est un nouveau lancement, on commence par annuler
+                    poll_cancel().then(response=>{task_id=null; reconstruit()})
+                }
+                
+               
                
                 //graphProgramme(response)
             } else {

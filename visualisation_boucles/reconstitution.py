@@ -24,6 +24,7 @@ from django.http.response import HttpResponseRedirect, HttpResponse
 from django.urls.base import reverse
 import json
 from DjangoSnap.celery import app
+import random
 
 affprint=False
 def aff(*str):
@@ -56,7 +57,7 @@ def listesnaps(request,session_key=None):
 @renderer_classes((JSONRenderer,))
 def listeblock_cancel(request,task_id=None):
     data = 'Fail'
-    app.control.revoke(task_id,terminate=True )
+    app.control.revoke(task_id,terminate=True,signal='SIGUSR1' )
     data = "Cancelled"
     return Response(data)
 
@@ -86,7 +87,7 @@ def celery_listeblock(request,session_key=None):
             'task_id':job_id,
         }
         return Response(context)
-    job = add.delay(int(3),int(4),int(80000))
+    job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
 
 
