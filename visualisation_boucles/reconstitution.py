@@ -19,12 +19,13 @@ from lxml import etree
 from snap.views import liste
 from snap.reconstitution import listeblock
 from celery.result import AsyncResult
-from visualisation_boucles.tasks import add
+
 from django.http.response import HttpResponseRedirect, HttpResponse
 from django.urls.base import reverse
 import json
 from DjangoSnap.celery import app
 import random
+from visualisation_boucles.tasks import reconstruit
 
 affprint=False
 def aff(*str):
@@ -87,14 +88,17 @@ def celery_listeblock(request,session_key=None):
             'task_id':job_id,
         }
         return Response(context)
-    job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
+    #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
+    job=reconstruit.delay(session_key)
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
 
-
+'''
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
-def listeblock(request,session_key=None):  
-    
+def listeblock(request,session_key=None):
+'''  
+@renderer_classes((JSONRenderer,))
+def reconstruitlisteblock(session_key=None):
     def createNew(spr,theTime,action):
         """
         créé un nouveau block et ses inputs
@@ -133,7 +137,6 @@ def listeblock(request,session_key=None):
         return newNode
     
     #liste les derniers débuts de tous les élèves
-    aff("session",session_key)
     if session_key.isdigit():
         #on a envoyé une id d'évènement EPR
         epr=EvenementEPR.objects.get(id=session_key)
