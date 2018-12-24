@@ -5,8 +5,7 @@ Created on 16 déc. 2018
 '''
 from celery import shared_task,current_task
 from snap.models import Evenement, EvenementEPR
-from visualisation_boucles import reconstitution
-#from visualisation_boucles.reconstitution import SimpleListeBlockSnap
+from visualisation_boucles.reconstitution import SimpleListeBlockSnap
 
 
 
@@ -17,28 +16,26 @@ def reconstruit(session_key):
     #liste les derniers débuts de tous les élèves
     evts=[]
     if session_key.isdigit():
-        print('youyou')
         #on a envoyé une id d'évènement EPR
-        #epr=EvenementEPR.objects.get(id=session_key)
-        #debut=epr.evenement
-        #evts=Evenement.objects.filter(session_key=debut.session_key,creation__gte=debut.creation,time__gte=debut.time).order_by('time')
+        epr=EvenementEPR.objects.get(id=session_key)
+        debut=epr.evenement
+        evts=Evenement.objects.filter(session_key=debut.session_key,creation__gte=debut.creation,time__gte=debut.time).order_by('time')
     else:
-        print('yazy')
-        #evts=Evenement.objects.filter(session_key=session_key).order_by('time')
-        #debut=evts[0]
+        evts=Evenement.objects.filter(session_key=session_key).order_by('time')
+        debut=evts[0]
     nb_evts=evts.count()
     current_task.update_state(state='Initialisation',
                                 meta={'evt_traites': 0,'nb_evts':nb_evts})
     infos={}
     eprInfos={}  
     evtTypeInfos={}  
-    #user=debut.user
-    #infos['user']=user.username
-    #infos['date']=debut.creation
+    user=debut.user
+    infos['user']=user.username
+    infos['date']=debut.creation
     
     #on va parcourir les évènement
     drops=[]
-    #listeBlocks=SimpleListeBlockSnap()
+    listeBlocks=SimpleListeBlockSnap()
     #on traite les évènements
     dtime=None
     evtPrec=None
@@ -48,7 +45,7 @@ def reconstruit(session_key):
         if (evt_traites % 10 == 0):
             current_task.update_state(state='Traitement',
                                 meta={'evt_traites': evt_traites,'nb_evts':nb_evts})
-        print('evt',evt,evt.type,evt.id)
+        #print('evt',evt,evt.type,evt.id)
         if dtime is None:
             dtime=evt.time
             theTime=0

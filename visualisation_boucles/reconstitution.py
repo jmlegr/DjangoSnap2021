@@ -16,16 +16,7 @@ from django.contrib.auth.models import User
 from django.db.models.aggregates import Min
 from django.utils.datetime_safe import datetime
 from lxml import etree
-from snap.views import liste
-from snap.reconstitution import listeblock
-from celery.result import AsyncResult
 
-from django.http.response import HttpResponseRedirect, HttpResponse
-from django.urls.base import reverse
-import json
-from DjangoSnap.celery import app
-import random
-from visualisation_boucles.tasks import reconstruit
 
 affprint=False
 def aff(*str):
@@ -54,43 +45,6 @@ def listesnaps(request,session_key=None):
                   'evts':serializers.EvenementEPRSerializer(evts,many=True).data
                   })
 
-@api_view(('GET',))
-@renderer_classes((JSONRenderer,))
-def listeblock_cancel(request,task_id=None):
-    data = 'Fail'
-    app.control.revoke(task_id,terminate=True) #,signal='SIGUSR1' )
-    data = "Cancelled"
-    return Response(data)
-
-@api_view(('GET',))
-@renderer_classes((JSONRenderer,))
-def listeblock_state(request,task_id=None):
-    """ A view to report the progress to the user """
-    data = 'Fail'
-    task = AsyncResult(task_id)
-    print(task.state,task.result)
-    if task.state=='REVOKED':
-        data={'state':task.state}
-    else:
-        data = {'result':task.result,'state':task.state}
-    return Response({'task_id':task_id,'data':data})            
-        
-@api_view(('GET',))
-@renderer_classes((JSONRenderer,))
-def celery_listeblock(request,session_key=None):
-    if 'job' in request.GET:
-        print('JOB')
-        job_id = request.GET['job']
-        job = AsyncResult(job_id)
-        data = {'result':job.result,'state':job.state}
-        context = {
-            'data':data,
-            'task_id':job_id,
-        }
-        return Response(context)
-    #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
-    job=reconstruit.delay(session_key)
-    return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
 
 '''
 @api_view(('GET',))

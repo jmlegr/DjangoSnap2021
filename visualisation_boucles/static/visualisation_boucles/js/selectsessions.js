@@ -709,12 +709,12 @@ var lance = function () {
                             d3.select('#result').text('reçu:'+result.x+'+'+result.y+'='+result.resultat)
                            } else if (response.data.state!="REVOKED") {
                              let result=response.data.result                            
-                             
+                             let process_percent=Math.round(result.evt_traites/result.nb_evts*100)
                              d3.select('#bar')
-                                 .style('width', result.process_percent + '%')
-                                 .text(result.process_percent + '%');
-                             d3.select('#result').text('i:'+result.i)
-                             d3.select("#user-count").text(task_id+" PROCRESSING");
+                                 .style('width',process_percent + '%')
+                                 .text(process_percent + '%');
+                             d3.select('#result').text('evts:'+result.evt_traites+'/'+result.nb_evts)
+                             d3.select("#user-count").text(task_id+': '+response.data.state);
                            } else {
                                willstop = 2;     
                                d3.select("#user-count").text("CANCELLED");                      
