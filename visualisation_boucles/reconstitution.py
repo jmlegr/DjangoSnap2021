@@ -400,6 +400,29 @@ def listeblock(request,session_key=None):
                         else:
                             conteneur.setWrapped(None)
                             newNode.unwrap()
+                    elif dspr.location=='wrap':
+                        #on remet le block conteneur a sa place (et donc maj de son prevBlock
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        if newNode.wrappedBlockId is not None:
+                            ancienContenu=listeBlocks.lastNode(newNode.wrappedBlockId,s['time']).copy(theTime)
+                            contenu=listeBlocks.lastNode(newNode.wrappedBlockId,theTime).copy(theTime)
+                            contenu.unwrap()
+                            listeBlocks.append(contenu)
+                            newNode.setWrapped(None)
+                        else:
+                            ancienContenu=None
+                        if ancienNode.prevBlockId is not None:
+                            newPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            newPrevBlock.setNextBlock(newNode)
+                            listeBlocks.append(newPrevBlock)
+                        else:
+                            newPrevBlock=None
+                        #on replace l'ancien prevBlock du bloc contenu
+                        if ancienContenu is not None and ancienContenu.prevBlockId is not None:
+                            newPrevBlock=listeBlocks.lastNode(ancienContenu.prevBlockId,theTime).copy(theTime)
+                            newPrevBlock.setNextBlock(contenu)
+                            listeBlocks.append(newPrevBlock)
+                            
                     elif dspr.location==None:
                         #on récupère l'ancien node
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
@@ -709,6 +732,32 @@ def listeblock(request,session_key=None):
                                 listeBlocks.setNextBlock(newNode,lastContenu)
                         conteneurNode.setWrapped(newNode)
                         aff('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
+                        listeBlocks.addTick(theTime)
+                    elif spr.location=='wrap':
+                        #c'est un conteneur qui vient englober les blocks à partir de targetId 
+                        #(et qui aura comme prevBlock parentId)
+                        #on recupere le prevblock avant modif
+                        lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
+                        #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
+                        if lastPrevBlock is not None:
+                            newNode.setPrevBlock(None)
+                            newLastPrevBlock=lastPrevBlock.copy(theTime)
+                            newLastPrevBlock.setNextBlock(None)
+                            listeBlocks.append(newLastPrevBlock) 
+                        else:
+                            listeBlocks.setPrevBlock(newNode,None)
+                        target=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
+                        #on recherche le parent
+                        if target.prevBlockId is not None:
+                            newPrevBlock=listeBlocks.lastNode(target.prevBlockId,theTime).copy(theTime)
+                            newPrevBlock.setNextBlock(newNode)
+                            listeBlocks.append(newPrevBlock)
+                        #on se passe du cslot
+                        #cslot=listeBlocks.lastNode(newNode.inputs['0'],theTime,veryLast=True)
+                        #on met à jour la cible                    
+                        target.setPrevBlock(None)
+                        target.setConteneur(newNode)
+                        listeBlocks.append(target)
                         listeBlocks.addTick(theTime)
                     elif spr.location is None:
                         #droppé tout seul, il devient bloc de tête
