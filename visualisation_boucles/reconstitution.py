@@ -176,17 +176,24 @@ def listeblock(request,session_key=None):
             #epr=evt.evenementepr.all()[0]
             epr=evtType
             aff('EPR',epr)
-            if epr.type in ['START','STOP','REPR','SNP','PAUSE']:                
+            if epr.type in ['START','STOP','FIN','REPR','SNP','PAUSE']:                
                 eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}                    
                 if epr.type=='SNP':
+                    eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}
                     #snp=SnapSnapShot.objects.get(id=epr.detail)
                     snp=evt.image.all()[0]
                     eprInfos['%s' % theTime]['snp']=serializers.SnapSnapShotSerializer(snp).data
-                    listeBlocks.addTick(theTime)
+                else:
+                    eprInfos['%s' % theTime]={'type':epr.type,
+                                              'detail':'{}({})'.format(epr.topBlockSelector,epr.topBlockId),
+                                              'click':epr.click
+                                              }
+                listeBlocks.addTick(theTime)
             elif epr.type in ['ASK','ANSW']:
                 #c'est une interaction avec l'utilisateur
                 eprInfos['%s' % theTime]={'type':epr.type,'detail':epr.detail}
-                listeBlocks.addTick(theTime)
+                listeBlocks.addTick(theTime)            
+                
             evtPrec=evtType
         if evt.type=='ENV':
             #env=evt.environnement.all()[0]

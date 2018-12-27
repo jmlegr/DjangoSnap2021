@@ -109,8 +109,14 @@ background-color: yellow;
 .blockepr.start {
 	background-color: lightgreen;
 }
-.blockepr.fin {
-    background-color: orange;
+.blockepr.snpstart {
+	background-color: #bdf5bd;
+}
+.blockepr.end {
+	background-color:orange;
+}
+.blockepr.snpfin {
+    background-color: #ffd280;
 }
 .blockepr.ask {
 	background-color: lightblue;
