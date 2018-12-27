@@ -61,13 +61,63 @@ const graphProgramme=function(donnees,div="graphSujet") {
             })
             console.log(newData)
         } else {
-            //traitement snap
+            //traitement epr
+            let snp=(c.epr.type=="SNP")
+            let ask=(c.epr.type=="ASK")
+            let answ=(c.epr.type=="ANSW")
             let fin=(c.epr.detail.substring(0,3)=='FIN')
-            divG.classed("blocksnap",true)
+            divG.classed("blockepr",true)
+                .classed("snp",snp)
+                .classed("ask",ask)
+                .classed("answ",answ)
                 .classed("start",!fin)
                 .classed("fin",fin)
-                .append("div").attr("class","tete").html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:'')) 
-            divG.append("div").html(fin?"END":"START")
+                .append("div").html(formatTimeToHMS(c.temps)+"\n"+c.evt.type)
+                .append("p").html(c.evt.detail?`<span>${c.evt.detail}</span>`:'') 
+            //divG.append("div").html(fin?"END":"START")
+            if (snp) {
+
+                const state = {
+                        isFetching: false,
+                        canFetch: true
+                }
+                tippy(divG.node(),{
+                    theme:'light',                 
+                    content:"belle image"+c.epr.snp.image,
+                    placement:'right',
+                    delay:200,
+                    arrow:true,
+                    arrowType: 'round',
+                    size: 'large',
+                    duration: 500,
+                    animation: 'perspective',
+                    async onShow(tip) {                     
+                        if ( state.isFetching || !state.canFetch) return
+                        state.isFetching = true
+                        state.canFetch = false
+                        try {
+                            const response = await fetch(c.epr.snp.image)
+                            const blob = await response.blob()
+                            const url = URL.createObjectURL(blob)
+                            if (tip.state.isVisible) {
+                                const img = new Image()
+                                img.width = 300
+                                img.height = 300
+                                img.src = url
+                                tip.setContent(img)
+                            }
+                        } catch (e) {
+                            tip.setContent(`Fetch failed. ${e}`)
+                        } finally {
+                            state.isFetching = false
+                        }
+                    },
+                    onHidden(tip) {
+                        state.canFetch = true
+                        tip.setContent("nothing")
+                    }
+                })
+            }
         }
         
         
