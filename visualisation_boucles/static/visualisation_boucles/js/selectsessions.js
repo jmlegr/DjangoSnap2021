@@ -659,6 +659,8 @@ var lance = function () {
                 //data=liste.map(d=>d.session_key)
                 url+=liste.map(d=>d.session_key)[0]
                 method="GET"
+                d3.select('#overlayDiv2').selectAll("*").remove();
+                d3.select('#overlayDiv2').style("visibility","visible")
             }
             xsend(url, csrf_token, {
                 "type": z,
@@ -671,7 +673,16 @@ var lance = function () {
                     users.forEach(function(u){graphSujet(u,response,statsGraphSession)})
                 }
             if (z=="programmes") {
-                graphProgramme(response)
+                d3.select("#overlayDiv2")
+                    .append('div')
+                    .style("class",'progTitle')
+                    .html(`Utilisateur <b>${response.infos.user}</b>, programme "<b>${response.infos.type}</b>", `
+                            +`le ${locale.utcFormat("%x à %X")(new Date(response.infos.date))}`)
+                graphProgramme(response,'overlayDiv2')
+                d3.select("#overlayDiv2").append("button").attr("class","btn").text("Fermer")
+                .on("click",function() {
+                    d3.select("#overlayDiv2").style("visibility","hidden")
+                    })
             }
             })
         })
