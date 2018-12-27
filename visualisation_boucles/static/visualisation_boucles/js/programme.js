@@ -35,25 +35,40 @@ const graphProgramme=function(donnees,div="graphSujet") {
                             || 
                             (d.conteneurBlock!=null && d.conteneurBlock.indexOf('SCRIPT')!=-1 ))
                         )
+        let firstTete=true
         console.log("etape",c.temps,tetes)
         //on reconstruit
         let newData={}
         let divG=d3.select("#"+div).append("div").attr("class","blockcommands")
-        if (tetes.length==0) {
-            let divCom=divG.append("div").attr("class","tete").html(c.temps+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+        if (tetes.length==0 ) {
+            let divCom=divG.append("div").attr("class","tete").html(c.temps+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))            
         }
         if (c.epr==null) {
             tetes.forEach(function(t) {            
                 newData[t.JMLid]=parcoursCommande(c.snap,[],t,0)
-                let divCom=divG.append("div").attr("class","tete").html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
-                let enter=divCom.selectAll(".commande").data(newData[t.JMLid])
+                let divCom
+                if (firstTete) {
+                    divG.append("div").attr("class","tete").html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+                    firstTete=false
+                } else {
+                    divG.append("div").attr("class","separation").html('--')
+                }
+                let enter=divG.selectAll(".commande").data(newData[t.JMLid])
                 enter.enter().append("p")
                     .attr("class",d=>"command "+(d.action?'action ':'')+(d.typeMorph?d.typeMorph:''))
-                    .attr("title",d=>d.action)
+                    .attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid}`)
                     .html(d=>'...'.repeat(d.index)+d.commande)
             })
             console.log(newData)
-    }
+        } else {
+            //traitement snap
+            let fin=(c.epr.detail.substring(0,3)=='FIN')
+            divG.classed("blocksnap",true)
+                .classed("start",!fin)
+                .classed("fin",fin)
+                .append("div").attr("class","tete").html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:'')) 
+            divG.append("div").html(fin?"END":"START")
+        }
         
         
         

@@ -73,6 +73,8 @@ pointer-events: none;
     visibility: hidden;
 }
 #overlayDiv2 {
+	padding:2em;
+	border: 2px solid slategrey;
     position: fixed;
     top: 5%;
     left: 5%;
@@ -99,16 +101,43 @@ background-color: yellow;
 	margin-bottom: 0.5em;
 	background-color: lavender;
 }
+.blocksnap {
+	font-size:8;
+    width : 5em;    
+    background-color: lightblue;
+}
+.blocksnap.start {
+	background-color: lightgreen;
+}
+.blocksnap.fin {
+    background-color: orange;
+}
 p.command {
 	font-size:10;
 	margin-top: 0.1em;
     margin-bottom: 0.1em;
     margin-left: 0.1em;
 }
+.command span{
+	border-radius: 5px;
+	padding-right: 5px;
+	padding-left: 5px;
+	background-color: silver;
+}
+ span.changed {
+	background-color: teal;
+}
 p.action {
 	font-style: italic;
+	color: red;
+	font-size:12;
 }
+
 p.CommentMorph {
 	font-style: normal;
 	color: cadetblue;
+}
+.separation {
+    background-color: lightsteelblue;
+    font-size:4;
 }

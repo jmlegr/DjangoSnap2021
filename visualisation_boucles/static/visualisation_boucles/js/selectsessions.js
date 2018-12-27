@@ -679,7 +679,7 @@ var lance = function () {
                     .html(`Utilisateur <b>${response.infos.user}</b>, programme "<b>${response.infos.type}</b>", `
                             +`le ${locale.utcFormat("%x à %X")(new Date(response.infos.date))}`)
                 graphProgramme(response,'overlayDiv2')
-                d3.select("#overlayDiv2").append("button").attr("class","btn").text("Fermer")
+                d3.select("#overlayDiv2").append("div").append("button").attr("class","btn").text("Fermer")
                 .on("click",function() {
                     d3.select("#overlayDiv2").style("visibility","hidden")
                     })
