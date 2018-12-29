@@ -16,8 +16,7 @@ from django.contrib.auth.models import User
 from django.db.models.aggregates import Min
 from django.utils.datetime_safe import datetime
 from lxml import etree
-from snap.views import liste
-from snap.reconstitution import listeblock
+
 
 affprint=False
 def aff(*str):
@@ -46,10 +45,14 @@ def listesnaps(request,session_key=None):
                   'evts':serializers.EvenementEPRSerializer(evts,many=True).data
                   })
 
+
+'''
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
-def listeblock(request,session_key=None):  
-    
+def listeblock(request,session_key=None):
+'''  
+@renderer_classes((JSONRenderer,))
+def reconstruitlisteblock(session_key=None):
     def createNew(spr,theTime,action):
         """
         créé un nouveau block et ses inputs
@@ -88,7 +91,6 @@ def listeblock(request,session_key=None):
         return newNode
     
     #liste les derniers débuts de tous les élèves
-    aff("session",session_key)
     if session_key.isdigit():
         #on a envoyé une id d'évènement EPR
         epr=EvenementEPR.objects.get(id=session_key)

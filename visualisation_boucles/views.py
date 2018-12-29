@@ -9,12 +9,19 @@ from visualisation_boucles.serializers import ProgrammeBaseSerializer, Evenement
                
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework.decorators import detail_route, list_route, renderer_classes
+from rest_framework.decorators import detail_route, list_route, renderer_classes,\
+    api_view
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer,\
     StaticHTMLRenderer
 from django.db.models.aggregates import Min, Max, Count
 import itertools
-from django.http.response import HttpResponse
+from django.http.response import HttpResponse, HttpResponseRedirect
+from DjangoSnap.celery import app
+import json
+from celery.result import AsyncResult
+
+from django.urls.base import reverse
+from visualisation_boucles.tasks import reconstruit
 # Create your views here.
 def choixbase(request):
     """
@@ -252,3 +259,41 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
         serializer=SimpleEvenementSerializer(evts,many=True)
         return Response(serializer.data)
         #return HttpResponse(data)
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def listeblock_cancel(request,task_id=None):
+    data = 'Fail'
+    app.control.revoke(task_id,terminate=True) #,signal='SIGUSR1' )
+    data = "Cancelled"
+    return Response(data)
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def listeblock_state(request,task_id=None):
+    """ A view to report the progress to the user """
+    data = 'Fail'
+    task = AsyncResult(task_id)
+    #print(task.state,task.result)
+    if task.state=='REVOKED':
+        data={'state':task.state}
+    else:
+        data = {'result':task.result,'state':task.state}
+    return Response({'task_id':task_id,'data':data})            
+        
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def celery_listeblock(request,session_key=None):
+    if 'job' in request.GET:
+        print('JOB')
+        job_id = request.GET['job']
+        job = AsyncResult(job_id)
+        data = {'result':job.result,'state':job.state}
+        context = {
+            'data':data,
+            'task_id':job_id,
+        }
+        return Response(context)
+    #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
+    job=reconstruit.delay(session_key)
+    return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
