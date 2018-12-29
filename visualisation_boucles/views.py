@@ -2,10 +2,10 @@ from django.shortcuts import render
 
 from rest_framework import viewsets
 from snap.models import ProgrammeBase, EvenementEPR, EvenementENV, Evenement,\
-    SnapSnapShot
+    SnapSnapShot, EvenementSPR
 from visualisation_boucles.serializers import ProgrammeBaseSerializer, EvenementENVSerializer, SimpleEvenementSerializer\
                     ,VerySimpleEvenementSerializer, ResumeSessionSerializer,\
-                    ReperesEPRSerializer
+                    ReperesEPRSerializer, SimpleSPRSerializer
                
 from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
@@ -22,6 +22,7 @@ from celery.result import AsyncResult
 
 from django.urls.base import reverse
 from visualisation_boucles.tasks import reconstruit
+from django.db.models.query import prefetch_one_level
 # Create your views here.
 def choixbase(request):
     """
@@ -297,3 +298,34 @@ def celery_listeblock(request,session_key=None):
     #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
     job=reconstruit.delay(session_key)
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
+
+@api_view(('POST',))
+@renderer_classes((JSONRenderer,))
+def graph_boucles(request):
+    '''
+    Recherche la premiere occurence d'une boucle ('doUntil','doForever','doRepeat')    
+    et renvoi l'enselbe des évènements la précédent
+    data:liste des session_key
+    only: si présent, tableau de recherche (défaut:['doUntil','doForever','doRepeat']
+    '''
+    if 'only' in request.data:
+        tabBoucles=request.data['only']
+    else:
+        tabBoucles=['doUntil','doForever','doRepeat']
+
+    evtsBoucle={}
+    for session_key in request.data['data']:
+        #on recherche une création de boucle
+        evt=EvenementSPR.objects.filter(evenement__session_key=session_key,type='NEW',selector__in=tabBoucles)\
+                .select_related('evenement')\
+                .order_by('evenement__time').first()
+        if evt is not None:
+            serializerSPR=SimpleSPRSerializer(evt,many=False)
+            evts=Evenement.objects.filter(session_key=session_key,time__lte=evt.evenement.time)\
+                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')
+                    
+            serializer=SimpleEvenementSerializer(evts,many=True)
+            evtsBoucle[session_key]={'boucle':serializerSPR.data,'evts':serializer.data}
+        else:
+            evtsBoucle[session_key]=None
+    return Response(evtsBoucle)

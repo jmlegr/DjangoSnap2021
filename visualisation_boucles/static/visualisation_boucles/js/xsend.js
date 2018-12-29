@@ -2,7 +2,8 @@
 var urls = {
         'visualise':"sessions/visualise/",
         'reperes':"sessions/reperes/",
-        'programmes':'toliste/'
+        'programmes':'toliste/',
+        'boucle':'boucle',
 }
 
 var xsend = function (url, csrf_token, data, method = "GET") {

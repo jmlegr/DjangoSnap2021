@@ -801,6 +801,18 @@ var lance = function () {
 
 
                 //graphProgramme(response)
+            } else if (z=='boucle' && liste.length>0) {
+                //graphe d'apparition de la boucle
+                url=urls.boucle               
+                data=liste.map(d=>d.session_key)
+                method="POST"
+                xsend(url, csrf_token, {
+                        "type": z,
+                        "data": data,
+                        //"only":['doUntil','doForever','doRepeat']
+                    }, method)
+                    .then(response => {console.log("boucle",response)                
+                        })                    
             }
     })
 
