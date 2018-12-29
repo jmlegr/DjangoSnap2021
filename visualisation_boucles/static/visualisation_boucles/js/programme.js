@@ -23,10 +23,10 @@ const parcoursCommande=function(commandes,data,snap,index) {
     }
     return data
 }
-const graphProgramme=function(donnees,div="graphSujet") {
+const graphProgramme=function(donnees,div) {
     //reconstitue le graphe du programme donné en paramère
     //données={commandes,infos,ticks,scripts}
-
+    
     
     donnees.commandes.forEach(function(c) {
         //on commence par rechercher les blocks de tête
@@ -39,7 +39,7 @@ const graphProgramme=function(donnees,div="graphSujet") {
         console.log("etape",c.temps,tetes)
         //on reconstruit
         let newData={}
-        let divG=d3.select("#"+div).append("div").attr("class","blockcommands")
+        let divG=div.append("div").attr("class","blockcommands")
         if (tetes.length==0 ) {
             let divCom=divG.append("div").attr("class","tete").html(c.temps+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))            
         }

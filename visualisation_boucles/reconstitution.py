@@ -53,6 +53,10 @@ def listeblock(request,session_key=None):
 '''  
 @renderer_classes((JSONRenderer,))
 def reconstruitlisteblock(session_key=None):
+    '''
+    OBSOLETE: traité dans tasks
+    '''
+    
     def createNew(spr,theTime,action):
         """
         créé un nouveau block et ses inputs

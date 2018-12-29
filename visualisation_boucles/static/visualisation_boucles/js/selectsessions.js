@@ -666,14 +666,16 @@ var lance = function () {
                         console.log('rep',users)
                         users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
                     })        
-            } else if (z=="programmes"){
+            } else if (z=="programmes" && liste.length>0){
                 url=urls.programmes
                 //data=liste.map(d=>d.session_key)
                 url+=liste.map(d=>d.session_key)[0]
                 method="GET"
 
                 //preparation de la fenetre                
-                let overlay=d3.select("#overlayDiv2") //a deplacer
+                let overlay=d3.select("#overlayDiv2")
+                let session=liste[0]
+                overlay.select("#progTitle").html(`Reconstruction du film de ${session.user_nom}: ${session.loads}`)
                 overlay.select("#resultats").selectAll("*").remove();
                 overlay.style("visibility","visible")
                
@@ -730,14 +732,15 @@ var lance = function () {
                             overlay.select('#result').text('reçu:'+result.x+'+'+result.y+'='+result.resultat)
                             
                             //on a reçu, on affiche les resultats
-                            /*
+                            
                              overlay.select("#progTitle")                    
-                                 .html(`Utilisateur <b>${response.infos.user}</b>, programme "<b>${response.infos.type}</b>", `
-                                         +`le ${locale.utcFormat("%x à %X")(new Date(response.infos.date))}`)
-                            graphProgramme(response,'overlayDiv2')*/
+                                 .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                                         +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
+                            graphProgramme(result,overlay.select("#resultats"))
                         } else if (response.data.state!="REVOKED") {
                             let result=response.data.result                            
-                            let process_percent=Math.round(result.evt_traites/result.nb_evts*100)
+                            //let process_percent=Math.round(result.evt_traites/result.nb_evts*100)
+                            let process_percent=result.percent_task
                             overlay.select('#bar')
                             .style('width',process_percent + '%')
                             .text(process_percent + '%');
