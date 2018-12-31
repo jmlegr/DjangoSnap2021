@@ -322,10 +322,12 @@ def graph_boucles(request):
         if evt is not None:
             serializerSPR=SimpleSPRSerializer(evt,many=False)
             evts=Evenement.objects.filter(session_key=session_key,time__lte=evt.evenement.time)\
-                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')
-                    
+                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
             serializer=SimpleEvenementSerializer(evts,many=True)
             evtsBoucle[session_key]={'boucle':serializerSPR.data,'evts':serializer.data}
-        else:
-            evtsBoucle[session_key]=None
+        else:            
+            evts=Evenement.objects.filter(session_key=session_key)\
+                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
+            serializer=SimpleEvenementSerializer(evts,many=True)
+            evtsBoucle[session_key]={'boucle':None,'evts':serializer.data}
     return Response(evtsBoucle)

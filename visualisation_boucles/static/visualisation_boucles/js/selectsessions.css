@@ -186,3 +186,7 @@ p.CommentMorph {
     top:140px;
     left:40px;
   }
+  
+  .noboucle {
+    opacity: 0.2;
+  }

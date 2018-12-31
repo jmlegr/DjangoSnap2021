@@ -13,6 +13,7 @@ import {
 } from './programme.js'
 import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
+import {initSessionStackedBarChart} from './sessionstackedbar.js'
 
 var margin = {
         top: 30,
@@ -811,8 +812,37 @@ var lance = function () {
                         "data": data,
                         //"only":['doUntil','doForever','doRepeat']
                     }, method)
-                    .then(response => {console.log("boucle",response)                
+                    .then(response => {
+                        console.log("boucle",response,liste)
+                        let data=new Array()
+                        let databoucles=[]
+                        for (var session in response) {                           
+                                data=data.concat(response[session].evts)                                
+                                databoucles[session]=response[session].boucle                                
+                        }
+                        const setDataType=function(obj) {
+                            switch (obj.type) {
+                            case "EPR": obj.data=obj.evenementepr[0];break;
+                            case "SPR": obj.data=obj.evenementspr[0];  break;
+                            case "ENV": obj.data=obj.environnement[0];break;
+                            default: obj.data={}                    
+                            }
+                            delete obj["evenementepr"]; 
+                            delete obj["evenementspr"];
+                            delete obj["environnement"]; 
+                            obj.datatype=obj.data.type+"_"+obj.type
+                            return obj
+                        }
+                        data.forEach(d=>setDataType(d))
+                        console.log('data',data,databoucles)
+                        initSessionStackedBarChart.draw({
+                            data:data,
+                            boucles:databoucles,
+                            liste:liste,
+                            key:d3.map(data,function(d){return d.datatype}).keys(),
+                            element:'stacked-bar'
                         })                    
+                    })
             }
     })
 
