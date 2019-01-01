@@ -14,7 +14,6 @@ var initSessionStackedBarChart = {
         xScale = d3.scaleBand().range([0, width]).padding(0.1),
         yScale = d3.scaleLinear().range([height, 0]),
         color = d3.scaleOrdinal(d3.schemeCategory10),
-        //xAxis = d3.axisBottom(xScale).tickFormat(d3.timeFormat("%b")),
         xAxis = d3.axisBottom(xScale).tickFormat(d=>liste.get(d).user_nom+'\n'+d.slice(0,5)),            
         yAxis =  d3.axisLeft(yScale),
         svg = d3.select("#"+domEle).append("svg")
@@ -50,8 +49,8 @@ var initSessionStackedBarChart = {
       }
       return a
       })
-    console.log('map',data,zdata,stackKey)
-    console.log('boucles',boucles)
+    //console.log('map',data,zdata,stackKey)
+    //console.log('boucles',boucles)
         var stack = d3.stack()
             .keys(stackKey)
             .order(d3.stackOrderNone)
@@ -61,19 +60,13 @@ var initSessionStackedBarChart = {
     //console.log(layers)
             //data.sort(function(a, b) { return b.s - a.s; });
             xScale.domain(zdata.map(function(d) { return d.session; }));
-      //console.log("xsca le",zdata.map(function(d) { return d.session; }))
-      //xScale.domain(['a','b','c'])
             yScale.domain([0, d3.max(layers[layers.length - 1], function(d) { return d[0] + d[1]; }) ]).nice();
-        console.log("stack",layers)
         var layer = svg.selectAll(".layer")
             .data(layers)
             .enter().append("g")
             .attr("class", "layer")
             .style("fill", function(d, i) { console.log('color',d.key,i);return color(i); })
-        //layer.append("title").text((d,v,k)=>{console.log("d",d,v,k); return d.key+"("+d.index+")"})
-    //layer.on("mouseover",function(d,v,k) {
-    //  console.log("over",d,v,k)
-    //})
+      
           var rect=layer.selectAll("rect")
               .data(function(d) { return d; })
             .enter().append("rect")
@@ -90,13 +83,9 @@ var initSessionStackedBarChart = {
             .each(function(d,e,f){
                 tippy(this,{content:p.key+":"+(d[1]-d[0]), arrow: true,})
             })
-            //.append("title").text(d=>p.key+":"+(d[1]-d[0]))        
+            
         })
-        
-       //rect
-        //.append("title").text((d,k,v)=>console.log("text",d[1]-d[0],d3.select(rect.parentElement).datum()))
-       // .on("mouseover",function(d,v,k) {console.log("over",d[1]-d[0],d3.select(this.parentElement).datum()['key'])})
-                //.append("title").text(d=>d3.select(this.parentElement).datum()['key']+": "+(d[1]-d[0]))
+      
             svg.append("g")
             .attr("class", "axis axis--x")
             .attr("transform", "translate(0," + (height+5) + ")")
