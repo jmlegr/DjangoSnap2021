@@ -1009,6 +1009,8 @@ def add(x,y,n):
         if(i%30 == 0):
             process_percent = int(100 * float(i) / float(n))
             current_task.update_state(state='PROGRESS',
-                                meta={'process_percent': process_percent,'i':i})
+                                meta={'percent_task': process_percent,
+                                      'evt_traites':i,
+                                      'nb_evts':n})
         a = x+y
     return {'x':x,'y':y,'resultat':x+y}

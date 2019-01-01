@@ -21,6 +21,8 @@ urlpatterns = [
     path('toliste$',views.celery_listeblock,name='celery_listeblock'),
     path('tolisteblock_state/<str:task_id>/',views.listeblock_state,name='listeblock_state'),
     path('tolisteblock_cancel/<str:task_id>/', views.listeblock_cancel,name='listeblock_cancel'),
+    path('testadd_state/<str:task_id>/',views.testadd_state,name='testadd_state'),
+    path('testadd', views.testadd,name='testadd'),
     path('boucle',views.graph_boucles,name='graph_boucles'),
     ]
 

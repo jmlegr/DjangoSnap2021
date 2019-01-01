@@ -14,6 +14,7 @@ import {
 import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
 import {initSessionStackedBarChart} from './sessionstackedbar.js'
+import {CeleryTask} from './celerytask.js'
 
 var margin = {
         top: 30,
@@ -642,7 +643,13 @@ var lance = function () {
 
         })     
     }
-
+    var testcel=new CeleryTask({
+            urlTask:'testadd',
+            urlStatus:'testadd_state',
+            overlay:'overlayDiv2',
+            csrf_token:csrf_token,
+            method:'POST'
+    },function(r,d,v) {console.log('recu',r,d,v)})
     var reconstruction=false, //vrai si on est en train de calculer la reconstruction du prg
     task_id
     d3.select("#visualiser")
@@ -843,6 +850,8 @@ var lance = function () {
                             element:'stacked-bar'
                         })                    
                     })
+            } else if (z=="testop") {
+                testcel.lance({x:7,y:8,n:80000})
             }
     })
 

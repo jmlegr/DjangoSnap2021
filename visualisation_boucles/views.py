@@ -21,7 +21,7 @@ import json
 from celery.result import AsyncResult
 
 from django.urls.base import reverse
-from visualisation_boucles.tasks import reconstruit
+from visualisation_boucles.tasks import reconstruit, add
 from django.db.models.query import prefetch_one_level
 # Create your views here.
 def choixbase(request):
@@ -298,6 +298,36 @@ def celery_listeblock(request,session_key=None):
     #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
     job=reconstruit.delay(session_key)
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def testadd_state(request,task_id=None):
+    """ A view to report the progress to the user """
+    data = 'Fail'
+    task = AsyncResult(task_id)
+    #print(task.state,task.result)
+    if task.state=='REVOKED':
+        data={'state':task.state}
+    else:
+        data = {'result':task.result,'state':task.state}
+    return Response({'task_id':task_id,'data':data})       
+
+@api_view(('POST','GET'))
+@renderer_classes((JSONRenderer,))
+def testadd(request):
+    if 'job' in request.GET:
+        print('JOB')
+        job_id = request.GET['job']
+        job = AsyncResult(job_id)
+        data = {'result':job.result,'state':job.state}
+        context = {
+            'data':data,
+            'task_id':job_id,
+        }
+        return Response(context)
+    data=request.data['data']
+    job=add.delay(data["x"],data["y"],data["n"])
+    return HttpResponseRedirect(reverse('testadd')+'?job='+job.id)
 
 @api_view(('POST',))
 @renderer_classes((JSONRenderer,))
