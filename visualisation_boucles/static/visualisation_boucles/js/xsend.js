@@ -13,7 +13,7 @@ var xsend = function (url, csrf_token, data, method = "GET") {
             cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
             credentials: "same-origin", // include, same-origin, *omit
             headers: {
-                "Content-Type": "application/json; charset=utf-8",
+                "Content-Type": (method=="GET"?"application/json;":"text/html;")+" charset=utf-8",
                 'X-CSRFToken': csrf_token,
                 'X-Requested-With':'XMLHttpRequest'
                 // "Content-Type": "application/x-www-form-urlencoded",
@@ -22,6 +22,7 @@ var xsend = function (url, csrf_token, data, method = "GET") {
             referrer: "no-referrer", // no-referrer, *client            
         }
     if (method=="POST") options.body= JSON.stringify(data) // body data type must match "Content-Type" header
+    
     return fetch(url, options)
         .then(response => response.json())
         //.then(response => console.log('Success:', response,JSON.stringify(response)))
