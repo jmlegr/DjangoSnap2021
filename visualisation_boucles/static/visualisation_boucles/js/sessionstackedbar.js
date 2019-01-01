@@ -13,9 +13,14 @@ var initSessionStackedBarChart = {
         height = 500 - margin.top - margin.bottom,
         xScale = d3.scaleBand().range([0, width]).padding(0.1),
         yScale = d3.scaleLinear().range([height, 0]),
-        color = d3.scaleOrdinal(d3.schemeCategory10),
-        xAxis = d3.axisBottom(xScale).tickFormat(d=>liste.get(d).user_nom+'\n'+d.slice(0,5)),            
+        //color = d3.scaleOrdinal(d3.schemeCategory10),        
+        xAxis = d3.axisBottom(xScale).tickFormat(d=>liste.get(d).user_nom+' '+d.slice(0,1)),            
         yAxis =  d3.axisLeft(yScale)
+        
+        var color=d3.scaleOrdinal()
+        .unknown("#ccc")
+        .domain(stackKey.sort())
+        .range(d3.quantize(t => d3.interpolateSpectral(t * 0.8 + 0.1),stackKey.length).reverse())
         d3Ele.attr("width", width + margin.left + margin.right+10)
             .attr("height", height + margin.top + margin.bottom+10)
         var svg = d3Ele.append("svg")
@@ -51,7 +56,7 @@ var initSessionStackedBarChart = {
       }
       return a
       })
-    //console.log('map',data,zdata,stackKey)
+    console.log('map',data,zdata,stackKey)
     //console.log('boucles',boucles)
         var stack = d3.stack()
             .keys(stackKey.sort())
@@ -62,7 +67,7 @@ var initSessionStackedBarChart = {
         var layers= stack(zdata)
             //data.sort(function(a, b) { return b.s - a.s; });
             xScale.domain(zdata.map(function(d) { return d.session; }));
-        console.log("layers",layers)
+        //console.log("layers",layers)
         //recherche du y max
         var maxi=0
         layers.forEach(l=>{let m=d3.max(l,function(d){return d[1]?d[1]:0}); if (m>maxi) maxi=m})
@@ -71,13 +76,13 @@ var initSessionStackedBarChart = {
             .data(layers)
             .enter().append("g")
             .attr("class", "layer")
-            .style("fill", function(d, i) { return color(i); })
+            .style("fill", function(d, i) { return color(d.key); })
       
           var rect=layer.selectAll("rect")
               .data(function(d) { return d; })
             .enter().append("rect")
                 .classed('noboucle',d=>boucles[d.data.session]==null)
-                .classed('noboucle',d=>boucles[d.data.session]!=null)
+                .classed('boucle',d=>boucles[d.data.session]!=null)
               .attr("x", function(d) { return xScale(d.data.session); })
               .attr("y", function(d) { return yScale(d[1]); })
               .attr("height", function(d) { return yScale(d[0]) - yScale(d[1]); })
