@@ -21,7 +21,7 @@ import json
 from celery.result import AsyncResult
 
 from django.urls.base import reverse
-from visualisation_boucles.tasks import reconstruit, add
+from visualisation_boucles.tasks import reconstruit, add, celery_graph_boucles
 from django.db.models.query import prefetch_one_level
 # Create your views here.
 def choixbase(request):
@@ -299,9 +299,18 @@ def celery_listeblock(request,session_key=None):
     job=reconstruit.delay(session_key)
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
 
+
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
-def testadd_state(request,task_id=None):
+def task_cancel(request,task_id=None):
+    data = 'Fail'
+    app.control.revoke(task_id,terminate=True) #,signal='SIGUSR1' )
+    data = "Cancelled"
+    return Response(data)
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def task_state(request,task_id=None):
     """ A view to report the progress to the user """
     data = 'Fail'
     task = AsyncResult(task_id)
@@ -329,7 +338,7 @@ def testadd(request):
     job=add.delay(data["x"],data["y"],data["n"])
     return HttpResponseRedirect(reverse('testadd')+'?job='+job.id)
 
-@api_view(('POST',))
+@api_view(('POST','GET'))
 @renderer_classes((JSONRenderer,))
 def graph_boucles(request):
     '''
@@ -338,26 +347,18 @@ def graph_boucles(request):
     data:liste des session_key
     only: si présent, tableau de recherche (défaut:['doUntil','doForever','doRepeat']
     '''
-    if 'only' in request.data:
-        tabBoucles=request.data['only']
-    else:
-        tabBoucles=['doUntil','doForever','doRepeat']
-
-    evtsBoucle={}
-    for session_key in request.data['data']:
-        #on recherche une création de boucle
-        evt=EvenementSPR.objects.filter(evenement__session_key=session_key,type='NEW',selector__in=tabBoucles)\
-                .select_related('evenement')\
-                .order_by('evenement__time').first()
-        if evt is not None:
-            serializerSPR=SimpleSPRSerializer(evt,many=False)
-            evts=Evenement.objects.filter(session_key=session_key,time__lte=evt.evenement.time)\
-                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
-            serializer=SimpleEvenementSerializer(evts,many=True)
-            evtsBoucle[session_key]={'boucle':serializerSPR.data,'evts':serializer.data}
-        else:            
-            evts=Evenement.objects.filter(session_key=session_key)\
-                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
-            serializer=SimpleEvenementSerializer(evts,many=True)
-            evtsBoucle[session_key]={'boucle':None,'evts':serializer.data}
-    return Response(evtsBoucle)
+    
+    if 'job' in request.GET:
+        print('JOB')
+        job_id = request.GET['job']
+        job = AsyncResult(job_id)
+        data = {'result':job.result,'state':job.state}
+        context = {
+            'data':data,
+            'task_id':job_id,
+        }
+        return Response(context)
+    data=request.data['data']
+    job=celery_graph_boucles.delay(data['session_keys'],data['only'] if 'only' in data else None)
+    return HttpResponseRedirect(reverse('graph_boucles')+'?job='+job.id)
+    

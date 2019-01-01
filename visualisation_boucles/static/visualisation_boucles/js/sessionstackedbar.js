@@ -2,7 +2,7 @@ export {initSessionStackedBarChart}
 var initSessionStackedBarChart = {
     draw: function(config) {
         var me = this,
-        domEle = config.element,
+        d3Ele = config.element,
         stackKey = config.key,
         data = config.data,
         boucles=config.boucles, //tableau des premières boucles trouvées par session
@@ -15,8 +15,10 @@ var initSessionStackedBarChart = {
         yScale = d3.scaleLinear().range([height, 0]),
         color = d3.scaleOrdinal(d3.schemeCategory10),
         xAxis = d3.axisBottom(xScale).tickFormat(d=>liste.get(d).user_nom+'\n'+d.slice(0,5)),            
-        yAxis =  d3.axisLeft(yScale),
-        svg = d3.select("#"+domEle).append("svg")
+        yAxis =  d3.axisLeft(yScale)
+        d3Ele.attr("width", width + margin.left + margin.right+10)
+            .attr("height", height + margin.top + margin.bottom+10)
+        var svg = d3Ele.append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
@@ -52,20 +54,24 @@ var initSessionStackedBarChart = {
     //console.log('map',data,zdata,stackKey)
     //console.log('boucles',boucles)
         var stack = d3.stack()
-            .keys(stackKey)
+            .keys(stackKey.sort())
             .order(d3.stackOrderNone)
+            // .order(d3.stackOrderDescending)
             .offset(d3.stackOffsetNone);
     
-        var layers= stack(zdata);
-    //console.log(layers)
+        var layers= stack(zdata)
             //data.sort(function(a, b) { return b.s - a.s; });
             xScale.domain(zdata.map(function(d) { return d.session; }));
-            yScale.domain([0, d3.max(layers[layers.length - 1], function(d) { return d[0] + d[1]; }) ]).nice();
+        console.log("layers",layers)
+        //recherche du y max
+        var maxi=0
+        layers.forEach(l=>{let m=d3.max(l,function(d){return d[1]?d[1]:0}); if (m>maxi) maxi=m})
+        yScale.domain([0, maxi]).nice();
         var layer = svg.selectAll(".layer")
             .data(layers)
             .enter().append("g")
             .attr("class", "layer")
-            .style("fill", function(d, i) { console.log('color',d.key,i);return color(i); })
+            .style("fill", function(d, i) { return color(i); })
       
           var rect=layer.selectAll("rect")
               .data(function(d) { return d; })

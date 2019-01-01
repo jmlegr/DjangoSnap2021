@@ -645,15 +645,17 @@ var lance = function () {
     }
     var testcel=new CeleryTask({
             urlTask:'testadd',
-            urlStatus:'testadd_state',
+            urlStatus:urls.task_status,
+            urlCancel:urls.task_cancel,
             overlay:'overlayDiv2',
             csrf_token:csrf_token,
             method:'POST'
     },function(r,d,v) {console.log('recu',r,d,v)})
+    
     var reconstructionTask=new CeleryTask({
         urlTask:urls.programmes,
-        urlStatus:'tolisteblock_state',
-        urslCancel:'tolisteblock_cancel',
+        urlStatus:urls.task_status,
+        urlCancel:urls.task_cancel,
         overlay:'overlayDiv2',
         csrf_token:csrf_token,       
         },function(result,elTitle,elResult) {
@@ -663,6 +665,14 @@ var lance = function () {
             graphProgramme(result,elResult)        
         }
     )
+    var graphbouclesTask=new CeleryTask({
+        urlTask:urls.boucle,
+        urlStatus:urls.task_status,
+        urlCancel:urls.task_cancel,
+        overlay:'overlayDiv2',
+        csrf_token:csrf_token,
+        method:'POST'
+        },function(result,elTitel,elResult) {})
     
     var reconstruction=false, //vrai si on est en train de calculer la reconstruction du prg
     task_id
@@ -694,7 +704,47 @@ var lance = function () {
                     ajout_url:liste.map(d=>d.session_key)[0]
                 })
             } else if (z=='boucle' && liste.length>0) {
+                graphbouclesTask.lance({
+                    data:{session_keys:liste.map(d=>d.session_key)},
+                    callback:function(result,elTitle,elResult) {
+                        let data=new Array()
+                        let databoucles=[]
+                        for (var session in result) {                           
+                                data=data.concat(result[session].evts)                                
+                                databoucles[session]=result[session].boucle                                
+                        }
+                        const setDataType=function(obj) {
+                            switch (obj.type) {
+                            case "EPR": obj.data=obj.evenementepr[0];break;
+                            case "SPR": obj.data=obj.evenementspr[0];  break;
+                            case "ENV": obj.data=obj.environnement[0];break;
+                            default: obj.data={}                    
+                            }
+                            
+                            if (obj.data) {
+                                obj.datatype=obj.type+"_"+obj.data.type
+                            } else {
+                                obj.datatype=obj.type+"_ZZZ"
+                                console.error("ZARB",obj)
+                            }
+                            delete obj["evenementepr"]; 
+                            delete obj["evenementspr"];
+                            delete obj["environnement"]; 
+                            return obj
+                        }
+                        data.forEach(d=>setDataType(d))
+                        console.log('data',data,databoucles,elResult.node())
+                        initSessionStackedBarChart.draw({
+                            data:data,
+                            boucles:databoucles,
+                            liste:liste,
+                            key:d3.map(data,function(d){return d.datatype}).keys(),
+                            element:elResult
+                        })                  
+                    }
+                })
                 //graphe d'apparition de la boucle
+                /*
                 url=urls.boucle               
                 data=liste.map(d=>d.session_key)
                 method="POST"
@@ -734,6 +784,7 @@ var lance = function () {
                             element:'stacked-bar'
                         })                    
                     })
+                    */
             } else if (z=="testop") {
                 testcel.lance({
                     data:{x:7,y:8,n:80000},
