@@ -200,3 +200,7 @@ p.CommentMorph {
   .boucle .evtline {
   stroke:slategrey;
   }
+  
+  [notselected] {
+    fill: grey;
+  }
