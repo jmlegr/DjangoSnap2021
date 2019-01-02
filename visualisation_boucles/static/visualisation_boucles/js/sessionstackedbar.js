@@ -8,10 +8,10 @@ var initSessionStackedBarChart = {
         boucles=config.boucles, //tableau des premières boucles trouvées par session
         sep=config.separator || '_', //separateur type_datatype passé en key
         liste=d3.map(config.liste,d=>d.session_key), //liste des infos de session, map de clef session_key
-        margin = {top: 20, right: 120, bottom: 30, left: 50},
+        margin = {top: 20, right: 20, bottom: 130, left: 50},
         parseDate = d3.timeParse("%m/%Y"),
         width = d3Ele.node().getBoundingClientRect().width - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom,
+        height = 600 - margin.top - margin.bottom,
         xScale = d3.scaleBand().range([0, width]).padding(0.1),
         yScale = d3.scaleLinear().range([height, 0]),
         //color = d3.scaleOrdinal(d3.schemeCategory10),        
@@ -160,6 +160,10 @@ var initSessionStackedBarChart = {
     
       }
       //tracé de la legende
+             const defaultVisible=[
+                 "ENV_DROPEX","ENV_DUPLIC","ENV_REDROP","ENV_UNDROP",
+                 "SPR_DEL","SPR_DROP","SPR_NEW","SPR_UNDROP","SPR_VAL"                 
+             ]
             const legend = svg => {
                 const g = svg
                     .attr("font-family", "sans-serif")
@@ -168,14 +172,14 @@ var initSessionStackedBarChart = {
                   .selectAll("g.legend")
                   .data(stackKey)
                   .enter().append("g").attr("class","legend")
-                    .attr("transform", (d, i) => `translate(${width},${i * 20})`);
-
+                    //.attr("transform", (d, i) => `translate(${width},${i * 20})`);
+                  .attr("transform", (d, i) => `translate(${Math.floor(i/5)*100},${height+30+(i%5) * 20})`);
                 g.append("rect")
                     .attr("x", 0)
                     .attr("width", 19)
                     .attr("height", 19)
                     .attr("fill", color)
-                    //.attr("selected",1)
+                    .attr("notselected",d=>defaultVisible.indexOf(d)>-1?null:1)
                     .on("click",function(d,i){
                         const el=d3.select(this)
                         el.attr("notselected",el.attr("notselected")?null:1)
@@ -190,7 +194,8 @@ var initSessionStackedBarChart = {
                     .text(d => d)
                     .attr("selected",true)
               }
-            trace(svg)
+            
             legend(svg)
+            trace(svg)
     }
 }
