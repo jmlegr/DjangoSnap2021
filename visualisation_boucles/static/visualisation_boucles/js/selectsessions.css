@@ -188,5 +188,15 @@ p.CommentMorph {
   }
   
   .noboucle {
-    opacity: 0.2;
+    opacity: 0.6;
+  }
+  .boucle {
+   /*stroke:gainsboro;*/
+   
+  }
+  .noboucle .evtline  {
+   stroke:grey;   
+  }
+  .boucle .evtline {
+  stroke:slategrey;
   }

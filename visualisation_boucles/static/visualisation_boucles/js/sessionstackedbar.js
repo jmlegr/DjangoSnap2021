@@ -3,9 +3,10 @@ var initSessionStackedBarChart = {
     draw: function(config) {
         var me = this,
         d3Ele = config.element,
-        stackKey = config.key,
+        stackKey = config.key.sort(),
         data = config.data,
         boucles=config.boucles, //tableau des premières boucles trouvées par session
+        sep=config.separator || '_', //separateur type_datatype passé en key
         liste=d3.map(config.liste,d=>d.session_key), //liste des infos de session, map de clef session_key
         margin = {top: 20, right: 20, bottom: 30, left: 50},
         parseDate = d3.timeParse("%m/%Y"),
@@ -17,10 +18,31 @@ var initSessionStackedBarChart = {
         xAxis = d3.axisBottom(xScale).tickFormat(d=>liste.get(d).user_nom+' '+d.slice(0,1)),            
         yAxis =  d3.axisLeft(yScale)
         
+        //calcul des couleurs, sur la base type_datatype
+        //chaque type dans le même schemecolor
+        //3 types prévus
+        const reducer=(accumulator,currentValue)=>{
+            if (accumulator[currentValue.split(sep)[0]])
+                accumulator[currentValue.split(sep)[0]]+=1
+            else
+                accumulator[currentValue.split(sep)[0]]=1
+            return accumulator
+        }
+        const nbType=stackKey.reduce(reducer,{})
+        let blues=[], greens=[], purples=[] //blues pour ENV, greens EPR purples SPR
+        for (var i=1;i<=nbType['ENV'];i++) blues.push(d3.interpolateBlues((i+5)/(nbType['ENV']+8)))
+        for (var i=1;i<=nbType['EPR'];i++) greens.push(d3.interpolateGreens((i+5)/(nbType['EPR']+8)))
+        for (var i=1;i<=nbType['SPR'];i++) purples.push(d3.interpolatePurples((i+5)/(nbType['SPR']+8)))
+        blues=blues.reverse()
+        greens=greens.reverse()
+        purples=purples.reverse()
+        /*
         var color=d3.scaleOrdinal()
         .unknown("#ccc")
         .domain(stackKey.sort())
         .range(d3.quantize(t => d3.interpolateSpectral(t * 0.8 + 0.1),stackKey.length).reverse())
+        */
+        var color=d3.scaleOrdinal(blues.concat(greens).concat(purples))
         d3Ele.attr("width", width + margin.left + margin.right+10)
             .attr("height", height + margin.top + margin.bottom+10)
         var svg = d3Ele.append("svg")
@@ -28,7 +50,7 @@ var initSessionStackedBarChart = {
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-        console.log('liste',liste)
+        //console.log('liste',liste)
         var ntx=crossfilter(data),
             sdim=ntx.dimension(d=>d.session_key), //session dimension
             countSession=sdim.group().reduceCount(), //nb d'evenements de chaque session
@@ -56,7 +78,7 @@ var initSessionStackedBarChart = {
       }
       return a
       })
-    console.log('map',data,zdata,stackKey)
+    //console.log('map',data,zdata,stackKey)
     //console.log('boucles',boucles)
         var stack = d3.stack()
             .keys(stackKey.sort())
@@ -78,25 +100,42 @@ var initSessionStackedBarChart = {
             .attr("class", "layer")
             .style("fill", function(d, i) { return color(d.key); })
       
-          var rect=layer.selectAll("rect")
+          var rectSel=layer.selectAll("g.evt")
               .data(function(d) { return d; })
-            .enter().append("rect")
-                .classed('noboucle',d=>boucles[d.data.session]==null)
-                .classed('boucle',d=>boucles[d.data.session]!=null)
+              .enter()
+              .append("g").attr("class",'evt')
+              .classed('noboucle',d=>boucles[d.data.session]==null)
+              .classed('boucle',d=>boucles[d.data.session]!=null)
+          rectSel.append("rect")
+                //.classed('noboucle',d=>boucles[d.data.session]==null)
+                //.classed('boucle',d=>boucles[d.data.session]!=null)
               .attr("x", function(d) { return xScale(d.data.session); })
               .attr("y", function(d) { return yScale(d[1]); })
               .attr("height", function(d) { return yScale(d[0]) - yScale(d[1]); })
               .attr("width", xScale.bandwidth())
-        
+          rectSel.append("line")
+              .attr("class","evtline")
+              .attr("x1",d=>xScale(d.data.session))
+              .attr("y1",d=>yScale(d[0]))
+              .attr("x2",d=>xScale(d.data.session))
+              .attr("y2",d=>yScale(d[1]))
+              .attr("stroke-width",d=>d[1]>d[0]?Math.min(5,xScale.bandwidth()/5):0)
+           
         svg.selectAll(".layer").each(function(p,j,g){
             d3.select(this)
             .selectAll("rect")
             .each(function(d,e,f){
-                tippy(this,{content:p.key+":"+(d[1]-d[0]), arrow: true,})
-            })
-            
+                tippy(this,{content:
+                    liste.get(d.data.session).user_nom+"<p>"+p.key+":"+(d[1]-d[0])+"</p>", arrow: true,})
+                }
+            )            
         })
-      
+       tippy(".evtline", {content:"tipp",
+           async onShow(tip) {
+               //console.log('tip',liste.get(d3.select(tip.reference).datum().data.session))
+               tip.setContent(liste.get(d3.select(tip.reference).datum().data.session).loads)
+       }})
+       
             svg.append("g")
             .attr("class", "axis axis--x")
             .attr("transform", "translate(0," + (height+5) + ")")
