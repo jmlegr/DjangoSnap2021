@@ -131,17 +131,37 @@ const graphNbCommandes=function(config) {
                     //la clef (JMLid) est dans le datum du parent
                     return color(d3.select(this.parentNode).datum().key)
                 })
-                .attr("r", 2)                
+                .attr("r", 4)                
                 .on("mouseover", function(a, b, c) { 
                     console.log(a) 
                     d3.select(this).attr('class', 'focus')
                 })
                 .on("mouseout", function() {  })
         tippy('.dotcircle',{content:function(tip) {
-                    let d=d3.select(tip).datum()
+                    var d=d3.select(tip).datum()
                     let jmlid=d3.select(tip.parentNode).datum().key
-                    return `<p>id:${jmlid}</p><p>temps:${d.temps}</p><p>nb:<b>${d.nb}</b></p>`
-                    }
+                    return `<p>id:${jmlid}</p><p>temps:${d.temps}</vp><p>nb:<b>${d.nb}</b></p>`                    
+                    },
+                    placement:'left',
+                    onShown: function(tip) {
+                        //console.log("youy",d3.select(tip.reference).datum())
+                        let datum=d3.select(tip.reference).datum()
+                        let jmlid=d3.select(tip.reference.parentNode).datum().key
+                        let div=d3.select("#overlayDiv2").append("div")//.attr("class","progs").html("ici")
+                            
+                        div.append("div").html(`<p>id:${jmlid}</p>
+                                                <p>temps:${datum.temps}</p>
+                                                <p>nb:<b>${datum.nb}</b></p>`)
+                        div.selectAll("p.command").data(datum.cmds)
+                            .enter().append("p")
+                        .attr("class",d=>"command "+(d.action?'action ':'')+(d.typeMorph?d.typeMorph:''))
+                        .attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid}`)
+                        .html(d=>'...'.repeat(d.index)+d.commande)
+                        tip.setContent(div.node())
+                    },
+                    /*async onHide(tip) {
+                        d3.select("#overlayDiv2").selectAll(".progs").remove()
+                    }*/
         })
     }
     const echelle=svg=>{
