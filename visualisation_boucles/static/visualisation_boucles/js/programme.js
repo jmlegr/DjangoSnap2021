@@ -87,7 +87,7 @@ const graphNbCommandes=function(config) {
       
       xScale.domain([0,d3.max(commandes,d=>d.temps)])
       yScale.domain([0,d3.max(d3.values(total))])
-    //console.log("total",total,d3.max(d3.values(total)))
+    console.log("total",total,d3.entries(total))
     d3Ele.attr("width", width + margin.left + margin.right+10)
         .attr("height", height + margin.top + margin.bottom+10)
      var svg = d3Ele.append("svg")
@@ -95,12 +95,12 @@ const graphNbCommandes=function(config) {
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-    var line =
+    var line = (xacc,yacc)=>
             d3.line()
-        .x(function(d, i) {return xScale(d.temps); }) // set the x values for the line generator
-        .y(function(d) { return yScale(d.nb); }) // set the y values for the line generator 
+        .x(function(d, i) {return xScale(xacc(d)); }) // set the x values for the line generator
+        .y(function(d) { return yScale(yacc(d)); }) // set the y values for the line generator 
         .curve(d3.curveMonotoneX)// apply smoothing to the line
-            //l(data)
+    
     
     const traceLine=svg=>{
         svg.selectAll(".linenbcommandes").data(d3.entries(donnees),d=>d.key).enter()
@@ -108,8 +108,14 @@ const graphNbCommandes=function(config) {
             //.datum(d=>d.value) // 10. Binds data to the line 
             .attr("class", "linenbcommandes") // Assign a class for styling 
             .style("stroke",(d,i)=>color(d.key))
-            .style("opacity",0.5)
-            .attr("d", d=>line(d.value));
+            .attr("d", d=>line(d=>d.temps,d=>d.nb)(d.value));
+    }
+    const traceTotal=svg=>{
+        svg.append('path')
+      //.datum(d=>d.value) // 10. Binds data to the line 
+            .attr("class", "linenbtotalcommandes") // Assign a class for styling            
+            .attr("d", line(d=>d.key,d=>d.value)(d3.entries(total)));
+        
     }
     const tracePoints=svg=>{
         let s=svg.selectAll(".dot")
@@ -152,6 +158,7 @@ const graphNbCommandes=function(config) {
     }
     echelle(svg)
     traceLine(svg)
+    traceTotal(svg)
     tracePoints(svg)
     
 }

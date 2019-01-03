@@ -205,7 +205,11 @@ p.CommentMorph {
     fill: grey;
   }
   .linenbcommandes {
+    fill: none;    
+    stroke-width: 1.5;
+}
+ .linenbtotalcommandes {
     fill: none;
-    stroke: #ffab00;
+    stroke: black;
     stroke-width: 3;
 }
