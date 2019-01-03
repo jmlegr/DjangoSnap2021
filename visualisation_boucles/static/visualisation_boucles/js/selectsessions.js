@@ -9,7 +9,7 @@ import {
     graphSujet
 } from './films.js'
 import {
-    graphProgramme
+    graphProgramme, graphNbCommandes
 } from './programme.js'
 import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
@@ -743,53 +743,24 @@ var lance = function () {
                         })                  
                     }
                 })
-                //graphe d'apparition de la boucle
-                /*
-                url=urls.boucle               
-                data=liste.map(d=>d.session_key)
-                method="POST"
-                xsend(url, csrf_token, {
-                        "type": z,
-                        "data": data,
-                        //"only":['doUntil','doForever','doRepeat']
-                    }, method)
-                    .then(response => {
-                        console.log("boucle",response,liste)
-                        let data=new Array()
-                        let databoucles=[]
-                        for (var session in response) {                           
-                                data=data.concat(response[session].evts)                                
-                                databoucles[session]=response[session].boucle                                
-                        }
-                        const setDataType=function(obj) {
-                            switch (obj.type) {
-                            case "EPR": obj.data=obj.evenementepr[0];break;
-                            case "SPR": obj.data=obj.evenementspr[0];  break;
-                            case "ENV": obj.data=obj.environnement[0];break;
-                            default: obj.data={}                    
-                            }
-                            delete obj["evenementepr"]; 
-                            delete obj["evenementspr"];
-                            delete obj["environnement"]; 
-                            obj.datatype=obj.data.type+"_"+obj.type
-                            return obj
-                        }
-                        data.forEach(d=>setDataType(d))
-                        console.log('data',data,databoucles)
-                        initSessionStackedBarChart.draw({
-                            data:data,
-                            boucles:databoucles,
-                            liste:liste,
-                            key:d3.map(data,function(d){return d.datatype}).keys(),
-                            element:'stacked-bar'
-                        })                    
-                    })
-                    */
+                
             } else if (z=="testop") {
+                reconstructionTask.lance({
+                    data:liste.map(d=>d.session_key)[0],
+                    ajout_url:liste.map(d=>d.session_key)[0],
+                    callback:function(result,elTitle,elResult) {
+                        elTitle                    
+                        .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                            +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}: évolution`)
+                        graphNbCommandes({data:result,element:elResult})
+                    }
+                })
+            
+                /*
                 testcel.lance({
                     data:{x:7,y:8,n:80000},
                     callback:function(r,t,v) {t.html('_>'+r.resultat); v.append("div").html("finitio")}
-                })
+                })*/
             }
     })
 

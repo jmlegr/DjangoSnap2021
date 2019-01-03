@@ -618,7 +618,7 @@ def reconstruit(session_key):
                     #on vérifie si le block déplacé n'était pas contenu
                     if newNode.conteneurBlockId is not None:
                         lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
-                        lastConteneur.change="youyou"
+                        lastConteneur.change="etaitcontenu"
                         lastConteneur.setWrapped(None)
                         newNode.unwrap()
                         listeBlocks.append(lastConteneur)
@@ -960,7 +960,8 @@ def reconstruit(session_key):
         res=[]
         
         #print('temps ',temps)
-        current_task.update_state(state='Reconstruction',
+        if ticks_traites%10==0:
+            current_task.update_state(state='Reconstruction',
                                 meta={'evt_traites': ticks_traites,'nb_evts':nb_ticks,
                                       'percent_task':round(ticks_traites/nb_ticks*50+50)
                                 })

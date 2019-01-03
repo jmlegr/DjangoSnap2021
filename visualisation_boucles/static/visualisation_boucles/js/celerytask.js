@@ -14,7 +14,7 @@ var CeleryTask=function(config,callback) {
      this.urlCancel=config.urlCancel // url d'annulation de la tache
      this.urlStatus=config.urlStatus // url d'état de la tache
      // this.data=config.data //données envoyées à la tache
-     this.delay= config.delay || 200 // temps entre 2 requetes
+     this.delay= config.delay || 500 // temps entre 2 requetes
      this.method=config.method || 'GET'  // methode pour lancement (cancel et
                                             // status sont en GET)
      this.waittitle= config.waittitle || 'En attente...' // message titre en

@@ -1,4 +1,4 @@
-export {graphProgramme}
+export {graphProgramme, graphNbCommandes}
 
 function formatTimeToHMS(num) {
     num=Math.floor(num/1000)
@@ -8,7 +8,7 @@ function formatTimeToHMS(num) {
     return (h < 10 ? "0" + h : h) + "h" + (m < 10 ? "0" + m : m) + "m" + (s < 10 ? "0" + s : s)+"s";
 }
 const parcoursCommande=function(commandes,data,snap,index) {
-    console.log('tratieltme',snap.JMLid,index,snap.wrappedBlock,snap.nextBlock)
+    //console.log('tratieltme',snap.JMLid,index,snap.wrappedBlock,snap.nextBlock)
     let retour=snap
     retour.index=index
     data.push(retour)
@@ -22,6 +22,138 @@ const parcoursCommande=function(commandes,data,snap,index) {
         data=data.concat(parcoursCommande(commandes,[],next,index))
     }
     return data
+}
+
+const graphNbCommandes=function(config) {
+        var me = this,
+        d3Ele = config.element,
+        data = config.data,
+        margin = {top: 20, right: 20, bottom: 20, left: 50},
+        parseDate = d3.timeParse("%m/%Y"),
+        width = d3Ele.node().getBoundingClientRect().width - margin.left - margin.right,
+        height = 600 - margin.top - margin.bottom,
+        xScale = d3.scaleLinear().range([0, width]),
+        yScale = d3.scaleLinear().range([height, 0]),
+        //color = d3.scaleOrdinal(d3.schemeCategory10),        
+        xAxis = d3.axisBottom(xScale),            
+        yAxis =  d3.axisLeft(yScale)
+        
+    console.log('tratiement',data)
+    var toutesTetes=data.commandes.map(d=>d.snap.map(i=>i.JMLid))
+                        .reduce((a,c)=>{c.forEach(i=>{if (a.indexOf(i)==-1) a.push(i)}); return a},[]).sort()
+    var color=d3.scaleOrdinal(d3.schemeCategory10).domain(toutesTetes)
+    console.log("test",toutesTetes)
+    //toutesTetes.forEach(d=>console.log(d,color(d)))
+    var commandes=[]
+    data.commandes.forEach(function(c) {
+        //on commence par rechercher les blocks de tête
+        if (c.snap==null) console.log("erreur:",c)
+        let tetes=c.snap.filter(d=>d.commande 
+                        && ((d.conteneurBlock==null && d.prevBlock==null)
+                            || 
+                            (d.conteneurBlock!=null && d.conteneurBlock.indexOf('SCRIPT')!=-1 ))
+                        )
+        let firstTete=true
+        console.log("etape",c.temps,tetes)
+        //on reconstruit
+        let newData=[]
+        if (c.epr==null) {
+            tetes.forEach(function(t) {            
+                newData.push({JMLid:t.JMLid,commande:parcoursCommande(c.snap,[],t,0)})                
+            })
+            console.log('->',newData.length,newData)
+            
+            commandes.push({temps:c.temps,commandes:newData,nb:newData.length})
+        }
+    })
+    console.log('_>DAT',commandes)
+    //on remanie sous la forme JMLid=>[{temps,nb,cmds}...]
+  
+    var donnees=commandes.reduce((a,c)=>{
+        c.commandes.forEach(d=>{
+            if (!a[d.JMLid]) a[d.JMLid]=[];
+            a[d.JMLid].push({temps:c.temps, nb:d.commande.length,cmds:d.commande})
+            })
+          return a
+        },{})
+    //console.log("donnees",donnees,d3.keys(donnees),d3.values(donnees),d3.entries(donnees))
+    var values=d3.values(donnees)
+    //console.log("entries",values)
+    var total=d3.merge(values).reduce((a,c)=>{
+        if (!a[c.temps]) a[c.temps]=c.nb
+        else a[c.temps]+=c.nb
+        return a
+      },{})
+      
+      xScale.domain([0,d3.max(commandes,d=>d.temps)])
+      yScale.domain([0,d3.max(d3.values(total))])
+    //console.log("total",total,d3.max(d3.values(total)))
+    d3Ele.attr("width", width + margin.left + margin.right+10)
+        .attr("height", height + margin.top + margin.bottom+10)
+     var svg = d3Ele.append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    var line =
+            d3.line()
+        .x(function(d, i) {return xScale(d.temps); }) // set the x values for the line generator
+        .y(function(d) { return yScale(d.nb); }) // set the y values for the line generator 
+        .curve(d3.curveMonotoneX)// apply smoothing to the line
+            //l(data)
+    
+    const traceLine=svg=>{
+        svg.selectAll(".linenbcommandes").data(d3.entries(donnees),d=>d.key).enter()
+            .append("path")
+            //.datum(d=>d.value) // 10. Binds data to the line 
+            .attr("class", "linenbcommandes") // Assign a class for styling 
+            .style("stroke",(d,i)=>color(d.key))
+            .style("opacity",0.5)
+            .attr("d", d=>line(d.value));
+    }
+    const tracePoints=svg=>{
+        let s=svg.selectAll(".dot")
+            .data(d3.entries(donnees),d=>d.key)
+            .enter().append("g").attr("class", "dot") // Assign a class for styling
+        s.selectAll(".circle").data(d=>d.value)
+            .enter()
+            .append("circle") // Uses the enter().append() method
+                .attr("class","dotcircle")
+                .attr("cx", function(d, i) { return xScale(d.temps) })
+                .attr("cy", function(d) { return yScale(d.nb) })
+                .attr("fill",function(d,i){
+                    //la clef (JMLid) est dans le datum du parent
+                    return color(d3.select(this.parentNode).datum().key)
+                })
+                .attr("r", 2)                
+                .on("mouseover", function(a, b, c) { 
+                    console.log(a) 
+                    d3.select(this).attr('class', 'focus')
+                })
+                .on("mouseout", function() {  })
+        tippy('.dotcircle',{content:function(tip) {
+                    let d=d3.select(tip).datum()
+                    let jmlid=d3.select(tip.parentNode).datum().key
+                    return `<p>id:${jmlid}</p><p>temps:${d.temps}</p><p>nb:<b>${d.nb}</b></p>`
+                    }
+        })
+    }
+    const echelle=svg=>{
+        
+        svg.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + (height+5) + ")")
+        .call(xAxis);
+
+        svg.append("g")
+        .attr("class", "axis axis--y")
+        .attr("transform", "translate(0,0)")
+        .call(yAxis);       
+    }
+    echelle(svg)
+    traceLine(svg)
+    tracePoints(svg)
+    
 }
 const graphProgramme=function(donnees,div) {
     //reconstitue le graphe du programme donné en paramère
