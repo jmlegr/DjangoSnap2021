@@ -1061,10 +1061,12 @@ def return_fichier_eleve(request,file_id):
 def return_files(request):
     if request.user.is_staff:
         fics=Document.objects.filter(Q(user=request.user) | Q(user__groups__name__in=['eleves',]))\
-                .select_related('user','user__eleve','user__eleve__classe').order_by('-uploaded_at')
+                .exclude(description__icontains="ERREUR")\
+                .select_related('user','user__eleve','user__eleve__classe').order_by('uploaded_at')
         return render(request,'file_user_prof.html',{'files':fics});
     else:
-        fics=Document.objects.filter(user=request.user,autosave=False).order_by('-uploaded_at')
+        fics=Document.objects.filter(user=request.user,autosave=False).order_by('-uploaded_at')\
+            .exclude(description__icontains="ERREUR")
         return render(request,'file_user.html',{'files':fics});
     
 
