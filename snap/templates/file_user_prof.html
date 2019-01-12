@@ -26,35 +26,38 @@ var selectClasse=dc.selectMenu("#selectClasse"),
 var data=[
 
 {% for file in files%}
-{ 'classe':"{{file.user.eleve.classe.nom}}",
+{ 'classe':"{{file.user.eleve.classe.nom|default:'prof'}}",
     'user':"{{file.user.username}}",
     'nom': "{{file.description}}", 
     'date':"{{file.uploaded_at}}",
+    "td":"{{file.uploaded_at|date:'c'}}",
     'id':"{{file.id}}",
     'autosave':("{{file.autosave}}"=="True")
     
 },
 {%endfor%}
 ]
+//data=data.sort((a,b)=>a-b)
+//console.log("data",data)
 var sepFic="_-_"
 var ndx=crossfilter(data), ngdx=crossfilter(data)    
     classeDim=ndx.dimension(d=>d.classe),
     eleveDim=ndx.dimension(d=>d.user),
-    ficDim=ndx.dimension(d=>d.id+sepFic+d.nom+sepFic+d.date+sepFic+d.autosave)
+    ficDim=ndx.dimension(d=>d.id+sepFic+d.nom+sepFic+d.date+sepFic+d.autosave+sepFic+d.td)
  
 selectClasse
    .dimension(classeDim)
    .group(classeDim.group())
    //.promptText("toutes les classes")
    .numberVisible(16)
-   .title(d=>(d.key==''?"(aucune)":d.key)+" ("+d.value+")")
+   .title(d=>(d.key==''?"prof":d.key)+" ("+d.value+")")
 selectEleve
    .dimension(eleveDim)
    .group(eleveDim.group())
    .numberVisible(16)
    .title(d=>d.key+" ("+d.value+")")
 selectFic
-   .dimension(ficDim)
+   .dimension(ficDim) 
    .group(ficDim.group())
    .title(function(d) {
        let s=d.key.split(sepFic)
@@ -62,6 +65,10 @@ selectFic
    })
    .numberVisible(16)
     .controlsUseVisibility(true)
-
+    .order(function (a,b) {
+        let sa=a.key.split(sepFic)[4]
+        let sb=b.key.split(sepFic)[4]         
+    return sa > sb ? -1 : sb > sa ? 1 : 0;
+    })
 dc.renderAll()
 </script>
