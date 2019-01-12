@@ -200,14 +200,22 @@ const graphProgramme=function(donnees,div) {
         let newData={}
         let divG=div.append("div").attr("class","blockcommands")
         if (tetes.length==0 ) {
-            let divCom=divG.append("div").attr("class","tete").html(c.temps+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))            
+            console.log("c=",c)
+            let divCom=divG.append("div")
+                    .attr("class","tete")
+                    .attr("title","ouou")
+                    .html(c.temps+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+                    
         }
         if (c.epr==null) {
             tetes.forEach(function(t) {            
                 newData[t.JMLid]=parcoursCommande(c.snap,[],t,0)
                 let divCom
                 if (firstTete) {
-                    divG.append("div").attr("class","tete").html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+                    divG.append("div")
+                        .attr("class","tete")
+                        .html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+                        .attr("title","évènement: "+c.evt.evenement)
                     firstTete=false
                 } else {
                     divG.append("div").attr("class","separation").html('--')
