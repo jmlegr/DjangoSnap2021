@@ -126,7 +126,7 @@ class EvenementENV(models.Model):
     key=models.BooleanField(default=False)    
     detail=models.TextField(null=True,blank=True)
     valueBool=models.NullBooleanField(null=True)
-    valueInt=models.IntegerField(null=True)
+    valueInt=models.BigIntegerField(null=True)
     valueChar=models.CharField(max_length=30,null=True,blank=True)
     #block=models.ForeignKey(Block,on_delete=models.CASCADE)
     
