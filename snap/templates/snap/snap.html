@@ -116,6 +116,7 @@
 		        contentType: false,
 		        enctype: 'multipart/form-data',
 		        processData: false,
+		        timeout: 180000,
 		        beforeSend: function() {
 		            console.log('Uploading XML...');
 		            //$('.upload-progress').show();
@@ -145,6 +146,7 @@
         //var time=newdate.getTime()-date_debut;
         var time=newdate.getTime()
         numero_evt+=1;
+        const num=numero_evt
         var json={
             evenement:{type:type,time:time,numero:numero_evt},             
             }
@@ -158,7 +160,9 @@
             default: url='evenement/'; break;            
             }
         }
-        function sendRequest(secs=3,nb=100) {
+        function sendRequest(secs=3,nb=100,first=true) {
+            
+                
 	        $.ajax({
 	            url: url,
 	            type: 'POST',
@@ -177,16 +181,34 @@
 	                },
 	            success: function (response) {
 	            //$('.upload-progress').hide();
-	                console.log('reponse recue, id=',response.id);                    
+	                console.log('reponse recue, id=',response.id);  
+	                if (!first) {
+	                    $("#erreursdiv").append("<div class='jmlerreur'>"+"<temps> "+time+"</temps>"+
+                                "<numero>"+num+ "</numero>"+
+                                "<data>"+JSON.stringify(json)+"</data>"+
+                                "<response>"+JSON.stringify(response)+"</response><ok>1</ok></div")
+	                    }
 	                },
 	            error: function(response) {
 	                //console.log("error", response);
+	                if (first) {
+	                    $("#erreursdiv").append("<div class='jmlerreur'>"+"<temps> "+time+"</temps>"+
+                                "<numero>"+num+ "</numero>"+
+                                "<data>"+JSON.stringify(json)+"</data>"+
+                                "<response>"+JSON.stringify(response)+"</response></div")
+                        
+	                }
 	                if (nb>0) {
 	                    let temp=secs/2*(1+Math.random())*1000; //un peu d'aléatoire en cas de surcharge
 	                    //console.log('erreur de réception. envoi encore dans ',temp,'s, reste ',nb-1,' essai(s)')
 	                    setTimeout(()=>{
-	                        sendRequest(secs,nb-1)},temp)
+	                        sendRequest(secs,nb-1,false)},temp)
 	                } else {
+	                    $("#erreursdiv").append("<div class='jmlerreur'>"+"<temps> "+time+"</temps>"+
+                                "<numero>"+num+ "</numero>"+
+                                "<data>"+JSON.stringify(json)+"</data>"+
+                                "<response>"+JSON.stringify(response)+"</response><ok>0</ok></div")
+                        	                    
 	                    alert('oups, quelque chose n\'a pas fonctionné\n'+response.responseText);
 	                }
 	                $('.upload-progress').hide();
@@ -242,8 +264,27 @@
 			    // Cancel the event as stated by the standard.
 			    event.preventDefault();
 			    //console.log('youpi',ide)
-			    if (jml.autoSave) {
-                ide.exportProjectToDjango(ide.projectName?ide.projectName:'autosave', false,base=false,autoSave=true);
+			    if (jml.autoSave && !jml.isProf()) {
+			        ide.exportProjectToDjango(ide.projectName?ide.projectName:'autosave', false,base=false,autoSave=true);
+			        //creation du fichier erreurs
+			        var xmldata=[];
+			        $(".jmlerreur").each((c,d,e)=>{
+			            let st=`<ERREUR nb="${c+1}">`
+			            d.childNodes.forEach(a=>st+=`<${a.nodeName}>${a.innerText}</${a.nodeName}>`)
+			            st+='</ERREUR>'
+			            xmldata.push(st)
+			            })
+			        if (xmldata.length>0) {
+			            //il y a des erreurs, on envoie
+			            UploadXML('<?xml version="1.0"?><ERREURS>'
+			                    +xmldata.join("\n")
+			                    +'</ERREURS>',
+			                    ide.projectName+"_ERREURS",
+			                    projectNotes='ficher erreur',
+			                    base=false,
+			                    autoSave=true)
+			        }
+			        
                 }
 			    // Chrome requires returnValue to be set.
 			    event.returnValue = '';
@@ -255,7 +296,9 @@
 		</script>
 	</head>
 	<body style="margin: 0;">
-		<canvas id="world" tabindex="1" style="position: absolute;" />
+		<canvas id="world" tabindex="1" style="position: absolute;" ></canvas>
 	</body>
+	
 </html>
 <div id="trucdialog" title="Dialog Title">ee</div>
+<div id="erreursdiv"></div>
