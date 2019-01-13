@@ -12743,6 +12743,31 @@ InputSlotMorph.prototype.menuFromDict = function (
             if (this.block) {
                 this.block.comment = null;
             }
+            /**
+             * Modification JML (duff,  13 janv. 2019)
+             **/
+            var scripts
+            if (this.block) {
+                var top = this.block.topBlock()
+                scripts = top.parentThatIsA(ScriptsMorph);
+            } else {
+                scripts=this.parent
+            }
+            scripts.lastDroppedBlock = this;
+            scripts.lastDroppedBlock.JMLfrom='DropDel'
+            if (scripts.recordDrop) {
+                scripts.recordDrop(this.situation());
+            }
+            if (scripts.dropRecord) {
+                scripts.dropRecord.action = 'delete';
+                scripts.dropRecord.JMLfrom='justhis'
+                var donnee=new scripts.donnee(scripts.dropRecord);
+            }
+            
+            /**
+             * Fin Modification JML
+             **/
+
             CommentMorph.uber.destroy.call(this);
         };
 

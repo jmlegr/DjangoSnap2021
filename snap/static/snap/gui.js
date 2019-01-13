@@ -1192,7 +1192,7 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 	    sendEvenement(type='ENV',
 		    data={type:'DROPEX',detail:"sprite",
 		    valueChar:droppedMorph.name,
-		    valueInt:droppedMorph.version
+		    valueInt:droppedMorph.JMLid || droppedMorph.version
 	    });
 
 	    droppedMorph.JMLfrom='DropSprite';
@@ -1209,7 +1209,7 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 	    sendEvenement(type='ENV',
 		    data={type:'DROPEX',detail:"spriteIcon",
 		    valueChar:droppedMorph.object.name,
-		    valueInt:droppedMorph.object.version
+		    valueInt:droppedMorph.JMLid || droppedMorph.object.version
 	    });
 
 	    droppedMorph.object.JMLfrom='DropIcon';
@@ -1225,7 +1225,7 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 	    sendEvenement(type='ENV',
 		    data={type:'DROPEX',detail:"costume",
 		    valueChar:droppedMorph.object.name,
-		    valueInt:droppedMorph.object.version
+		    valueInt:droppedMorph.JMLid || droppedMorph.object.version
 	    });
 
 	    /**
@@ -1261,10 +1261,27 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
 	    /**
 	     * Modification JML (duff, 29 déc. 2017)
 	     */
-	    sendEvenement(type='ENV',
-		    data={type:'DROPEX',detail:"autre",
-		    valueChar:droppedMorph        	    	
-	    });
+	    if (droppedMorph instanceof CommentMorph) {
+	        droppedMorph.JMLfrom='DropBlock';
+	        sendEvenement(type='ENV',
+	            data={type:'DROPEX',detail:"comment",
+	            valueChar:droppedMorph.constructor.name,
+	            valueInt:droppedMorph.JMLid
+	        });
+	        
+	        if (hand && hand.grabOrigin.origin instanceof ScriptsMorph) {
+	            hand.grabOrigin.origin.clearDropInfo();
+	            hand.grabOrigin.origin.lastDroppedBlock = droppedMorph;
+	            hand.grabOrigin.origin.recordDrop(hand.grabOrigin);
+	            }
+	    } else {
+	        droppedMorph.JMLfrom='DropBlock';
+	        sendEvenement(type='ENV',
+	                data={type:'DROPEX',detail:"autre",
+	                valueChar:droppedMorph.constructor.name,
+	                valueInt:droppedMorph.JMLid
+	                })
+	    }
 	    /**
 	     * Fin Modification JML
 	     */
