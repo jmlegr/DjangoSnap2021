@@ -161,9 +161,7 @@
             }
         }
         function sendRequest(secs=3,nb=100,first=true) {
-            
-                
-	        $.ajax({
+            $.ajax({
 	            url: url,
 	            type: 'POST',
 	            headers:{"X-CSRFToken":"{{ csrf_token }}"},
