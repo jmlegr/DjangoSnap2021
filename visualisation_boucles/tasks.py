@@ -9,6 +9,8 @@ from snap.models import Evenement, EvenementEPR, ProgrammeBase, Document,\
 from visualisation_boucles.reconstitution import SimpleListeBlockSnap
 from lxml import etree
 from snap import serializers
+from visualisation_boucles.serializers import SimpleSPRSerializer,\
+    SimpleEvenementSerializer
 
 affprint=False
 def aff(*str):
@@ -616,7 +618,7 @@ def reconstruit(session_key):
                     #on vérifie si le block déplacé n'était pas contenu
                     if newNode.conteneurBlockId is not None:
                         lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
-                        lastConteneur.change="youyou"
+                        lastConteneur.change="etaitcontenu"
                         lastConteneur.setWrapped(None)
                         newNode.unwrap()
                         listeBlocks.append(lastConteneur)
@@ -958,7 +960,8 @@ def reconstruit(session_key):
         res=[]
         
         #print('temps ',temps)
-        current_task.update_state(state='Reconstruction',
+        if ticks_traites%10==0:
+            current_task.update_state(state='Reconstruction',
                                 meta={'evt_traites': ticks_traites,'nb_evts':nb_ticks,
                                       'percent_task':round(ticks_traites/nb_ticks*50+50)
                                 })
@@ -1009,6 +1012,49 @@ def add(x,y,n):
         if(i%30 == 0):
             process_percent = int(100 * float(i) / float(n))
             current_task.update_state(state='PROGRESS',
-                                meta={'process_percent': process_percent,'i':i})
+                                meta={'percent_task': process_percent,
+                                      'evt_traites':i,
+                                      'nb_evts':n})
         a = x+y
     return {'x':x,'y':y,'resultat':x+y}
+
+@shared_task
+def celery_graph_boucles(sessions,only=None):
+    '''
+    Recherche la premiere occurence d'une boucle ('doUntil','doForever','doRepeat')    
+    et renvoi l'enselbe des évènements la précédent
+    data:liste des session_key
+    only: si présent, tableau de recherche (défaut:['doUntil','doForever','doRepeat']
+    '''
+    if only is not None:
+        tabBoucles=only
+    else:
+        tabBoucles=['doUntil','doForever','doRepeat']
+
+    evtsBoucle={}
+    nb_evts=len(sessions)
+    evt_traites=0
+    percent_task=0
+    for session_key in sessions:
+        evt_traites+=1
+        current_task.update_state(state='En cours',
+                                meta={'evt_traites': evt_traites,'nb_evts':nb_evts,
+                                      'percent_task':round(evt_traites/nb_evts*100)
+                                })
+        
+        #on recherche une création de boucle
+        evt=EvenementSPR.objects.filter(evenement__session_key=session_key,type='NEW',selector__in=tabBoucles)\
+                .select_related('evenement')\
+                .order_by('evenement__time').first()
+        if evt is not None:
+            serializerSPR=SimpleSPRSerializer(evt,many=False)
+            evts=Evenement.objects.filter(session_key=session_key,time__lte=evt.evenement.time)\
+                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
+            serializer=SimpleEvenementSerializer(evts,many=True)
+            evtsBoucle[session_key]={'boucle':serializerSPR.data,'evts':serializer.data}
+        else:            
+            evts=Evenement.objects.filter(session_key=session_key)\
+                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
+            serializer=SimpleEvenementSerializer(evts,many=True)
+            evtsBoucle[session_key]={'boucle':None,'evts':serializer.data}
+    return evtsBoucle

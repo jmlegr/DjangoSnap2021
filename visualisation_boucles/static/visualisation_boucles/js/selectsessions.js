@@ -9,10 +9,12 @@ import {
     graphSujet
 } from './films.js'
 import {
-    graphProgramme
+    graphProgramme, graphNbCommandes
 } from './programme.js'
 import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
+import {initSessionStackedBarChart} from './sessionstackedbar.js'
+import {CeleryTask} from './celerytask.js'
 
 var margin = {
         top: 30,
@@ -641,7 +643,37 @@ var lance = function () {
 
         })     
     }
-
+    var testcel=new CeleryTask({
+            urlTask:'testadd',
+            urlStatus:urls.task_status,
+            urlCancel:urls.task_cancel,
+            overlay:'overlayDiv2',
+            csrf_token:csrf_token,
+            method:'POST'
+    },function(r,d,v) {console.log('recu',r,d,v)})
+    
+    var reconstructionTask=new CeleryTask({
+        urlTask:urls.programmes,
+        urlStatus:urls.task_status,
+        urlCancel:urls.task_cancel,
+        overlay:'overlayDiv2',
+        csrf_token:csrf_token,       
+        },function(result,elTitle,elResult) {
+            elTitle                    
+                .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                    +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
+            graphProgramme(result,elResult)        
+        }
+    )
+    var graphbouclesTask=new CeleryTask({
+        urlTask:urls.boucle,
+        urlStatus:urls.task_status,
+        urlCancel:urls.task_cancel,
+        overlay:'overlayDiv2',
+        csrf_token:csrf_token,
+        method:'POST'
+        },function(result,elTitel,elResult) {})
+    
     var reconstruction=false, //vrai si on est en train de calculer la reconstruction du prg
     task_id
     d3.select("#visualiser")
@@ -667,140 +699,68 @@ var lance = function () {
                         users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
                     })        
             } else if (z=="programmes" && liste.length>0){
-                url=urls.programmes
-                //data=liste.map(d=>d.session_key)
-                url+=liste.map(d=>d.session_key)[0]
-                method="GET"
-
-                //preparation de la fenetre                
-                let overlay=d3.select("#overlayDiv2")
-                let session=liste[0]
-                overlay.select("#progTitle").html(`Reconstruction du film de ${session.user_nom}: ${session.loads}`)
-                overlay.select("#resultats").selectAll("*").remove();
-                overlay.style("visibility","visible")
-               
-                overlay.select("#fermerBtn")                        
-                        .on("click",function() {
-                            overlay.style("visibility","hidden")
-                        })
-                // fonctions pour la reconstructions asynchrone
-                let delay=200 //temps entre 2 requetes
-                let tr=0 //nombre de requetes (pour tests)
-                let willstop = 0; //drapeau d'arret(1) ou d'annulation(2)
-                //task_id=null
-                var retour=null
-
-                /* bouton d'annulation */
-                var poll_cancel= function() {
-                    return xsend('tolisteblock_cancel/'+task_id+'/',csrf_token)
-                    .then(response=>{
-                        willstop = 2
-                        console.log("cancel:",result)
-                    })
-                }
-
-                overlay.select('#cancelBtn').on('click',function() {
-                    console.log('cancel')
-                    poll_cancel()
+                reconstructionTask.lance({
+                    data:liste.map(d=>d.session_key)[0],
+                    ajout_url:liste.map(d=>d.session_key)[0]
                 })
-
-                /* attente des resultats et maj de la barre de progression*/
-                var poll=function() {
-                    tr+=1
-                    console.log('tr',tr,task_id,reconstruction)
-                    overlay.select("#addProgress").style('visibility','visible')
-                    overlay.select('#cancelBtn').style('visibility','visible');
-                    //pas de task_id -> on lance la tache, sinon on fait une requete sur son etat
-                    if (task_id==null) url=urls.programmes+liste.map(d=>d.session_key)[0]
-                    else url='tolisteblock_state/'+task_id+"/"
-                    xsend(url, csrf_token, {
-                        "type": z,
-                        "data": {'task_id':task_id}
-                    }, method)
-                    .then(response => {
-                        console.log("sessions",response)
-                        if (response.task_id) task_id=response.task_id
-                        if (response.data.state=="SUCCESS") {
-                            let result=response.data.result
-                            willstop = 1;                            
-                            overlay.select("#user-count").text("DONE");
-                            overlay.select('#bar')
-                            .style('width','100%')
-                            .text(100 + '%');
-                            //d3.select('#returnBtn').style('visibility','visible');
-                            overlay.select('#cancelBtn').style('visibility','hidden');
-                            overlay.select('#result').text('reçu:'+result.x+'+'+result.y+'='+result.resultat)
-                            
-                            //on a reçu, on affiche les resultats
-                            
-                             overlay.select("#progTitle")                    
-                                 .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
-                                         +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
-                            graphProgramme(result,overlay.select("#resultats"))
-                        } else if (response.data.state!="REVOKED") {
-                            let result=response.data.result                            
-                            //let process_percent=Math.round(result.evt_traites/result.nb_evts*100)
-                            let process_percent=result.percent_task
-                            overlay.select('#bar')
-                            .style('width',process_percent + '%')
-                            .text(process_percent + '%');
-                            overlay.select('#result').text('evts:'+result.evt_traites+'/'+result.nb_evts)
-                            overlay.select("#user-count").text(task_id+': '+response.data.state);
-                        } else {
-                            willstop = 2;     
-                            overlay.select("#user-count").text("CANCELLED");                      
-                            //d3.select('#returnBtn').style('visibility','visible');
-                            overlay.select('#cancelBtn').style('visibility','hidden');
+            } else if (z=='boucle' && liste.length>0) {
+                graphbouclesTask.lance({
+                    data:{session_keys:liste.map(d=>d.session_key)},
+                    callback:function(result,elTitle,elResult) {
+                        let data=new Array()
+                        let databoucles=[]
+                        for (var session in result) {                           
+                                data=data.concat(result[session].evts)                                
+                                databoucles[session]=result[session].boucle                                
                         }
-                    })
-                }
-                /* requete s */
-                var reconstruit=function() {
-                    reconstruction=true;
-                    return xsend(url, csrf_token, {
-                        "type": z,
-                        "data": {'task_id':task_id}
-                    }, method).then(response=>{
-                        console.log('recept(',response)                    
-                        task_id=response.task_id                        
-                        willstop=0
-                        var refreshIntervalId = setInterval(function() {
-                            poll()
-                            if(willstop >= 1 ){
-                                clearInterval(refreshIntervalId);  
-                                task_id=null
-                                overlay.select("#addProgress").style('visibility', 'hidden');                                
-                            } 
-                        },delay);
-                    })
-                }
-                /* lancement */
-                if (task_id==null) {
-                    if (!reconstruction) reconstruit()
-                    else {
-                        //une reconstruction est déjà lancée mais on n'a pas encore la task_id
-                        overlay.select('#cancelBtn').style('visibility','hidden');
-                        var refreshTask=setInterval(function(){
-                            if (task_id!=null) {
-                                clearInterval(refreshTask)
-                                poll_cancel().then(response=>{
-                                    task_id=null;
-                                    reconstruction=false;
-                                    reconstruit()})
+                        const setDataType=function(obj) {
+                            switch (obj.type) {
+                            case "EPR": obj.data=obj.evenementepr[0];break;
+                            case "SPR": obj.data=obj.evenementspr[0];  break;
+                            case "ENV": obj.data=obj.environnement[0];break;
+                            default: obj.data={}                    
                             }
-                        },delay)
+                            
+                            if (obj.data) {
+                                obj.datatype=obj.type+"_"+obj.data.type
+                            } else {
+                                obj.datatype=obj.type+"_ZZZ"
+                                console.error("ZARB",obj)
+                            }
+                            delete obj["evenementepr"]; 
+                            delete obj["evenementspr"];
+                            delete obj["environnement"]; 
+                            return obj
+                        }
+                        data.forEach(d=>setDataType(d))
+                        console.log('data',data,databoucles,elResult.node())
+                        initSessionStackedBarChart.draw({
+                            data:data,
+                            boucles:databoucles,
+                            liste:liste,
+                            key:d3.map(data,function(d){return d.datatype}).keys(),
+                            element:elResult
+                        })                  
                     }
-                } else {
-                    //c'est un nouveau lancement, on commence par annuler
-                    poll_cancel().then(response=>{
-                        task_id=null; 
-                        reconstruction=false;
-                        reconstruit()})
-                }
-
-
-
-                //graphProgramme(response)
+                })
+                
+            } else if (z=="testop") {
+                reconstructionTask.lance({
+                    data:liste.map(d=>d.session_key)[0],
+                    ajout_url:liste.map(d=>d.session_key)[0],
+                    callback:function(result,elTitle,elResult) {
+                        elTitle                    
+                        .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                            +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}: évolution`)
+                        graphNbCommandes({data:result,element:elResult})
+                    }
+                })
+            
+                /*
+                testcel.lance({
+                    data:{x:7,y:8,n:80000},
+                    callback:function(r,t,v) {t.html('_>'+r.resultat); v.append("div").html("finitio")}
+                })*/
             }
     })
 

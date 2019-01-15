@@ -48,6 +48,8 @@ var csrf_token="{{ csrf_token }}";
  <div id="visualisation-type" style="clear: both; float: left">
     <div><label><input type=radio name="operation" value="programmes" checked="true">&nbsp;programme</label></div>
     <div><label><input type=radio name="operation" value="reperes">&nbsp;reperes</label></div>
+    <div><label><input type=radio name="operation" value="boucle">&nbsp;boucle</label></div>
+    <div><label><input type=radio name="operation" value="testop">&nbsp;test Cery</label></div>
 </div>
 
 <div style="float: left">
@@ -84,7 +86,9 @@ var csrf_token="{{ csrf_token }}";
         <div id="result">en attente</div>
         <button id="cancelBtn">cancel</button>  
     </div>
+    
 </div>
+<div id='stacked-bar'></div>
 </body>
 
 <script type="module" src="{% static 'visualisation_boucles/js/main.js' %}"></script>

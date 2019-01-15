@@ -83,6 +83,7 @@ class SimpleEvenementSerializer(serializers.ModelSerializer):
         model=Evenement
         fields='__all__'
         depth=0
+        
     image=SimpleSnapShotSerializer(many=True,read_only=True)  
     isSpr=serializers.SerializerMethodField()
     
