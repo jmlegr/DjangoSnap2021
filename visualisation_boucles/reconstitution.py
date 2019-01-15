@@ -1656,6 +1656,7 @@ class SimpleListeBlockSnap:
             else:
                 block.blockSpec=item.get('blockSpec')
             params=re.findall(r'(%\w+)',u'%s' % block.blockSpec)
+            #aff('params',params)
             rang=0
             for e in params:
                 if e in ['%inputs','%words','%exp','%scriptvars','%parms']:
@@ -1668,7 +1669,8 @@ class SimpleListeBlockSnap:
                     #on attend un Cslotmorph(commandes)
                     inp=self.addFromXML(item.getchildren()[rang],theTime=theTime)
                     inp.rang=rang
-                    block.addInput(inp);                
+                    block.setWrapped(self.getNode(inp.wrappedBlockId,theTime))
+                    block.addInput(inp);                    
                     rang+=1                
                 elif e not in ['%clockwise','%counterclockwise','%greenflag']:
                     #un seul input

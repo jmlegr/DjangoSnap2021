@@ -127,6 +127,7 @@ background-color: yellow;
     background-color: lightblue;
 }
 p.command {
+	text-align: left;
 	font-size:10;
 	margin-top: 0.1em;
     margin-bottom: 0.1em;
@@ -185,4 +186,47 @@ p.CommentMorph {
     position:absolute; 
     top:140px;
     left:40px;
+  }
+  
+  .noboucle {
+    opacity: 0.6;
+  }
+  .boucle {
+   /*stroke:gainsboro;*/
+   
+  }
+  .noboucle .evtline  {
+   stroke:grey;   
+  }
+  .boucle .evtline {
+  stroke:slategrey;
+  }
+  
+  [notselected] {
+    fill: grey;
+  }
+  .linenbcommandes {
+    fill: none;    
+    stroke-width: 1.5;
+}
+ .linenbtotalcommandes {
+    fill: none;
+    stroke: black;
+    stroke-width: 3;
+}
+#overlayDiv2 .progs {
+	overflow: auto;
+	padding:0.5em;
+    border: 2px solid pink;
+    position: fixed;
+    top: 6%;
+    right: 6%;
+    width: 200px;
+    height: 90%;
+    background-color: pink;
+    z-index:999;
+    /*visibility: hidden;*/
+}
+.tippy-backdrop {
+  width: 640px !important;
   }

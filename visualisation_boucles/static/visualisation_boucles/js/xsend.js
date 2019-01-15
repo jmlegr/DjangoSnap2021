@@ -2,7 +2,10 @@
 var urls = {
         'visualise':"sessions/visualise/",
         'reperes':"sessions/reperes/",
-        'programmes':'toliste/'
+        'programmes':'toliste/',
+        'boucle':'graph_boucles/',
+        'task_status':'task_state',
+        'task_cancel':'task_cancel',
 }
 
 var xsend = function (url, csrf_token, data, method = "GET") {
@@ -21,6 +24,7 @@ var xsend = function (url, csrf_token, data, method = "GET") {
             referrer: "no-referrer", // no-referrer, *client            
         }
     if (method=="POST") options.body= JSON.stringify(data) // body data type must match "Content-Type" header
+    
     return fetch(url, options)
         .then(response => response.json())
         //.then(response => console.log('Success:', response,JSON.stringify(response)))
