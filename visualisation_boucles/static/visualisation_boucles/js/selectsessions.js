@@ -714,10 +714,13 @@ var lance = function () {
                         users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
                     })        
             } else if (z=="programmes"  && liste.length>0){
+                xsend('tb/'+liste.map(d=>d.session_key)[0],csrf_token,{"truc":"bidule"},'GET')
+                .then(response=> console.log("resp",response))
+                /*
                 reconstructionTask.lance({
                     data:liste.map(d=>d.session_key)[0],
                     ajout_url:liste.map(d=>d.session_key)[0]
-                })
+                })*/
             } else if (z=="programmes(export)"  && liste.length>0){
                 reconstructionTaskForExport.lance({
                     data:liste.map(d=>d.session_key)[0],
