@@ -216,6 +216,7 @@ p.CommentMorph {
 }
 #overlayDiv2 .progs {
 	overflow: auto;
+	white-space: nowrap;
 	padding:0.5em;
     border: 2px solid pink;
     position: fixed;
