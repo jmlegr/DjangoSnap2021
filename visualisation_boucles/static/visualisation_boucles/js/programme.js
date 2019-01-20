@@ -182,10 +182,9 @@ const graphNbCommandes=function(config) {
     tracePoints(svg)
     
 }
-const graphProgramme=function(donnees,div) {
+const graphProgramme=function(donnees,div,forExport=false) {
     //reconstitue le graphe du programme donné en paramère
     //données={commandes,infos,ticks,scripts}
-    
     
     donnees.commandes.forEach(function(c) {
         //on commence par rechercher les blocks de tête
@@ -251,10 +250,55 @@ const graphProgramme=function(donnees,div) {
                 .append("p").html(startclic?'CLICK':'')
             //divG.append("div").html(fin?"END":"START")
             if (snp) {
-                divG.append("img")
-                    .attr("class","snapimage")
-                    .attr("src",c.epr.snp.image)              
-                
+                if (forExport) {
+                    divG.append("img")
+                        .attr("class","snapimageforexport")
+                        .attr("src",c.epr.snp.image)
+                } else {
+                    divG.append("img")
+                        .attr("class","snapimage")
+                        .attr("src",c.epr.snp.image)
+                    const state = {
+                        isFetching: false,
+                        canFetch: true
+                    }
+                    tippy(divG.node(),{
+                        theme:'light',                 
+                        content:"belle image"+c.epr.snp.image,
+                        placement:'right',
+                        delay:200,
+                        arrow:true,
+                        arrowType: 'round',
+                        size: 'large',
+                        duration: 500,
+                        animation: 'perspective',
+                        async onShow(tip) {                     
+                            if ( state.isFetching || !state.canFetch) return
+                            state.isFetching = true
+                            state.canFetch = false
+                            try {
+                                const response = await fetch(c.epr.snp.image)
+                                const blob = await response.blob()
+                                const url = URL.createObjectURL(blob)
+                                if (tip.state.isVisible) {
+                                    const img = new Image()
+                                    img.width = 300
+                                    img.height = 300
+                                    img.src = url
+                                    tip.setContent(img)
+                                }
+                            } catch (e) {
+                                tip.setContent(`Fetch failed. ${e}`)
+                            } finally {
+                                state.isFetching = false
+                            }
+                        },
+                        onHidden(tip) {
+                            state.canFetch = true
+                            tip.setContent("nothing")
+                        }
+                    })
+                }
             }
         }
         

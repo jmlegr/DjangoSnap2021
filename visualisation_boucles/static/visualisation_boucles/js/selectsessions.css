@@ -103,7 +103,7 @@ background-color: yellow;
 }
 .blockepr {
 	font-size:8;
-    width : 7em;    
+    width : 8em;    
     background-color: lightblue;
 }
 .blockepr.start {
@@ -231,7 +231,7 @@ p.CommentMorph {
   width: 640px !important;
   }
   
- .snapimage {
+ .snapimage, .snapimageforexport {
     width:50px;
     position: relative;
     /**opacity: 0.5;**/
@@ -239,7 +239,7 @@ p.CommentMorph {
     cursor: pointer;
     /*z-index:1;*/
  }
- .snapimage:hover {
+ .snapimageforexport:hover {
     width:450px;
     position: sticky;
     z-index:1501;
