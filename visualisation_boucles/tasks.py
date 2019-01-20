@@ -18,7 +18,7 @@ def aff(*str):
         print(*str)
 
 @shared_task
-def reconstruit(session_key):    
+def reconstruit(session_key,noTask=False):    
     def createNew(spr,theTime,action):
         """
         créé un nouveau block et ses inputs
@@ -56,7 +56,8 @@ def reconstruit(session_key):
                     newInput.addInput(inputMulti)
         return newNode
     
-    current_task.update_state(state='Initialisation',
+    if not noTask:
+        current_task.update_state(state='Initialisation',
                                 meta={'evt_traites': 0,'nb_evts':None})
     #liste les derniers débuts de tous les élèves
     evts=[]
@@ -69,7 +70,8 @@ def reconstruit(session_key):
         evts=Evenement.objects.filter(session_key=session_key).order_by('time')
         debut=evts[0]
     nb_evts=evts.count()
-    current_task.update_state(state='Initialisation',
+    if not noTask:
+        current_task.update_state(state='Initialisation',
                                 meta={'evt_traites': 0,'nb_evts':nb_evts,'percent_task':0})
     infos={}
     eprInfos={}  
@@ -87,7 +89,7 @@ def reconstruit(session_key):
     evt_traites=0
     for evt in evts:
         evt_traites+=1
-        if (evt_traites % 10 == 0):
+        if (not noTask and evt_traites % 10 == 0):
             current_task.update_state(state='Traitement',
                                 meta={'evt_traites': evt_traites,'nb_evts':nb_evts,
                                       'percent_task':round(evt_traites/nb_evts*50)
@@ -960,7 +962,7 @@ def reconstruit(session_key):
         res=[]
         
         #print('temps ',temps)
-        if ticks_traites%10==0:
+        if not noTask and ticks_traites%10==0:
             current_task.update_state(state='Reconstruction',
                                 meta={'evt_traites': ticks_traites,'nb_evts':nb_ticks,
                                       'percent_task':round(ticks_traites/nb_ticks*50+50)
