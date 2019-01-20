@@ -660,7 +660,7 @@ var lance = function () {
             csrf_token:csrf_token,       
             },function(result,elTitle,elResult) {
                 elTitle                    
-                    .html(`PASEXOPUtilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                    .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
                     +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
                 graphProgramme(result,elResult,false)        
             }
@@ -673,8 +673,10 @@ var lance = function () {
         csrf_token:csrf_token,       
         },function(result,elTitle,elResult) {
             elTitle                    
-                .html(`EXPOUtilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
-                +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
+                .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}
+                (pour export)`
+                )
             graphProgramme(result,elResult,true)        
         }
     )
