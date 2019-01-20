@@ -103,7 +103,7 @@ background-color: yellow;
 }
 .blockepr {
 	font-size:8;
-    width : 7em;    
+    width : 8em;    
     background-color: lightblue;
 }
 .blockepr.start {
@@ -230,3 +230,27 @@ p.CommentMorph {
 .tippy-backdrop {
   width: 640px !important;
   }
+  
+ .snapimage, .snapimageforexport {
+    width:50px;
+    position: relative;
+    /**opacity: 0.5;**/
+    transition: 0.3s ease;
+    cursor: pointer;
+    /*z-index:1;*/
+ }
+ .snapimageforexport:hover {
+    width:450px;
+    position: sticky;
+    z-index:1501;
+    /**opacity: 1;**/
+
+    /** default is 1, scale it to 1.5 */
+    /**transform: scale(1.5, 1.5);*/
+
+    /** translate 50px from left, and 40px from top */
+    /**transform: translate(10px, 10px); */
+
+    /** combine both scale and translate */
+    /**transform: scale(1.5, 1.5) translate(50px, 40px);*//
+ }

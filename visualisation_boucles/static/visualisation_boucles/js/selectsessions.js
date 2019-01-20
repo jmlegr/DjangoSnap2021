@@ -653,6 +653,19 @@ var lance = function () {
     },function(r,d,v) {console.log('recu',r,d,v)})
     
     var reconstructionTask=new CeleryTask({
+            urlTask:urls.programmes,
+            urlStatus:urls.task_status,
+            urlCancel:urls.task_cancel,
+            overlay:'overlayDiv2',
+            csrf_token:csrf_token,       
+            },function(result,elTitle,elResult) {
+                elTitle                    
+                    .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                    +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
+                graphProgramme(result,elResult,false)        
+            }
+        )
+    var reconstructionTaskForExport=new CeleryTask({
         urlTask:urls.programmes,
         urlStatus:urls.task_status,
         urlCancel:urls.task_cancel,
@@ -661,8 +674,10 @@ var lance = function () {
         },function(result,elTitle,elResult) {
             elTitle                    
                 .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
-                    +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
-            graphProgramme(result,elResult)        
+                +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}
+                (pour export)`
+                )
+            graphProgramme(result,elResult,true)        
         }
     )
     var graphbouclesTask=new CeleryTask({
@@ -698,11 +713,16 @@ var lance = function () {
                         console.log('rep',users)
                         users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
                     })        
-            } else if (z=="programmes" && liste.length>0){
+            } else if (z=="programmes"  && liste.length>0){
                 reconstructionTask.lance({
                     data:liste.map(d=>d.session_key)[0],
                     ajout_url:liste.map(d=>d.session_key)[0]
                 })
+            } else if (z=="programmes(export)"  && liste.length>0){
+                reconstructionTaskForExport.lance({
+                    data:liste.map(d=>d.session_key)[0],
+                    ajout_url:liste.map(d=>d.session_key)[0]
+                })            
             } else if (z=='boucle' && liste.length>0) {
                 graphbouclesTask.lance({
                     data:{session_keys:liste.map(d=>d.session_key)},
