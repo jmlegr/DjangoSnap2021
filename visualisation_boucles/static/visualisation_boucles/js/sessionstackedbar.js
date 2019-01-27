@@ -130,7 +130,11 @@ var initSessionStackedBarChart = {
                 .attr("x2",d=>xScale(d.data.session))
                 .attr("y2",d=>yScale(d[1]))
                 .attr("stroke-width",d=>d[1]>d[0]?Math.min(5,xScale.bandwidth()/5):0)
-             
+            var nb=svg.selectAll(".nb").data(layers)
+                    .enter()
+                    .append("text")
+                    .attr("class","nb")
+                    .text(d=>{console.log('lai',d); return "oi"})
           svg.selectAll(".layer").each(function(p,j,g){
               d3.select(this)
               .selectAll("rect")

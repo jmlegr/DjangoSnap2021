@@ -9,7 +9,7 @@ import {
     graphSujet
 } from './films.js'
 import {
-    graphProgramme, graphNbCommandes
+    graphProgramme, graphNbCommandes, graphStackNbCommandes
 } from './programme.js'
 import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
@@ -775,7 +775,7 @@ var lance = function () {
                         elTitle                    
                         .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
                             +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}: évolution`)
-                        graphNbCommandes({data:result,element:elResult})
+                        graphStackNbCommandes({data:result,element:elResult})
                     }
                 })
             
