@@ -612,6 +612,7 @@ def reconstruit(session_key):
                     #On récupère le block et on le recopie
                     newNode=listeBlocks.lastNode(spr.blockId, theTime,deleted=True).copy(theTime,action)
                     newNode.deleted=False
+                    #newNode.change="dropped"
                     #si ni le prevBlock ni le nextblock (ni wrapp?) ne change, c'est un simplement déplacement non pris en compte
                     #pour l'instant on le fait quand même                
                     listeBlocks.append(newNode)
@@ -666,11 +667,9 @@ def reconstruit(session_key):
                         listeBlocks.setFirstBlock(newNode)
                         newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
                         #on récupère la cible
-                        nextBlock=listeBlocks.lastNode(spr.targetId,theTime)
-                        newNextBlock=listeBlocks.addSimpleBlock(theTime, 
-                                                                block=nextBlock 
-                                                                )
+                        newNextBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)                        
                         newNextBlock.change='insert_%s' % spr.location
+                        listeBlocks.append(newNextBlock)
                         #on ne vérifie pas si le next avait un prev, ça ne doit pas arriver
                         #on va cherche le fin du script droppé (si c'en est un)
                         finBlock=listeBlocks.lastFromBlock(theTime,newNode)
@@ -680,6 +679,16 @@ def reconstruit(session_key):
                             listeBlocks.setNextBlock(newFinBlock,newNextBlock)
                         else:
                             listeBlocks.setNextBlock(newNode,newNextBlock)
+                        #on change le prevBlock                        
+                        lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
+                        if lastPrevBlock is not None:
+                            if lastPrevBlock.JMLid!=newNextBlock.JMLid:                            
+                                newLastPrevBlock=lastPrevBlock.copy(theTime)
+                                newLastPrevBlock.setNextBlock(None)
+                                listeBlocks.append(newLastPrevBlock)
+                            else:
+                                newNextBlock.setNextBlock(None)
+                        newNode.setPrevBlock(None)
                         listeBlocks.addTick(theTime)   
                     elif spr.location=="slot":
                         #c'est un drop dans le CSLotMorph d'une boucle englobante
@@ -803,6 +812,7 @@ def reconstruit(session_key):
             elif spr.type=='VAL':
                 #c'est une modification de la valeur (directe) d'un inputSlotMorph
                 #on cherche l'input modifié (par le rang ou par le detail)
+                action+=' VAL'
                 if spr.location is None:
                     #c'est un CommentBlock (sans input). La valuer est blockSpec
                     #si le commentaire est trop long (blockSpec limité à 50 car), le complément est dans detail
@@ -982,7 +992,10 @@ def reconstruit(session_key):
                 if change:
                     resultat['change']='AAchangeAA '+resultat['change']+"AA"+change  
                 else:
-                    resultat['change']='XXchangeXX '+resultat['change']+"XX"+change
+                    if resultat['action']:
+                        resultat['change']='AAchangeACTION'+ resultat["action"]
+                    else:
+                        resultat['change']='XXchangeXX '+resultat['change']+"XX"+change
                 res.append(resultat)
         #les résultats ne sont pas dans l'ordre!
         #le client devra retouver les blocs de débuts (prevBlock=None et parent=None)
