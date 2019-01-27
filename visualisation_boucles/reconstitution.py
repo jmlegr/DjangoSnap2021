@@ -1544,6 +1544,13 @@ class SimpleListeBlockSnap:
                 if len(inputNode.inputs)>0:
                     res,repl,change=self.parcoursBlock(inputNode.JMLid,thetime,toHtml=toHtml)
                     repl='['+repl+']'
+                    """
+                    if change:
+                        res['change']='BBchangeBB '+res['change']+"BB"+change  
+                    else:
+                        res['change']='YYchangeYY '+res['change']+"YY"+change
+                    change=res['change']
+                    """
                     resultat+=res
                 else:
                     #pas d'input, on récupère la valeur
@@ -1620,7 +1627,7 @@ class SimpleListeBlockSnap:
                     i+=1
         else:
             #c'est un CommentMorph
-            change=block.change if block.time==thetime else 'r' #change
+            change=block.change if block.time==thetime else ''
         resultat={'JMLid':block.JMLid,
                   'time':thetime,
                   'commande':nom,
