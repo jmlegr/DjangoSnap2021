@@ -73,6 +73,8 @@ pointer-events: none;
     visibility: hidden;
 }
 #overlayDiv2 {
+	overflow: auto;
+    white-space: nowrap;
 	padding:2em;
 	border: 2px solid slategrey;
     position: fixed;
@@ -93,13 +95,28 @@ font-size:10;
 .block:hover {
 background-color: yellow;
 }
+
+.tetescript {
+	background-color: DarkGoldenRod;
+	border-radius: 8px;
+    padding-right: 5px;
+    padding-left: 5px;	
+}
+.script {
+	 width : 100%;   
+    
+}
+.script.haschanged {
+    background-color: lightblue;
+}
 .blockcommands {
-	 display:inline-block;
+	display:inline-block;
     width : 20%;    
     vertical-align: top;
 	border-style: dotted;
 	margin-bottom: 0.5em;
 	background-color: lavender;
+	white-space: pre-wrap;
 }
 .blockepr {
 	font-size:8;
@@ -162,11 +179,14 @@ p.CommentMorph {
 }
 .separation {
     background-color: lightsteelblue;
-    font-size:4;
+    font-size:10;
 }
 
 #overlayDiv2 .btn {
 	background-color: #b7bfc8;
+	position: sticky;
+	left:0;
+	top:0;
 }
 
 .progress {
@@ -180,6 +200,7 @@ p.CommentMorph {
    text-align:right;
   }
   .taskProgress {
+    white-space: normal;
     width:250px;
     z-index:999;
     background-color: lightblue;
@@ -214,19 +235,13 @@ p.CommentMorph {
     stroke: black;
     stroke-width: 3;
 }
-#overlayDiv2 .progs {
-	overflow: auto;
-	white-space: nowrap;
-	padding:0.5em;
-    border: 2px solid pink;
-    position: fixed;
-    top: 6%;
-    right: 6%;
-    width: 200px;
-    height: 90%;
-    background-color: pink;
-    z-index:999;
-    /*visibility: hidden;*/
+
+.dotcircle {
+ cursor: pointer;	
+}
+.dotcircle.focus {
+	stroke:black;
+	stroke-width: 3;
 }
 .tippy-backdrop {
   width: 640px !important;
