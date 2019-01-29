@@ -231,7 +231,6 @@ const graphStackNbCommandes=function(config) {
         tippy(".dotEvts",{
             content:function(tip){                
                 var d=d3.select(tip).datum()
-                console.log('ttyy',d)
                 return `<p>temps: ${d.temps}</p>
                 <p>${d.evt.evenement_type}</p>
                 <p>${d.evt.type} ${d.evt.detail?d.evt.detail:""}</p>  `
