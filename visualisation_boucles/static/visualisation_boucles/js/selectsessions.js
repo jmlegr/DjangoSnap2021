@@ -699,9 +699,12 @@ var lance = function () {
             valueSelected=valueSplit[0],
             option=valueSplit.length>1?valueSplit[1]:null
                     
-        var liste = selectedCountChart.dimension().all()
+        // marche pas plus:var liste = JSON.parse(JSON.stringify(selectedCountChart.dimension().all()))
+        let liste = selectedCountChart.dimension().all()
+        var session_keys= selectedCountChart.dimension().all().map(d=>d.session_key)
+        console.log("listenb",liste.length)
         let url="",data=null,method="POST"
-            console.log("value", valueSelected,option, liste,)
+            console.log("value", valueSelected,option, liste,liste[0])
             //alert("chargement de " + z)
             if (valueSelected=="reperes") {
                 url=urls.reperes               
@@ -718,6 +721,7 @@ var lance = function () {
                     })        
             } else if (valueSelected=="reconstitution"){
                 if (liste.length!=1) {
+                    console.log("data",liste,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
                     alert("Sélectionner une et une seule session!")
                 } else {
                     switch (option) {
@@ -742,8 +746,9 @@ var lance = function () {
                 if (liste.length=0) {
                     alert("Sélectionner au moins une session!")
                 } else {
+                    console.log("data",session_keys,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
                     graphbouclesTask.lance({
-                        data:{session_keys:liste.map(d=>d.session_key)},
+                        data:{session_keys:session_keys},
                         callback:function(result,elTitle,elResult) {
                             let data=new Array()
                             let databoucles=[]
