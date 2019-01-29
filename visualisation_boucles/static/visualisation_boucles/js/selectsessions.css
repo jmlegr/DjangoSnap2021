@@ -243,6 +243,15 @@ p.CommentMorph {
 	stroke:black;
 	stroke-width: 3;
 }
+.dotevts.epr{
+    fill:green;
+}
+.dotevts.spr{
+    fill:blue;
+}
+.dotevts.env{
+    fill:grey;  
+}
 .tippy-backdrop {
   width: 640px !important;
   }
