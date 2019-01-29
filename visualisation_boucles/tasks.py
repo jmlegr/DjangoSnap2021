@@ -21,7 +21,7 @@ def aff(*str):
         print(*str)
 
 @shared_task
-def reconstruit(session_key):    
+def reconstruit(session_key,save=False,load=False):    
     def createNew(spr,theTime,action):
         """
         créé un nouveau block et ses inputs
@@ -59,11 +59,17 @@ def reconstruit(session_key):
                     newInput.addInput(inputMulti)
         return newNode
     
-    current_task.update_state(state='Initialisation',
-                                meta={'evt_traites': 0,'nb_evts':None})
+    
     #liste les derniers débuts de tous les élèves
     programme=None
     evts=[]
+    if load:
+        current_task.update_state(state='Chargement')
+        prog=Reconstitution.objects.filter(session_key=session_key)
+        if prog.exists():
+            return prog[0].detail_json
+    current_task.update_state(state='Initialisation',
+                                meta={'evt_traites': 0,'nb_evts':None})    
     if session_key.isdigit():
         #on a envoyé une id d'évènement EPR
         epr=EvenementEPR.objects.get(id=session_key)
@@ -1017,12 +1023,13 @@ def reconstruit(session_key):
     #    print(i)
     #print('-----------------------------------------------------------------------------------------')
     #sauvegarde dans la base (avec écrasement)
-    current_task.update_state(state='Sauvegarde')
-    prog,created=Reconstitution.objects.get_or_create(
-        session_key=session_key,
-        user=user)
-    prog.programme=infos['type'],
-    prog.detail_json={"commandes":commandes,
+    if save:
+        current_task.update_state(state='Sauvegarde')
+        prog,created=Reconstitution.objects.get_or_create(
+            session_key=session_key,
+            user=user)
+        prog.programme=infos['type'],
+        prog.detail_json={"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
                      "ticks":listeBlocks.ticks,
@@ -1033,7 +1040,9 @@ def reconstruit(session_key):
                       "session":session_key,
                       #'infos':evtTypeInfos
                       }
-    prog.save()
+        prog.save()
+    else:
+        created=False
     current_task.update_state(state='Envoi')
     return {"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,

@@ -724,7 +724,7 @@ var lance = function () {
             } else if (z=="programmes(export)"  && liste.length>0){
                 reconstructionTaskForExport.lance({
                     data:liste.map(d=>d.session_key)[0],
-                    ajout_url:liste.map(d=>d.session_key)[0]
+                    ajout_url:liste.map(d=>d.session_key)[0]+'/?save'
                 })            
             } else if (z=='boucle' && liste.length>0) {
                 graphbouclesTask.lance({
