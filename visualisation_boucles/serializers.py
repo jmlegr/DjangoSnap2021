@@ -8,6 +8,7 @@ from snap.models import ProgrammeBase,EvenementENV, EvenementEPR, EvenementSPR,\
     Evenement, SnapSnapShot, Classe
 from snap import serializers as snapserializers
 from django.contrib.auth.models import User
+from lxml.html._diffcommand import description
 class ProgrammeBaseSerializer(serializers.ModelSerializer):
     class Meta:
         model=ProgrammeBase
@@ -102,3 +103,10 @@ class ResumeSessionSerializer(serializers.Serializer):
     fin=serializers.DateTimeField()
     classe_nom=serializers.CharField(source="user__eleve__classe__nom")
     classe_id=serializers.IntegerField(source="user__eleve__classe")
+    
+class InfoProgSerializer(serializers.Serializer):
+    user=serializers.CharField(max_length=150)
+    date=serializers.DateTimeField()
+    type=serializers.CharField(allow_null=True)
+    description=serializers.CharField(allow_null=True)
+    tooltip=serializers.CharField(allow_null=True)
