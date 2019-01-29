@@ -198,12 +198,53 @@ const graphStackNbCommandes=function(config) {
                     }*/
         })
     }
+    
+    /**
+     * traçage des epr     
+     */
+    const traceEvenements=svg=> {
+        let evts=data.commandes.filter(d=>d.evt != null).map(function(d){return {temps:d.temps,evt:d.evt}})
+        console.log("evts",evts)
+        svg.selectAll(".dotEvts").data(evts)
+            .enter()
+            .append("circle")
+            //.attr("class",function(d){return "dotEvts "+d.evt.evenement_type})
+            .attr("class",function(d) {return "dotEvts "+d.evt.evenement_type})
+            .attr("cx", function(d) { return xScale2(d.temps) })
+            .attr("cy", function(d) { return yScale(0) })
+            .attr("r", 3)
+            .on("mouseover",function(a,b,c) {
+                console.log("az",a,b,c,this)
+               svg
+                    .append("line")
+                    .attr("id","lignetemps")
+                    .attr("x1",xScale2(a.temps))
+                    .attr("y1",yScale(0))
+                    .attr("x2",xScale2(a.temps))
+                    .attr("y2",yScale(maxNbs))
+                    .style("stroke-width",2)
+                    .style("stroke","grey")
+            })
+            .on("mouseout",function() {
+                svg.select("#lignetemps").remove()
+            })
+        tippy(".dotEvts",{
+            content:function(tip){                
+                var d=d3.select(tip).datum()
+                console.log('ttyy',d)
+                return `<p>temps: ${d.temps}</p>
+                <p>${d.evt.evenement_type}</p>
+                <p>${d.evt.type} ${d.evt.detail?d.evt.detail:""}</p>  `
+            }
+        })
+    }
     /**
      * traçage
      */
     echelle(svg)
     traceArea(svg)
     tracePoints(svg)
+    traceEvenements(svg)
 }
 const graphNbCommandes=function(config) {
         var me = this,
