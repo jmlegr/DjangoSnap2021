@@ -695,17 +695,20 @@ var lance = function () {
     .on("click", function () {
         //on supprime les graphes
         d3.select("#graphSujet").selectAll("*").remove()
-        var z = d3.select("#visualisation-type input:checked").node().value
+        var valueSplit = d3.select("#visualisation-type input:checked").node().value.split('_'),
+            valueSelected=valueSplit[0],
+            option=valueSplit.length>1?valueSplit[1]:null
+                    
         var liste = selectedCountChart.dimension().all()
         let url="",data=null,method="POST"
-            console.log("z", z, liste)
+            console.log("value", valueSelected,option, liste,)
             //alert("chargement de " + z)
-            if (z=="reperes") {
+            if (valueSelected=="reperes") {
                 url=urls.reperes               
                 data=liste.map(d=>d.session_key)
                 method="POST"
                     xsend(url, csrf_token, {
-                        "type": z,
+                        "type": valueSelected,
                         "data": data
                     }, method)
                     .then(response => {console.log("sessions",response)                
@@ -713,77 +716,89 @@ var lance = function () {
                         console.log('rep',users)
                         users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
                     })        
-            } else if (z=="programmes"  && liste.length>0){
-                xsend('tb/'+liste.map(d=>d.session_key)[0],csrf_token,{"truc":"bidule"},'GET')
-                .then(response=> console.log("resp",response))
-                /*
-                reconstructionTask.lance({
-                    data:liste.map(d=>d.session_key)[0],
-                    ajout_url:liste.map(d=>d.session_key)[0]
-                })*/
-            } else if (z=="programmes(export)"  && liste.length>0){
-                reconstructionTaskForExport.lance({
-                    data:liste.map(d=>d.session_key)[0],
-                    ajout_url:liste.map(d=>d.session_key)[0]+'/?save'
-                })            
-            } else if (z=='boucle' && liste.length>0) {
-                graphbouclesTask.lance({
-                    data:{session_keys:liste.map(d=>d.session_key)},
-                    callback:function(result,elTitle,elResult) {
-                        let data=new Array()
-                        let databoucles=[]
-                        for (var session in result) {                           
-                                data=data.concat(result[session].evts)                                
-                                databoucles[session]=result[session].boucle                                
-                        }
-                        const setDataType=function(obj) {
-                            switch (obj.type) {
-                            case "EPR": obj.data=obj.evenementepr[0];break;
-                            case "SPR": obj.data=obj.evenementspr[0];  break;
-                            case "ENV": obj.data=obj.environnement[0];break;
-                            default: obj.data={}                    
-                            }
-                            
-                            if (obj.data) {
-                                obj.datatype=obj.type+"_"+obj.data.type
-                            } else {
-                                obj.datatype=obj.type+"_ZZZ"
-                                console.error("ZARB",obj)
-                            }
-                            delete obj["evenementepr"]; 
-                            delete obj["evenementspr"];
-                            delete obj["environnement"]; 
-                            return obj
-                        }
-                        data.forEach(d=>setDataType(d))
-                        console.log('data',data,databoucles,elResult.node())
-                        initSessionStackedBarChart.draw({
-                            data:data,
-                            boucles:databoucles,
-                            liste:liste,
-                            key:d3.map(data,function(d){return d.datatype}).keys(),
-                            element:elResult
-                        })                  
+            } else if (valueSelected=="reconstitution"){
+                if (liste.length!=1) {
+                    alert("Sélectionner une et une seule session!")
+                } else {
+                    switch (option) {
+                    case "normal": reconstructionTask.lance({
+                                        data:liste.map(d=>d.session_key)[0],
+                                        ajout_url:liste.map(d=>d.session_key)[0]+"/?load"
+                                    }); break;
+                    case "debug": xsend('tb/'+liste.map(d=>d.session_key)[0],csrf_token,{"truc":"bidule"},'GET')
+                                    .then(response=> console.log("resp",response)); break;
+                    case "save": reconstructionTask.lance({
+                                    data:liste.map(d=>d.session_key)[0],
+                                    ajout_url:liste.map(d=>d.session_key)[0]+"/?save"
+                                    }); break;
+                    case "export": reconstructionTaskForExport.lance({
+                                    data:liste.map(d=>d.session_key)[0],
+                                    ajout_url:liste.map(d=>d.session_key)[0]+'/?load'
+                                    }); break;
+                    default: alert("Option non reconnue ("+option+")");
                     }
-                })
+                }                
+            } else if (valueSelected=='boucle') {
+                if (liste.length=0) {
+                    alert("Sélectionner au moins une session!")
+                } else {
+                    graphbouclesTask.lance({
+                        data:{session_keys:liste.map(d=>d.session_key)},
+                        callback:function(result,elTitle,elResult) {
+                            let data=new Array()
+                            let databoucles=[]
+                            for (var session in result) {                           
+                                    data=data.concat(result[session].evts)                                
+                                    databoucles[session]=result[session].boucle                                
+                            }
+                            const setDataType=function(obj) {
+                                switch (obj.type) {
+                                case "EPR": obj.data=obj.evenementepr[0];break;
+                                case "SPR": obj.data=obj.evenementspr[0];  break;
+                                case "ENV": obj.data=obj.environnement[0];break;
+                                default: obj.data={}                    
+                                }
+                                
+                                if (obj.data) {
+                                    obj.datatype=obj.type+"_"+obj.data.type
+                                } else {
+                                    obj.datatype=obj.type+"_ZZZ"
+                                    console.error("ZARB",obj)
+                                }
+                                delete obj["evenementepr"]; 
+                                delete obj["evenementspr"];
+                                delete obj["environnement"]; 
+                                return obj
+                            }
+                            data.forEach(d=>setDataType(d))
+                            console.log('data',data,databoucles,elResult.node())
+                            initSessionStackedBarChart.draw({
+                                data:data,
+                                boucles:databoucles,
+                                liste:liste,
+                                key:d3.map(data,function(d){return d.datatype}).keys(),
+                                element:elResult
+                            })                  
+                        }
+                    })
+                }
                 
-            } else if (z=="testop") {
-                reconstructionTask.lance({
-                    data:liste.map(d=>d.session_key)[0],
-                    ajout_url:liste.map(d=>d.session_key)[0],
-                    callback:function(result,elTitle,elResult) {
-                        elTitle                    
-                        .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
-                            +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}: évolution`)
-                        graphStackNbCommandes({data:result,element:elResult})
-                    }
-                })
-            
-                /*
-                testcel.lance({
-                    data:{x:7,y:8,n:80000},
-                    callback:function(r,t,v) {t.html('_>'+r.resultat); v.append("div").html("finitio")}
-                })*/
+                
+            } else if (valueSelected=="evolution") {
+                if (liste.length!=1) {
+                    alert("Sélectionner une et une seule session!")
+                } else {
+                    reconstructionTask.lance({
+                        data:liste.map(d=>d.session_key)[0],
+                        ajout_url:liste.map(d=>d.session_key)[0]+"/?load",
+                        callback:function(result,elTitle,elResult) {
+                            elTitle                    
+                            .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
+                                    +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}: évolution`)
+                                    graphStackNbCommandes({data:result,element:elResult})
+                        }
+                    })
+                }
             }
     })
 
