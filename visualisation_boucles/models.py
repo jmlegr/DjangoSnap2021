@@ -10,4 +10,4 @@ class Reconstitution(models.Model):
     programme=models.TextField()
     creation=models.DateTimeField(auto_now_add=True)
     modification=models.DateTimeField(auto_now=True,null=True)
-    detail_json = JSONField()  # requires Django-Mysql package
+    detail_json = models.TextField()  # requires Django-Mysql package
