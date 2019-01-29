@@ -296,7 +296,9 @@ def celery_listeblock(request,session_key=None):
         }
         return Response(context)
     #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
-    job=reconstruit.delay(session_key)
+    save='save'in request.GET
+    load='load' in request.GET
+    job=reconstruit.delay(session_key,save=save,load=load)
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
 
 
