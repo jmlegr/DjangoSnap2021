@@ -6,11 +6,14 @@ Created on 16 déc. 2018
 from celery import shared_task,current_task
 from snap.models import Evenement, EvenementEPR, ProgrammeBase, Document,\
     EvenementSPR
+from visualisation_boucles.models import Reconstitution
 from visualisation_boucles.reconstitution import SimpleListeBlockSnap
 from lxml import etree
 from snap import serializers
 from visualisation_boucles.serializers import SimpleSPRSerializer,\
-    SimpleEvenementSerializer
+    SimpleEvenementSerializer,InfoProgSerializer
+from rest_framework.renderers import JSONRenderer
+
 
 affprint=False
 def aff(*str):
@@ -18,7 +21,7 @@ def aff(*str):
         print(*str)
 
 @shared_task
-def reconstruit(session_key):    
+def reconstruit(session_key,save=False,load=False):    
     def createNew(spr,theTime,action):
         """
         créé un nouveau block et ses inputs
@@ -56,10 +59,17 @@ def reconstruit(session_key):
                     newInput.addInput(inputMulti)
         return newNode
     
-    current_task.update_state(state='Initialisation',
-                                meta={'evt_traites': 0,'nb_evts':None})
+    
     #liste les derniers débuts de tous les élèves
+    programme=None
     evts=[]
+    if load:
+        current_task.update_state(state='Chargement')
+        prog=Reconstitution.objects.filter(session_key=session_key)
+        if prog.exists():
+            return prog[0].detail_json
+    current_task.update_state(state='Initialisation',
+                                meta={'evt_traites': 0,'nb_evts':None})    
     if session_key.isdigit():
         #on a envoyé une id d'évènement EPR
         epr=EvenementEPR.objects.get(id=session_key)
@@ -71,7 +81,7 @@ def reconstruit(session_key):
     nb_evts=evts.count()
     current_task.update_state(state='Initialisation',
                                 meta={'evt_traites': 0,'nb_evts':nb_evts,'percent_task':0})
-    infos={}
+    infos={'type':''}
     eprInfos={}  
     evtTypeInfos={}  
     user=debut.user
@@ -107,7 +117,7 @@ def reconstruit(session_key):
         aff('---- temps=',theTime, evt.type,evtType)
         if evt.type=='ENV' and evtType.type in ['NEW','LANCE']:
             #c'est un nouveau programme vide        
-            infos['type']="Nouveau programme vide"
+            infos['type']=" - ".join((infos['type'],"Nouveau programme vide"))
             #on précise que les blocks existants n'existent plus
             #theTime - 1 millisecond pour éviter la confusion avec la création des nouveaux blocs
             #on peut aussi faire la différence avec le numéro
@@ -129,12 +139,12 @@ def reconstruit(session_key):
             if evtType.type=='LOBA':
                 p=ProgrammeBase.objects.get(id=evtType.valueInt) #detail contient le nom
                 f=p.file
-                infos['type']='Programme de base: %s' %p.nom
+                infos['type']=" - ".join((infos['type'],'Programme de base: %s' %p.nom))
                 infos['tooltip']=p.description
             else:
                 p=Document.objects.get(id=evtType.detail)
                 f=p.document
-                infos['type']='Programme sauvegardé: %s' % p.description
+                infos['type']=" - ".join((infos['type'],'Programme sauvegardé: %s' % p.description))
                 infos['tooltip']=p.uploaded_at
                 #on reconstruit a partir du xml
             try:
@@ -1007,6 +1017,28 @@ def reconstruit(session_key):
     #for i in listeBlocks.liste:
     #    print(i)
     #print('-----------------------------------------------------------------------------------------')
+    #sauvegarde dans la base (avec écrasement)
+    if save:
+        current_task.update_state(state='Sauvegarde')
+        prog,created=Reconstitution.objects.get_or_create(
+            session_key=session_key,
+            user=user)
+        prog.programme=infos['type'],
+        prog.detail_json={"commandes":commandes,
+                     "scripts":listeBlocks.firstBlocks,
+                     #"data":listeBlocks.toJson(),
+                     "ticks":listeBlocks.ticks,
+                     #'links':listeBlocks.links,
+                     'etapes':{},#etapes,
+                     #'actions':[a.toD3() for a in actions]
+                      "infos":InfoProgSerializer(infos).data,                     
+                      "session":session_key,
+                      #'infos':evtTypeInfos
+                      }
+        prog.save()
+    else:
+        created=False
+    current_task.update_state(state='Envoi')
     return {"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
@@ -1017,6 +1049,7 @@ def reconstruit(session_key):
                       "infos":infos,                     
                       "session":session_key,
                       #'infos':evtTypeInfos
+                      "created":created,
                       }
     
 @shared_task

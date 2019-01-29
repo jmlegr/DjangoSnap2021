@@ -1,5 +1,5 @@
 {% load static %}
-<h1>vouzou</h1>
+<h1>Traces de programmation</h1>
 <script type="text/javascript">
 var csrf_token="{{ csrf_token }}";
 </script>
@@ -46,11 +46,13 @@ var csrf_token="{{ csrf_token }}";
 </div>
             
  <div id="visualisation-type" style="clear: both; float: left">
-    <div><label><input type=radio name="operation" value="programmes" checked="true">&nbsp;programme</label></div>
-    <div><label><input type=radio name="operation" value="programmes(export)">&nbsp;programme(export)</label></div>
-    <div><label><input type=radio name="operation" value="reperes">&nbsp;reperes</label></div>
-    <div><label><input type=radio name="operation" value="boucle">&nbsp;boucle</label></div>
-    <div><label><input type=radio name="operation" value="testop">&nbsp;test Cery</label></div>
+    <div><label><input type=radio name="operation" value="reconstitution_save" checked="true">&nbsp;Reconstitution et sauvegarde</label></div>
+    <div><label><input type=radio name="operation" value="reconstitution_normal">&nbsp;Reconstitution</label></div>
+    <div><label><input type=radio name="operation" value="reconstitution_export">&nbsp;Reconstitution(export)</label></div>
+    <div><label><input type=radio name="operation" value="reconstitution_debug">&nbsp;debug</label></div>
+    <div><label><input type=radio name="operation" value="reperes">&nbsp;Reperes</label></div>
+    <div><label><input type=radio name="operation" value="boucle">&nbsp;Boucle</label></div>
+    <div><label><input type=radio name="operation" value="evolution">&nbsp;Evolution</label></div>
 </div>
 
 <div style="float: left">
