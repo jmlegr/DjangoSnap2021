@@ -13,6 +13,7 @@ from snap import serializers
 from visualisation_boucles.serializers import SimpleSPRSerializer,\
     SimpleEvenementSerializer,InfoProgSerializer
 from rest_framework.renderers import JSONRenderer
+from rest_framework.utils import json
 
 
 affprint=False
@@ -67,7 +68,8 @@ def reconstruit(session_key,save=False,load=False):
         current_task.update_state(state='Chargement')
         prog=Reconstitution.objects.filter(session_key=session_key)
         if prog.exists():
-            return prog[0].detail_json
+            #return prog[0].detail_json #si champs JSONField
+            return json.loads(prog[0].detail_json)
     current_task.update_state(state='Initialisation',
                                 meta={'evt_traites': 0,'nb_evts':None})    
     if session_key.isdigit():
