@@ -719,14 +719,19 @@ def reconstruit(session_key,save=False,load=False):
                         #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
                         if lastPrevBlock is not None:
                             newNode.setPrevBlock(None)
-                            newLastPrevBlock=lastPrevBlock.copy(theTime)
-                            newLastPrevBlock.setNextBlock(None)
-                            listeBlocks.append(newLastPrevBlock) 
+                            if lastPrevBlock.JMLid!=conteneurNode.JMLid:
+                                newLastPrevBlock=lastPrevBlock.copy(theTime)
+                                newLastPrevBlock.setNextBlock(None)
+                                listeBlocks.append(newLastPrevBlock)
+                            else:
+                                #le conteneur est l'ancien prev 
+                                conteneurNode.setNextBlock(None)
                         else:
                             listeBlocks.setPrevBlock(newNode,None)
                         
                         lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
                         if lastContenu is not None:
+                            aff('lastcontenu',lastContenu)
                             #l'ancien contenu devient le nextblock
                             lastContenu=lastContenu.copy(theTime)
                             lastContenu.unwrap()
