@@ -143,6 +143,18 @@ background-color: yellow;
 	width:auto;
     background-color: lightblue;
 }
+.blockepr.pause {
+	background-color: #ffcc00;
+}
+.blockepr.snppause {
+	background-color: #fbc462;
+}
+.blockepr.reprise {
+	background-color: #cccc00;
+}
+.blockepr.snprepr {
+    background-color: #dfff80;
+}
 p.command {
 	text-align: left;
 	font-size:10;
