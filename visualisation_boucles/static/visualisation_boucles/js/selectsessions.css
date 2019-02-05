@@ -127,13 +127,16 @@ background-color: yellow;
 	background-color: lightgreen;
 }
 .blockepr.snpstart {
-	background-color: #bdf5bd;
+	background-color: lightgreen;
 }
 .blockepr.end {
 	background-color:orange;
 }
 .blockepr.snpfin {
-    background-color: #ffd280;
+    background-color: orange;
+}
+.blockepr.snpstop {
+    background-color: orange;
 }
 .blockepr.ask {
 	background-color: lightblue;
@@ -144,7 +147,7 @@ background-color: yellow;
     background-color: lightblue;
 }
 .blockepr.pause {
-	background-color: #ffcc00;
+	background-color: #fbc462;
 }
 .blockepr.snppause {
 	background-color: #fbc462;
@@ -153,7 +156,7 @@ background-color: yellow;
 	background-color: #cccc00;
 }
 .blockepr.snprepr {
-    background-color: #dfff80;
+    background-color: #cccc00;
 }
 p.command {
 	text-align: left;
