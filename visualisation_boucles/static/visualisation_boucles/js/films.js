@@ -305,12 +305,14 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
     }
 
     function forceSimulation(nodes, links) {
+        console.log("nodes",nodes,links,d3.max(links,d=>d.temps))
+        const dtmax=d3.max(links,d=>d.temps)
         return d3.forceSimulation(nodes)
             .force("y", d3.forceY().y(d => nodes.indexOf(d)*dy-height/2+10).strength(0.9))
             //.force("x", d3.forceX().strength(d => d.type == "NEW" || (d.type == "LOAD" && d.detail == undefined) ? 0.5 : 0.1))
             .force("link", d3.forceLink(links)
                     .id(d => d.id)
-                    .distance(d=>d.type=="next"?dy+d.temps/10:dy)
+                    .distance(d=>d.type=="next"?dy+width*d.temps/(2*dtmax):dy)
                     .strength(d=>d.type=="next"?0.9:0.0))
             //.force("charge", d3.forceManyBody())
             //.force("center", d3.forceCenter())

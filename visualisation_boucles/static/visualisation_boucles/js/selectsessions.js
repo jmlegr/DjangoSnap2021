@@ -680,6 +680,23 @@ var lance = function () {
             graphProgramme(result,elResult,true)        
         }
     )
+    var reperesTask=new CeleryTask({
+        urlTask:urls.celrep,
+        urlStatus:urls.task_status,
+        urlCancel:urls.task_cancel,
+        overlay:'overlayDiv2',
+        csrf_token:csrf_token,   
+        method:'POST'
+        },function(result,elTitle,elResult) {
+            console.log("repere",result)
+            elTitle                    
+                .html(`hop`
+                )         
+            let users=d3.map(result,d=>d.evenement.user).keys()
+            users.forEach(function(u){graphSujet(u,response,statsGraphSession)})  
+        
+    })
+    
     var graphbouclesTask=new CeleryTask({
         urlTask:urls.boucle,
         urlStatus:urls.task_status,
@@ -706,7 +723,7 @@ var lance = function () {
         let url="",data=null,method="POST"
             console.log("value", valueSelected,option, liste,liste[0])
             //alert("chargement de " + z)
-            if (valueSelected=="reperes") {
+            if (valueSelected=="Xreperes") {                
                 url=urls.reperes               
                 data=liste.map(d=>d.session_key)
                 method="POST"
@@ -719,6 +736,10 @@ var lance = function () {
                         console.log('rep',users)
                         users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
                     })        
+            } else if (valueSelected=="reperes") {
+                reperesTask.lance({
+                    data:liste.map(d=>d.session_key)
+                })            
             } else if (valueSelected=="reconstitution"){
                 if (liste.length!=1) {
                     console.log("data",liste,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
