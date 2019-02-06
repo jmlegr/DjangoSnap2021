@@ -21,7 +21,7 @@ import json
 from celery.result import AsyncResult
 
 from django.urls.base import reverse
-from visualisation_boucles.tasks import reconstruit, add, celery_graph_boucles
+from visualisation_boucles.tasks import reconstruit, add, celery_graph_boucles, celery_liste_reperes
 from django.db.models.query import prefetch_one_level
 # Create your views here.
 def choixbase(request):
@@ -186,10 +186,16 @@ GROUP BY `snap_evenement`.`session_key`, `snap_evenement`.`user_id` ORDER BY NUL
         for e in reperes:
             #recherche du dernier snap
             try:
+                
                 snaps=SnapSnapShot.objects.filter(evenement__user=e.evenement.user,
                                               evenement__session_key=e.evenement.session_key,
-                                              evenement__time__lt=e.evenement.time
-                                              ).select_related('evenement').order_by('-evenement__time')
+                                              evenement__time__lt=e.evenement.time,
+                                              evenement__type=Evenement.ETAT_PROGRAMME                                              
+                                              ).select_related('evenement').prefetch_related('evenement__evenementepr').order_by('-evenement__time')
+                #on ne prend que les snaps de fin ou stop 
+                snaps=[s for s in snaps if s.evenement.getEvenementType().type=='SNP' 
+                                        and s.evenement.getEvenementType().detail[:3] in ["STO","FIN"]]
+                print ([s.evenement.getEvenementType() for s in snaps])
                 e.snapshot=snaps[0]
                 #print("snap",snaps[0])
                 
@@ -364,3 +370,27 @@ def graph_boucles(request):
     job=celery_graph_boucles.delay(data['session_keys'],data['only'] if 'only' in data else None)
     return HttpResponseRedirect(reverse('graph_boucles')+'?job='+job.id)
     
+@api_view(('POST','GET'))
+@renderer_classes((JSONRenderer,))
+def reperes(request):
+    '''
+    Recherche la premiere occurence d'une boucle ('doUntil','doForever','doRepeat')    
+    et renvoi l'enselbe des évènements la précédent
+    data:liste des session_key
+    only: si présent, tableau de recherche (défaut:['doUntil','doForever','doRepeat']
+    '''
+    
+    if 'job' in request.GET:
+        print('JOB')
+        job_id = request.GET['job']
+        job = AsyncResult(job_id)
+        data = {'result':job.result,'state':job.state}
+        context = {
+            'data':data,
+            'task_id':job_id,
+        }
+        return Response(context)
+    data=request.data['data']
+    print("data",data)
+    job=celery_liste_reperes.delay(data)
+    return HttpResponseRedirect(reverse('graph_boucles')+'?job='+job.id)

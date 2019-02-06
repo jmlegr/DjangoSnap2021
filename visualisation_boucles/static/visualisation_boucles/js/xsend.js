@@ -2,6 +2,7 @@
 var urls = {
         'visualise':"sessions/visualise/",
         'reperes':"sessions/reperes/",
+        'celrep':'celrep/',
         'programmes':'toliste/',
         'boucle':'graph_boucles/',
         'task_status':'task_state',

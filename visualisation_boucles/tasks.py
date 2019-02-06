@@ -5,15 +5,16 @@ Created on 16 déc. 2018
 '''
 from celery import shared_task,current_task
 from snap.models import Evenement, EvenementEPR, ProgrammeBase, Document,\
-    EvenementSPR
+    EvenementSPR, SnapSnapShot, EvenementENV
 from visualisation_boucles.models import Reconstitution
 from visualisation_boucles.reconstitution import SimpleListeBlockSnap
 from lxml import etree
 from snap import serializers
 from visualisation_boucles.serializers import SimpleSPRSerializer,\
-    SimpleEvenementSerializer,InfoProgSerializer
+    SimpleEvenementSerializer,InfoProgSerializer, ReperesEPRSerializer
 from rest_framework.renderers import JSONRenderer
 from rest_framework.utils import json
+import itertools
 
 
 affprint=False
@@ -1111,3 +1112,87 @@ def celery_graph_boucles(sessions,only=None):
             serializer=SimpleEvenementSerializer(evts,many=True)
             evtsBoucle[session_key]={'boucle':None,'evts':serializer.data}
     return evtsBoucle
+
+@shared_task
+def celery_liste_reperes(sessions):
+    current_task.update_state(state='Récupération repères',
+                              meta={'evt_traites': 1,'nb_evts':5,
+                                      'percent_task':1
+                                })
+    reperes=EvenementEPR.objects.filter(evenement__session_key__in=sessions,
+                                            type__in=["LOAD","SAVE","NEW"])\
+                                            .order_by('evenement__user','evenement__time')\
+                                            .select_related('evenement',
+                                                            'evenement__user',
+                                                            'evenement__user__eleve',
+                                                            'evenement__user__eleve__classe')
+    current_task.update_state(state='Récupération snaps',
+                                meta={'evt_traites': 2,'nb_evts':5,
+                                      'percent_task':25
+                                })
+    for e in reperes:
+        #recherche du dernier snap
+        try:
+             
+            snaps=SnapSnapShot.objects.filter(evenement__user=e.evenement.user,
+                                              evenement__session_key=e.evenement.session_key,
+                                              evenement__time__lt=e.evenement.time,
+                                              evenement__type=Evenement.ETAT_PROGRAMME                                              
+                                              ).select_related('evenement').prefetch_related('evenement__evenementepr').order_by('-evenement__time')
+            #on ne prend que les snaps de fin ou stop 
+            snaps=[s for s in snaps if s.evenement.getEvenementType().type=='SNP' 
+                                    and s.evenement.getEvenementType().detail[:3] in ["STO","FIN"]]
+            print ([s.evenement.getEvenementType() for s in snaps])
+            e.snapshot=snaps[0]
+            #print("snap",snaps[0])
+            
+        except IndexError:
+            snap=None
+            #print("pasnsap")
+    current_task.update_state(state='Récupération lancements',
+                                meta={'evt_traites': 3,'nb_evts':5,
+                                      'percent_task':50
+                                })
+    lances=EvenementENV.objects.filter(evenement__session_key__in=sessions
+                                            ,type__in=["LANCE","IMPORT","EXPORT"])\
+                                            .order_by('evenement__user','evenement__time')\
+                                            .select_related('evenement',
+                                                            'evenement__user',
+                                                            'evenement__user__eleve',
+                                                            'evenement__user__eleve__classe')
+    lasts=[]
+    current_task.update_state(state='Récupération last',
+                                meta={'evt_traites': 4,'nb_evts':5,
+                                      'percent_task':75
+                                })
+    for session in sessions:
+        last=Evenement.objects.filter(session_key=session)\
+                                            .select_related('user',
+                                                            'user__eleve',
+                                                            'user__eleve__classe')\
+                                            .latest('time')\
+                                            .getEvenementType() 
+        if last not in reperes:
+            lasts.append(last)
+        #print("LAST",lasts)
+    for e in lasts:
+        #recherche du dernier snap
+        try:
+            snaps=SnapSnapShot.objects.filter(evenement__user=e.evenement.user,
+                                              evenement__session_key=e.evenement.session_key,
+                                              evenement__time__lte=e.evenement.time
+                                              ).order_by('-evenement__time')
+            e.snapshot=snaps[0]
+            #print("snap",snaps[0])
+                
+        except IndexError:
+            snap=None
+                #print("pasnsap")
+    current_task.update_state(state='Envoi',
+                                meta={'evt_traites': 5,'nb_evts':5,
+                                      'percent_task':100
+                                })
+    queryset=itertools.chain(lances,reperes,lasts)
+    serializer=ReperesEPRSerializer(queryset,many=True)
+    data=sorted(serializer.data,key= lambda x:x['evenement']['time'])              
+    return data
