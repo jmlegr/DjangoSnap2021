@@ -15,6 +15,8 @@ from visualisation_boucles.serializers import SimpleSPRSerializer,\
 from rest_framework.renderers import JSONRenderer
 from rest_framework.utils import json
 import itertools
+from pymongo.mongo_client import MongoClient
+from _datetime import datetime
 
 
 affprint=False
@@ -66,11 +68,20 @@ def reconstruit(session_key,save=False,load=False):
     programme=None
     evts=[]
     if load:
+        #chargement de la reconstruction (si elle existe) depuis une base mongodb
         current_task.update_state(state='Chargement')
-        prog=Reconstitution.objects.filter(session_key=session_key)
-        if prog.exists():
-            return prog[0].detail_json #si champs JSONField
-            #return json.loads(prog[0].detail_json)
+        db=MongoClient().sierpinsky_db
+        collection=db.reconstructions
+        #on récupère les metadata (le document qui n'a pas de commandes)
+        p=collection.find_one({"session_key":session_key,"commandes":{ "$exists": False}})
+        if p is not None:
+            #on ajoute les commandes
+            liste=collection.find({"session_key":session_key,"commandes":{ "$exists": True}})
+            p['commandes']=[c['commandes'] for c in liste]
+            #on supprime l'ObjectId
+            p.pop('_id')
+            return p
+        
     current_task.update_state(state='Initialisation',
                                 meta={'evt_traites': 0,'nb_evts':None})    
     if session_key.isdigit():
@@ -1027,23 +1038,23 @@ def reconstruit(session_key,save=False,load=False):
     #print('-----------------------------------------------------------------------------------------')
     #sauvegarde dans la base (avec écrasement)
     if save:
+        #sauvegarde la reconstruction dans une base mongodb
         current_task.update_state(state='Sauvegarde')
-        prog,created=Reconstitution.objects.get_or_create(
-            session_key=session_key,
-            user=user)
-        prog.programme=infos['type'],
-        prog.detail_json={"commandes":commandes,
-                     "scripts":listeBlocks.firstBlocks,
-                     #"data":listeBlocks.toJson(),
-                     "ticks":listeBlocks.ticks,
-                     #'links':listeBlocks.links,
-                     'etapes':{},#etapes,
-                     #'actions':[a.toD3() for a in actions]
-                      "infos":InfoProgSerializer(infos).data,                     
-                      "session":session_key,
-                      #'infos':evtTypeInfos
-                      }
-        prog.save()
+        db=MongoClient().sierpinsky_db
+        collection=db.reconstructions
+        p=collection.delete_many({'session_key':session_key})
+        p=collection.insert_one({'user':user.username,'session_key':session_key,
+                                 'date':datetime.utcnow(),
+                                 "infos":InfoProgSerializer(infos).data,
+                                 "scripts":listeBlocks.firstBlocks,  
+                                 "ticks":listeBlocks.ticks,
+                                 })
+        cmds=collection.insert_many([{'session_key':session_key,
+                                      'etape':c['temps'],
+                                      'commandes':c} for c in commandes])
+        
+        print("sauvegarde %s: %s morceaux" %(p,len(cmds.inserted_ids)))
+        
     else:
         created=False
     current_task.update_state(state='Envoi')
