@@ -762,6 +762,9 @@ var lance = function () {
                     graphbouclesTask.lance({
                         data:{session_keys:session_keys},
                         callback:function(result,elTitle,elResult) {
+                            elTitle                    
+                                .html(`Recherche des boucles`)
+                            
                             let data=new Array()
                             let databoucles=[]
                             for (var session in result) {                           

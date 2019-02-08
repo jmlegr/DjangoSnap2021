@@ -74,14 +74,16 @@ var initSessionStackedBarChart = {
     var zdata=()=> countBySession.top(Infinity).map(d=>{
         var a={};
       a.session=d.key
+      a.total=0
       for (var v in d.value) {
         a[v]=d.value[v]
+        a.total+=d.value[v]
       }
       return a
       })
       
-    //console.log('map',data,zdata,stackKey)
-    //console.log('boucles',boucles)
+    //console.log('map',data,zdata(),stackKey)
+   // console.log('boucles',boucles)
       //fonction de tracé du graphique
       const trace=svg1=>{
           //on  filtre l'affichage des types          
@@ -95,11 +97,13 @@ var initSessionStackedBarChart = {
   
           var layers= stack(zdata())
           //data.sort(function(a, b) { return b.s - a.s; });
-          xScale.domain(zdata().map(function(d) { return d.session; }));
+          xScale.domain(zdata().map(function(d) { return d.session; }));          
           //recherche du y max
           var maxi=0
-          layers.forEach(l=>{let m=d3.max(l,function(d){return d[1]?d[1]:0}); if (m>maxi) maxi=m})
-          yScale.domain([0, maxi]).nice();
+          layers.forEach(l=>{
+              let m=d3.max(l,function(d){return d[1]?d[1]:0});             
+              if (m>maxi) maxi=m})
+          yScale.domain([0, maxi+1]).nice();
           
           svg1.select("#stackedchart").remove()
           
@@ -144,6 +148,29 @@ var initSessionStackedBarChart = {
                   }
               )            
           })
+         
+          var rectboucle=svg.selectAll(".rectboucle").data(zdata()).enter()
+              .append("g")
+              .attr("class",d=>"rectboucle "+ (boucles[d.session]?"boucle":"noboucle"))
+              .attr("transform",function(d,i) {return "translate("+xScale(d.session)+","+(yScale(d.total)-15)+")"})
+          rectboucle
+              .append("rect")
+              .attr("class",d=>"rectboucle "+ (boucles[d.session]?"boucle":"noboucle"))
+              .attr("width",25)
+              .attr("height",15)
+          rectboucle
+              .append("text")
+              .attr("x",0)
+              .attr("y",10)
+              .text(d=>d.total)
+          rectboucle
+              .append("title").text(d=>{
+                  if (boucles[d.session]) {
+                      return "Boucle trouvée "+boucles[d.session].blockSpec+"\n"
+                              +"total: "+d.total
+                  }
+                  return "total: "+d.total})
+              
          tippy(".evtline", {content:"tipp",
              async onShow(tip) {
                  //console.log('tip',liste.get(d3.select(tip.reference).datum().data.session))
