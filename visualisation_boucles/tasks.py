@@ -1126,11 +1126,16 @@ def celery_liste_reperes(sessions):
                                                             'evenement__user',
                                                             'evenement__user__eleve',
                                                             'evenement__user__eleve__classe')
-    current_task.update_state(state='Récupération snaps',
-                                meta={'evt_traites': 2,'nb_evts':5,
-                                      'percent_task':25
-                                })
+    
+    evt_traites=0
+    nb_evts=len(reperes)
     for e in reperes:
+        evt_traites+=1
+        current_task.update_state(state='Récupération snapshots',
+                                meta={'evt_traites': evt_traites,'nb_evts':nb_evts,
+                                      'percent_task':round(25*(1+evt_traites/nb_evts))
+                                })
+    
         #recherche du dernier snap
         try:
              
@@ -1142,7 +1147,7 @@ def celery_liste_reperes(sessions):
             #on ne prend que les snaps de fin ou stop 
             snaps=[s for s in snaps if s.evenement.getEvenementType().type=='SNP' 
                                     and s.evenement.getEvenementType().detail[:3] in ["STO","FIN"]]
-            print ([s.evenement.getEvenementType() for s in snaps])
+            #print ([s.evenement.getEvenementType() for s in snaps])
             e.snapshot=snaps[0]
             #print("snap",snaps[0])
             

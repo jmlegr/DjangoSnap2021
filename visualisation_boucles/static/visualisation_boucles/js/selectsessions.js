@@ -6,7 +6,8 @@ import {
 import {
     isSujet,
     getSujet,
-    graphSujet
+    graphSujet,
+    graphSujets
 } from './films.js'
 import {
     graphProgramme, graphNbCommandes, graphStackNbCommandes
@@ -680,6 +681,7 @@ var lance = function () {
             graphProgramme(result,elResult,true)        
         }
     )
+   
     var reperesTask=new CeleryTask({
         urlTask:urls.celrep,
         urlStatus:urls.task_status,
@@ -688,13 +690,11 @@ var lance = function () {
         csrf_token:csrf_token,   
         method:'POST'
         },function(result,elTitle,elResult) {
-            console.log("repere",result)
+            //console.log("repere",result,elResult)
             elTitle                    
-                .html(`hop`
-                )         
-            let users=d3.map(result,d=>d.evenement.user).keys()
-            users.forEach(function(u){graphSujet(u,response,statsGraphSession)})  
-        
+                .html(`Repères de ${d3.map(result,d=>d.evenement.user_nom).keys()}`
+                )       
+            graphSujets({result:result,callback:statsGraphSession,element:elResult})
     })
     
     var graphbouclesTask=new CeleryTask({
@@ -734,7 +734,7 @@ var lance = function () {
                     .then(response => {console.log("sessions",response)                
                         let users=d3.map(response,d=>d.evenement.user).keys()
                         console.log('rep',users)
-                        users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
+                        //users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
                     })        
             } else if (valueSelected=="reperes") {
                 reperesTask.lance({
