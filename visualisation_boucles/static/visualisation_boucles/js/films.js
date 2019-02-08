@@ -5,8 +5,10 @@ import {xsend} from './xsend.js'
 export {
     isSujet,
     getSujet,
-    graphSujet
+    graphSujet,
+    graphSujets,
 }
+
 var isSujet = function (user, nom, elt, reperes) {
     //    vrai si l'élément elt a le même sujet (nom) que le film
     // reperes est un tableau d'élélément EPS {evenement,type,detail}
@@ -44,16 +46,45 @@ function formatSecondsToHMS(num) {
     var s = num - (h * 3600 + m * 60);
     return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
 }
-var graphSujet = function (user, reperes, callback=function(d){console.log("recept",d)},div = "graphSujet") {
+
+var graphSujets=function(config) {
+    //construit les graphSujet
+    //on cré ou vide le div contenant
+    var div
+    if (config.element.select("#graphSujet").empty()) {
+        div=config.element.append("div").attr("id","graphSujet").attr("style","white-space:normal")
+    } else {
+        div=config.element.select("#graphSujet")
+        div.selectAll("*").remove()
+    }
+    let users=d3.map(config.result,d=>d.evenement.user).keys()    
+    users.forEach(function(u){graphSujet({
+                                user:u,
+                                reperes:config.result,
+                                callback:config.callback,
+                                div:div,
+                                width:250
+                                })
+    })
+    
+}
+
+var graphSujet = function (config){
+    
     // construit l'évolution du sujet sur les sessions données
     //  reperes est un tableau d'élélément EPS {evenement,type,detail}
     // ne contenant que les événements clés (NEW, LOAD, SAVE)
+    var user=config.user,
+        reperes=config.reperes,
+        callback=config.callback || function(d){console.log("callback graphsujet",d)},        
+        div=config.div
+     
     const nodes = reperes.filter(d => d.evenement.user == user)
     const session_keys=d3.map(nodes,d=>d.evenement.session_key).keys() //sessions concernant cet élève
     
     let links = []
-    const width = 150,
-        height = 150;
+    const width = config.width || 150,
+        height = config.height || 150;
     const dy=(height-15)/(nodes.length-1)
     
     let dtime=null
@@ -128,7 +159,7 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
         l.temps = Math.round((new Date(l.target.evenement.time) - new Date(l.source.evenement.time)) / 1000)        
     })
     //console.log("user", user, nodes, links, reperes)
-    
+    //console.log("d3",d3el)
     let chart = function () {
         //const links = data.links.map(d => Object.create(d));
         //const nodes = data.nodes.map(d => Object.create(d));
@@ -136,7 +167,7 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
         const simulation = forceSimulation(nodes, links).on("tick", ticked);
         // const svg = d3.select(DOM.svg(width, height))
 
-        let svg2 = d3.select("#" + div).append('svg')
+        let svg2 = div.append('svg')
             .attr("id", user)
             .attr("width", width).attr("height", height)
             .attr("viewBox", [-width / 2, -height / 2, width, height]);
@@ -305,12 +336,14 @@ var graphSujet = function (user, reperes, callback=function(d){console.log("rece
     }
 
     function forceSimulation(nodes, links) {
+        //console.log("nodes",nodes,links,d3.max(links,d=>d.temps))
+        const dtmax=d3.max(links,d=>d.temps)
         return d3.forceSimulation(nodes)
             .force("y", d3.forceY().y(d => nodes.indexOf(d)*dy-height/2+10).strength(0.9))
             //.force("x", d3.forceX().strength(d => d.type == "NEW" || (d.type == "LOAD" && d.detail == undefined) ? 0.5 : 0.1))
             .force("link", d3.forceLink(links)
                     .id(d => d.id)
-                    .distance(d=>d.type=="next"?dy+d.temps/10:dy)
+                    .distance(d=>d.type=="next"?dy+(width-10)*d.temps/(2*dtmax):dy)
                     .strength(d=>d.type=="next"?0.9:0.0))
             //.force("charge", d3.forceManyBody())
             //.force("center", d3.forceCenter())

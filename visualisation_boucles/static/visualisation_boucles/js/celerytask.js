@@ -34,14 +34,14 @@ CeleryTask.prototype.lance=function(config) {
     var me=this
     this.overlay.select("#progTitle").html(this.waittitle)
     this.overlay.select("#resultats").selectAll("*").remove();
-    this.overlay.style("visibility","visible")
+    this.overlay.style("visibility","visible").style("display","initial")
 
     /**
     * à déplacer dans programme.js plutot
     **/
     this.overlay.select("#fermerBtn")                        
     .on("click",function() {
-        me.overlay.style("visibility","hidden")
+        me.overlay.style("visibility","hidden").style("display","none")
     })
 
     // fonctions pour la reconstructions asynchrone
@@ -79,7 +79,7 @@ CeleryTask.prototype.lance=function(config) {
             "data": {}
         }, 'GET')
         .then(response => {
-            console.log("sessions",response)
+            console.log("attente resultat",response)
             if (response.data.state=="SUCCESS") {
                 me.result=response.data.result                                                  
                 me.overlay.select("#user-count").text("DONE");

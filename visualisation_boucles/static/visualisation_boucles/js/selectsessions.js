@@ -6,7 +6,8 @@ import {
 import {
     isSujet,
     getSujet,
-    graphSujet
+    graphSujet,
+    graphSujets
 } from './films.js'
 import {
     graphProgramme, graphNbCommandes, graphStackNbCommandes
@@ -680,6 +681,22 @@ var lance = function () {
             graphProgramme(result,elResult,true)        
         }
     )
+   
+    var reperesTask=new CeleryTask({
+        urlTask:urls.celrep,
+        urlStatus:urls.task_status,
+        urlCancel:urls.task_cancel,
+        overlay:'overlayDiv2',
+        csrf_token:csrf_token,   
+        method:'POST'
+        },function(result,elTitle,elResult) {
+            //console.log("repere",result,elResult)
+            elTitle                    
+                .html(`Repères de ${d3.map(result,d=>d.evenement.user_nom).keys()}`
+                )       
+            graphSujets({result:result,callback:statsGraphSession,element:elResult})
+    })
+    
     var graphbouclesTask=new CeleryTask({
         urlTask:urls.boucle,
         urlStatus:urls.task_status,
@@ -702,26 +719,21 @@ var lance = function () {
         // marche pas plus:var liste = JSON.parse(JSON.stringify(selectedCountChart.dimension().all()))
         let liste = selectedCountChart.dimension().all()
         var session_keys= selectedCountChart.dimension().all().map(d=>d.session_key)
-        console.log("listenb",liste.length)
+        //console.log("listenb",liste.length)
         let url="",data=null,method="POST"
-            console.log("value", valueSelected,option, liste,liste[0])
+            //console.log("value", valueSelected,option, liste,liste[0])
             //alert("chargement de " + z)
             if (valueSelected=="reperes") {
-                url=urls.reperes               
-                data=liste.map(d=>d.session_key)
-                method="POST"
-                    xsend(url, csrf_token, {
-                        "type": valueSelected,
-                        "data": data
-                    }, method)
-                    .then(response => {console.log("sessions",response)                
-                        let users=d3.map(response,d=>d.evenement.user).keys()
-                        console.log('rep',users)
-                        users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
-                    })        
+                if (liste.length==0) {
+                    alert("Sélectionner au moins une session!")
+                } else {
+                    reperesTask.lance({
+                        data:liste.map(d=>d.session_key)
+                    })
+                }
             } else if (valueSelected=="reconstitution"){
                 if (liste.length!=1) {
-                    console.log("data",liste,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
+                    //console.log("data",liste,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
                     alert("Sélectionner une et une seule session!")
                 } else {
                     switch (option) {
@@ -743,10 +755,10 @@ var lance = function () {
                     }
                 }                
             } else if (valueSelected=='boucle') {
-                if (liste.length=0) {
+                if (liste.length==0) {
                     alert("Sélectionner au moins une session!")
                 } else {
-                    console.log("data",session_keys,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
+                    //console.log("data",session_keys,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
                     graphbouclesTask.lance({
                         data:{session_keys:session_keys},
                         callback:function(result,elTitle,elResult) {

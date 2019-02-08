@@ -25,6 +25,7 @@ urlpatterns = [
     path('task_cancel/<str:task_id>/',views.task_cancel,name='task_cancel'),
     path('testadd', views.testadd,name='testadd'),
     path('graph_boucles/',views.graph_boucles,name='graph_boucles'),
+    path('celrep/',views.reperes,name="reperes"),
     ]
 
 urlpatterns += [
