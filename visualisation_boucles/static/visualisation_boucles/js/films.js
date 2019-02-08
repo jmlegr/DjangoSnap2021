@@ -61,7 +61,7 @@ var graphSujets=function(config) {
     users.forEach(function(u){graphSujet({
                                 user:u,
                                 reperes:config.result,
-                                callback:config.statsGraphSession,
+                                callback:config.callback,
                                 div:div,
                                 width:250
                                 })
@@ -336,7 +336,7 @@ var graphSujet = function (config){
     }
 
     function forceSimulation(nodes, links) {
-        console.log("nodes",nodes,links,d3.max(links,d=>d.temps))
+        //console.log("nodes",nodes,links,d3.max(links,d=>d.temps))
         const dtmax=d3.max(links,d=>d.temps)
         return d3.forceSimulation(nodes)
             .force("y", d3.forceY().y(d => nodes.indexOf(d)*dy-height/2+10).strength(0.9))

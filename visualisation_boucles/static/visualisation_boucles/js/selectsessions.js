@@ -719,30 +719,21 @@ var lance = function () {
         // marche pas plus:var liste = JSON.parse(JSON.stringify(selectedCountChart.dimension().all()))
         let liste = selectedCountChart.dimension().all()
         var session_keys= selectedCountChart.dimension().all().map(d=>d.session_key)
-        console.log("listenb",liste.length)
+        //console.log("listenb",liste.length)
         let url="",data=null,method="POST"
-            console.log("value", valueSelected,option, liste,liste[0])
+            //console.log("value", valueSelected,option, liste,liste[0])
             //alert("chargement de " + z)
-            if (valueSelected=="Xreperes") {                
-                url=urls.reperes               
-                data=liste.map(d=>d.session_key)
-                method="POST"
-                    xsend(url, csrf_token, {
-                        "type": valueSelected,
-                        "data": data
-                    }, method)
-                    .then(response => {console.log("sessions",response)                
-                        let users=d3.map(response,d=>d.evenement.user).keys()
-                        console.log('rep',users)
-                        //users.forEach(function(u){graphSujet(u,response,statsGraphSession)})                    
-                    })        
-            } else if (valueSelected=="reperes") {
-                reperesTask.lance({
-                    data:liste.map(d=>d.session_key)
-                })            
+            if (valueSelected=="reperes") {
+                if (liste.length==0) {
+                    alert("Sélectionner au moins une session!")
+                } else {
+                    reperesTask.lance({
+                        data:liste.map(d=>d.session_key)
+                    })
+                }
             } else if (valueSelected=="reconstitution"){
                 if (liste.length!=1) {
-                    console.log("data",liste,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
+                    //console.log("data",liste,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
                     alert("Sélectionner une et une seule session!")
                 } else {
                     switch (option) {
@@ -764,10 +755,10 @@ var lance = function () {
                     }
                 }                
             } else if (valueSelected=='boucle') {
-                if (liste.length=0) {
+                if (liste.length==0) {
                     alert("Sélectionner au moins une session!")
                 } else {
-                    console.log("data",session_keys,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
+                    //console.log("data",session_keys,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
                     graphbouclesTask.lance({
                         data:{session_keys:session_keys},
                         callback:function(result,elTitle,elResult) {
