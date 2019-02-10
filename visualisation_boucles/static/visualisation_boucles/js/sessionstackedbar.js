@@ -6,6 +6,7 @@ var initSessionStackedBarChart = {
         stackKey = config.key.sort(),
         data = config.data,
         boucles=config.boucles, //tableau des premières boucles trouvées par session
+        commandes=config.commandes, // tableau des commandes (si reconstruction faite) par session
         sep=config.separator || '_', //separateur type_datatype passé en key
         liste=d3.map(config.liste,d=>d.session_key), //liste des infos de session, map de clef session_key
         margin = {top: 20, right: 20, bottom: 130, left: 50},
@@ -70,18 +71,20 @@ var initSessionStackedBarChart = {
                         return p;
                     }
             )
-            
+    console.info(data)     
     var zdata=()=> countBySession.top(Infinity).map(d=>{
         var a={};
       a.session=d.key
+      a.total=0
       for (var v in d.value) {
         a[v]=d.value[v]
+        a.total+=d.value[v]
       }
       return a
       })
       
-    //console.log('map',data,zdata,stackKey)
-    //console.log('boucles',boucles)
+    //console.log('map',data,zdata(),stackKey)
+   // console.log('boucles',boucles)
       //fonction de tracé du graphique
       const trace=svg1=>{
           //on  filtre l'affichage des types          
@@ -95,11 +98,15 @@ var initSessionStackedBarChart = {
   
           var layers= stack(zdata())
           //data.sort(function(a, b) { return b.s - a.s; });
-          xScale.domain(zdata().map(function(d) { return d.session; }));
-          //recherche du y max
+          var sessionsMap=zdata().map(function(d) { return d.session; })
+          xScale.domain(sessionsMap);          
+          //recherche du y max (même échelle pour nombre d'évenements et nombre de commandes)
           var maxi=0
-          layers.forEach(l=>{let m=d3.max(l,function(d){return d[1]?d[1]:0}); if (m>maxi) maxi=m})
-          yScale.domain([0, maxi]).nice();
+          layers.forEach(l=>{
+              let m=d3.max(l,function(d){return d[1]?d[1]:0});             
+              if (m>maxi) maxi=m})
+          maxi=Math.max(maxi,d3.max(d3.entries(commandes),d=>d.value?d.value.length:0))
+          yScale.domain([0, maxi+1]).nice();
           
           svg1.select("#stackedchart").remove()
           
@@ -130,11 +137,7 @@ var initSessionStackedBarChart = {
                 .attr("x2",d=>xScale(d.data.session))
                 .attr("y2",d=>yScale(d[1]))
                 .attr("stroke-width",d=>d[1]>d[0]?Math.min(5,xScale.bandwidth()/5):0)
-            var nb=svg.selectAll(".nb").data(layers)
-                    .enter()
-                    .append("text")
-                    .attr("class","nb")
-                    .text(d=>{console.log('lai',d); return "oi"})
+            
           svg.selectAll(".layer").each(function(p,j,g){
               d3.select(this)
               .selectAll("rect")
@@ -144,6 +147,46 @@ var initSessionStackedBarChart = {
                   }
               )            
           })
+          //affichage du nombre d'évenements total
+          var rectboucle=svg.selectAll(".rectboucle").data(zdata()).enter()
+              .append("g")
+              .attr("class",d=>"rectboucle "+ (boucles[d.session]?"boucle":"noboucle"))
+              .attr("transform",function(d,i) {return "translate("+xScale(d.session)+","+(yScale(d.total)-15)+")"})
+          rectboucle
+              .append("rect")
+              .attr("class",d=>"rectboucle "+ (boucles[d.session]?"boucle":"noboucle"))
+              .attr("width",25)
+              .attr("height",15)
+          rectboucle
+              .append("text")
+              .attr("x",0)
+              .attr("y",10)
+              .text(d=>d.total)
+          rectboucle
+              .append("title").text(d=>{
+                  if (boucles[d.session]) {
+                      return "Boucle trouvée "+boucles[d.session].blockSpec+"\n"
+                              +"total: "+d.total
+                  }
+                  return "total: "+d.total})
+         //affichage du nombre d'instructions (si reconstruction disponible)
+                  console.log("commandes",commandes)
+         var rectinstructions=svg.selectAll(".ginstructions").data(zdata()).enter()
+             .append("g").attr("class","ginstructions")
+             .attr("transform",function(d,i) {
+                 return "translate("+
+                     (xScale(d.session)+xScale.bandwidth()/2-5)+","+
+                     yScale(commandes[d.session]?commandes[d.session].length:1)+
+                             ")"})
+         rectinstructions
+             .append("rect").attr("class","rectinstruction")
+             .attr("width",10)
+             .attr("height",function(d,i) {
+                 return yScale(0)-yScale(commandes[d.session]?commandes[d.session].length:1)
+             })
+         rectinstructions
+             .append("title")
+             .text(d=>d.session+":"+(commandes[d.session]?commandes[d.session].length:"?"))
          tippy(".evtline", {content:"tipp",
              async onShow(tip) {
                  //console.log('tip',liste.get(d3.select(tip.reference).datum().data.session))

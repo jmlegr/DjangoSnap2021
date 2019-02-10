@@ -762,12 +762,21 @@ var lance = function () {
                     graphbouclesTask.lance({
                         data:{session_keys:session_keys},
                         callback:function(result,elTitle,elResult) {
+                            elTitle                    
+                                .html(`Recherche des boucles`)
+                            //console.log("result",result,d3.entries(result))
                             let data=new Array()
-                            let databoucles=[]
-                            for (var session in result) {                           
-                                    data=data.concat(result[session].evts)                                
-                                    databoucles[session]=result[session].boucle                                
-                            }
+                            let databoucles={}, datacommandes={}
+                            d3.entries(result).forEach(d=>{
+                                
+                                data=data.concat(d.value.evts)
+                                databoucles[d.value.session]=d.value.boucle
+                                datacommandes[d.value.session]=d.value.commandes
+                            })
+                                                                    
+                                    
+                                  //  datacommandes[session]=result[session].commandes
+                            
                             const setDataType=function(obj) {
                                 switch (obj.type) {
                                 case "EPR": obj.data=obj.evenementepr[0];break;
@@ -788,10 +797,11 @@ var lance = function () {
                                 return obj
                             }
                             data.forEach(d=>setDataType(d))
-                            console.log('data',data,databoucles,elResult.node())
+                            //console.log('data',data,databoucles,datacommandes,elResult.node())
                             initSessionStackedBarChart.draw({
                                 data:data,
                                 boucles:databoucles,
+                                commandes:datacommandes,
                                 liste:liste,
                                 key:d3.map(data,function(d){return d.datatype}).keys(),
                                 element:elResult

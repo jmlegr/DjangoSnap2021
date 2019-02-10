@@ -231,6 +231,12 @@ p.CommentMorph {
    /*stroke:gainsboro;*/
    
   }
+  rect.boucle {
+  fill:green
+  }
+  rect.noboucle {
+  fill:grey
+  }
   .noboucle .evtline  {
    stroke:grey;   
   }
