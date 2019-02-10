@@ -17,6 +17,7 @@ from rest_framework.utils import json
 import itertools
 from pymongo.mongo_client import MongoClient
 from _datetime import datetime
+import pymongo
 
 
 affprint=False
@@ -70,7 +71,7 @@ def reconstruit(session_key,save=False,load=False):
     if load:
         #chargement de la reconstruction (si elle existe) depuis une base mongodb
         current_task.update_state(state='Chargement')
-        db=MongoClient().sierpinsky_db
+        db=MongoClient().sierpinski_db
         collection=db.reconstructions
         #on récupère les metadata (le document qui n'a pas de commandes)
         p=collection.find_one({"session_key":session_key,"commandes":{ "$exists": False}})
@@ -121,12 +122,12 @@ def reconstruit(session_key,save=False,load=False):
             dtime=evt.time
             theTime=0
         theTime=evt.time-dtime        
-        
         evtType=evt.getEvenementType()
         evtTypeInfos['%s' % theTime]={'evenement':evt.id,
                                       'evenement_type':evt.type,
                                       'type':evtType.type,
-                                      'detail':evtType.detail}
+                                      'detail':evtType.detail,
+                                      'realtime':evt.time}
         history=None #memorise l'état undrop/redrop
         aff('---- temps=',theTime, evt.type,evtType)
         if evt.type=='ENV' and evtType.type in ['NEW','LANCE']:
@@ -1040,7 +1041,7 @@ def reconstruit(session_key,save=False,load=False):
     if save:
         #sauvegarde la reconstruction dans une base mongodb
         current_task.update_state(state='Sauvegarde')
-        db=MongoClient().sierpinsky_db
+        db=MongoClient().sierpinski_db
         collection=db.reconstructions
         p=collection.delete_many({'session_key':session_key})
         p=collection.insert_one({'user':user.username,'session_key':session_key,
@@ -1050,11 +1051,11 @@ def reconstruit(session_key,save=False,load=False):
                                  "ticks":listeBlocks.ticks,
                                  })
         cmds=collection.insert_many([{'session_key':session_key,
-                                      'etape':c['temps'],
+                                      'etape':c['evt']['realtime'],
                                       'commandes':c} for c in commandes])
         
         print("sauvegarde %s: %s morceaux" %(p,len(cmds.inserted_ids)))
-        
+        created=True
     else:
         created=False
     current_task.update_state(state='Envoi')
@@ -1096,11 +1097,16 @@ def celery_graph_boucles(sessions,only=None):
     else:
         tabBoucles=['doUntil','doForever','doRepeat']
 
-    evtsBoucle={}
+    #connection à la base mongodb
+    db=MongoClient().sierpinski_db
+    collection=db.reconstructions
+    
+    evtsBoucle=[]
     nb_evts=len(sessions)
     evt_traites=0
     percent_task=0
     for session_key in sessions:
+        evtBoucle={}
         evt_traites+=1
         current_task.update_state(state='En cours',
                                 meta={'evt_traites': evt_traites,'nb_evts':nb_evts,
@@ -1112,16 +1118,28 @@ def celery_graph_boucles(sessions,only=None):
                 .select_related('evenement')\
                 .order_by('evenement__time').first()
         if evt is not None:
+            timeboucle=evt.evenement.time
             serializerSPR=SimpleSPRSerializer(evt,many=False)
             evts=Evenement.objects.filter(session_key=session_key,time__lte=evt.evenement.time)\
                     .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
             serializer=SimpleEvenementSerializer(evts,many=True)
-            evtsBoucle[session_key]={'boucle':serializerSPR.data,'evts':serializer.data}
+            evtBoucle={'boucle':serializerSPR.data,'evts':serializer.data}
         else:            
             evts=Evenement.objects.filter(session_key=session_key)\
-                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')                    
+                    .prefetch_related('evenementspr','evenementepr','environnement','image','evenementspr__inputs','evenementspr__scripts')
+            timeboucle=evts.latest('time').time                    
             serializer=SimpleEvenementSerializer(evts,many=True)
-            evtsBoucle[session_key]={'boucle':None,'evts':serializer.data}
+            evtBoucle={'boucle':None,'evts':serializer.data}
+        #on regarde si on a une sauvegarde de la reconstruction
+        print("commandes")
+        p=collection.find_one({"session_key":session_key,"commandes":{"$exists":False}})
+        if p is not None:
+            print("commandes tourv pour ",session_key,timeboucle)
+            c=collection.find_one({"session_key":session_key,"etape":{"$lte":timeboucle}},sort=[('etape',pymongo.DESCENDING)])
+            evtBoucle["commandes"]=[s for s in c['commandes']['snap'] 
+                                                  if 'commande' in s and s['commande'] is not None and not s['deleted']]
+        evtBoucle["session"]=session_key
+        evtsBoucle.append(evtBoucle)
     return evtsBoucle
 
 @shared_task
