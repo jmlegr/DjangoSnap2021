@@ -1640,6 +1640,11 @@ class SimpleListeBlockSnap:
                   'conteneurBlock':block.conteneurBlockId,
                   'wrappedBlock':block.wrappedBlockId}
         #print('nom',nom,' résultat de niom',resultat)
+        try:
+            resultat['truc']=block.truc if block.time==thetime else ''
+        except AttributeError:
+            pass 
+            
         return resultat,nom,change
     
     def addFromXML(self,item,withScript=False,theTime=0):

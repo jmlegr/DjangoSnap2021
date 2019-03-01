@@ -405,6 +405,16 @@ const graphNbCommandes=function(config) {
     
 }
 const graphProgramme=function(donnees,div,forExport=false) {
+    const affTruc=function(s) {
+        var tapTruc=[["next","⬇"],["prev","⬆"],["me","➡"],
+            ["contenu","⤵"],["conteneur","↖"],
+            ["undrop","↩"],["redrop","↪"],
+            ["lastnode","⚓"],["del","❌"]]
+        var mapTruc=new Map(tapTruc)
+        var ret=""
+        s.split(" ").forEach(d=>ret+=(mapTruc.get(d)!=undefined?mapTruc.get(d):" "))
+        return ret
+    }
     //reconstitue le graphe du programme donné en paramère
     //données={commandes,infos,ticks,scripts}
     
@@ -466,8 +476,8 @@ const graphProgramme=function(donnees,div,forExport=false) {
                 let enter=divScript.selectAll(".commande").data(newData[t.JMLid])
                 enter.enter().append("p")
                     .attr("class",d=>"command "+(d.action?'action ':'')+(d.typeMorph?d.typeMorph:''))
-                    .attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid}`)
-                    .html(d=>'...'.repeat(d.index)+d.commande)
+                    .attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid} truc:${d.truc}`)
+                    .html(d=>'...'.repeat(d.index)+affTruc(d.truc)+ d.commande)
             })
             //console.log(newData)
         } else {
