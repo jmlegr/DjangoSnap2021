@@ -239,12 +239,13 @@ def reconstruit(session_key,save=False,load=False):
                 listeReplace={}
                 for e in listeEquiv:
                     c=e.split('-')
-                    listeReplace[c[0]]=c[1]                
+                    listeReplace[c[0]]=c[1]       
                 for b in listeReplace:
-                    bc=listeBlocks.lastNode(b,theTime)
+                    bc=listeBlocks.lastNode(b,theTime)                    
                     if bc is None:
                         print("pas bon")
-                    newBlock,copiedBlock=bc.duplic(listeReplace,theTime,action) 
+                    #on ne met pas d'action le premier bloc en aura une lors du drop
+                    newBlock,copiedBlock=bc.duplic(listeReplace,theTime,None)
                     copiedBlock.truc="copyfrom"      
                     newBlock.truc="copyto"             
                     listeBlocks.append(copiedBlock)
