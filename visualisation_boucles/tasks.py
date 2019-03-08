@@ -139,22 +139,34 @@ def reconstruit(session_key,save=False,load=False):
                     newi.deleted=True
             
             if evtType.type=='LOBA':
-                p=ProgrammeBase.objects.get(id=evtType.valueInt) #detail contient le nom
-                f=p.file
-                infos['type']=" - ".join((infos['type'],'Programme de base: %s' %p.nom))
-                infos['tooltip']=p.description
+                #on charge un programme de base
+                if evtType.valueInt is not None:
+                    p=ProgrammeBase.objects.get(id=evtType.valueInt) #detail contient le nom
+                    f=p.file
+                    infos['type']=" - ".join((infos['type'],'Programme de base: %s' %p.nom))
+                    infos['tooltip']=p.description
+                    try:
+                        tree=etree.parse(f.path)            
+                        root=tree.getroot()
+                        scripts=root.find('stage/sprites/sprite/scripts').findall('script')
+                    except:
+                        scripts=[]
+                else:
+                    #c'est un chargement de programme de base non existant
+                    scripts=[]
             else:
+                #on charge une sauvegarde
                 p=Document.objects.get(id=evtType.detail)
                 f=p.document
                 infos['type']=" - ".join((infos['type'],'Programme sauvegardé: %s' % p.description))
                 infos['tooltip']=p.uploaded_at
                 #on reconstruit a partir du xml
-            try:
-                tree=etree.parse(f.path)            
-                root=tree.getroot()
-                scripts=root.find('stage/sprites/sprite/scripts').findall('script')
-            except:
-                scripts=[]
+                try:
+                    tree=etree.parse(f.path)            
+                    root=tree.getroot()
+                    scripts=root.find('stage/sprites/sprite/scripts').findall('script')
+                except:
+                    scripts=[]
           
             for s in scripts:
                 listeBlocks.addFromXML(s,theTime=theTime)
