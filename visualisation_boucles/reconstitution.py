@@ -1239,7 +1239,7 @@ class SimpleBlockSnap:
         
         aff('trateiemt,n',liste,self.JMLid)
         assert self.JMLid in liste
-        blockOrig=self.copy(thetime,action)
+        blockOrig=self.copy(thetime,None)
         block=self.copy(thetime,action)
         block.JMLid=replace(block.JMLid)
         block.nextBlockId=replace(block.nextBlockId)
@@ -1252,8 +1252,8 @@ class SimpleBlockSnap:
             block.inputs[i]=replace(block.inputs[i])
         for i in block.wrapped:
             block.wrapped[i]=replace(block.wrapped[i])
-        block.change='copyfrom'
-        blockOrig.change='copyto'
+        #block.change='copyfrom'
+        #blockOrig.change='copyto'
         return block,blockOrig
                 
     def setNextBlock(self,block):
@@ -1424,6 +1424,13 @@ class SimpleListeBlockSnap:
         if len(blocks)>0:
             return blocks[0]
         return None
+    
+    def getNodes(self,theTime):
+        """
+        REnvoie les noeuds au temps theTime, [] si aucun
+        """
+        blocks=[b for b in self.liste if b.time==theTime]
+        return  blocks
     
     def lastNode(self,JMLid,thetime,veryLast=False,deleted=False):
         """

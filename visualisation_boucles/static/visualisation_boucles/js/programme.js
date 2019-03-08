@@ -406,14 +406,19 @@ const graphNbCommandes=function(config) {
 }
 const graphProgramme=function(donnees,div,forExport=false) {
     const affTruc=function(s) {
-        var tapTruc=[["next","⬇"],["prev","⬆"],["me","➡"],
-            ["contenu","⤵"],["conteneur","↖"],
-            ["undrop","↩"],["redrop","↪"],
-            ["lastnode","⚓"],["del","❌"]]
-        var mapTruc=new Map(tapTruc)
-        var ret=""
-        s.split(" ").forEach(d=>ret+=(mapTruc.get(d)!=undefined?mapTruc.get(d):" "))
-        return ret
+        if (s) {
+            const tapTruc=[["next","⬇"],["prev","⬆"],["me","⇒"],
+                ["contenu","⤵"],["conteneur","↖"],
+                ["undrop","↩"],["redrop","↪"],
+                ["lastnode","⇏"],["del","❌"],
+                ["copyfrom","⇺"],["copyto","⇻"]
+            ]
+            const mapTruc=new Map(tapTruc)
+            var ret=""
+            s.split(" ").forEach(d=>ret+=(mapTruc.get(d)!=undefined?mapTruc.get(d):" "))
+            return ret
+        }
+        return ""
     }
     //reconstitue le graphe du programme donné en paramère
     //données={commandes,infos,ticks,scripts}

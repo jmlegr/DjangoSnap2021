@@ -234,7 +234,7 @@ def reconstruit(session_key,save=False,load=False):
                         print("pas bon")
                     newBlock,copiedBlock=bc.duplic(listeReplace,theTime,action) 
                     copiedBlock.truc="copyfrom"      
-                    newBlock.truc="me copyto"             
+                    newBlock.truc="copyto"             
                     listeBlocks.append(copiedBlock)
                     listeBlocks.append(newBlock)
                     listeBlocks.setFirstBlock(newBlock)
@@ -292,12 +292,14 @@ def reconstruit(session_key,save=False,load=False):
                         lastConteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
                         lastConteneur.setWrapped(None)
                         newNode.unwrap()
+                        lastConteneur.truc="contenu"
                         listeBlocks.append(lastConteneur)
                     else:
                         lastConteneur=None
                     if newNode.prevBlockId is not None:
                         newPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime).copy(theTime)
-                        newPrevBlock.change="uninsert"                        
+                        newPrevBlock.change="uninsert"
+                        newPrevBlock.truc="next"                        
                         newPrevBlock.setNextBlock(None)
                         listeBlocks.append(newPrevBlock)
                     else:
@@ -307,6 +309,7 @@ def reconstruit(session_key,save=False,load=False):
                         newNextBlock.change="uninsert"
                         newNextBlock.setPrevBlock(newPrevBlock)
                         newNextBlock.setConteneur(lastConteneur)
+                        newNextBlock.truc="prev"
                         listeBlocks.append(newNextBlock)
                     else:
                         newNextBlock=None
@@ -316,6 +319,7 @@ def reconstruit(session_key,save=False,load=False):
                         if newPrevBlock is not None:
                             newPrevBlock.setNextBlock(newNextBlock)
                         newNextBlock.unwrap()
+                        newNextBlock.truc="conteneur"
                         listeBlocks.append(newNextBlock)
                                                 
                 elif dspr.type=="DROP" or dspr.type=="DEL":
@@ -339,44 +343,53 @@ def reconstruit(session_key,save=False,load=False):
                     else:           
                         deleted=False         
                         newNode=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime,action)
-                    #on traite le déplacement                                          
+                    newNode.truc="me undrop"
+                    #on traite le déplacement                                     
                     listeBlocks.append(newNode)
                     if dspr.location=='bottom':
                         #on passe de target->newNode->...->finscript->nextnode (où nextnode.id=ancienTarget.next)
                         #à ancienprev(newnode)->newNode->...->finscript et target->nextNode
                         target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)
+                        target.truc="next"
                         listeBlocks.append(target)
                         ancienTarget=listeBlocks.lastNode(dspr.targetId,s['time'],veryLast=deleted)
                         nextNode=listeBlocks.lastNode(ancienTarget.nextBlockId,theTime)
                         if nextNode is not None:
                             nextNode=nextNode.copy(theTime)   
+                            nextNode.truc="prev"                        
                             listeBlocks.append(nextNode)
                             finScript=listeBlocks.lastNode(nextNode.prevBlockId,theTime).copy(theTime)
                             if finScript.JMLid!=newNode.JMLid:
                                 finScript.deleted=False
                                 listeBlocks.append(finScript)
-                            else:
+                                finScript.truc="lastnode m1"
+                            else:                             
                                 finScript=newNode
+                                finScript.truc+=" lastnode m2"
                         else:
                             finScript=newNode
+                            finScript.truc+=" lastnode m3"
+                        
                         ancienNode=listeBlocks.lastNode(dspr.blockId,s['time'],veryLast=deleted)                        
                         if ancienNode.prevBlockId is not None:
                             ancienPrevNode=listeBlocks.lastNode(ancienNode.prevBlockId,theTime,deleted=not deleted).copy(theTime)
                             ancienPrevNode.deleted=False
                             listeBlocks.append(ancienPrevNode)
+                            ancienPrevNode.truc="next"
                             listeBlocks.setPrevBlock(newNode,ancienPrevNode)
                         else:
                             listeBlocks.setPrevBlock(newNode,None)
                         #on vérifie s'il n'était pas contenu
                         if ancienNode.conteneurBlockId is not None:
                             conteneur=listeBlocks.lastNode(ancienNode.conteneurBlockId,theTime).copy(theTime)
+                            conteneur.truc="contenu"
                             conteneur.setWrapped(newNode)
                             listeBlocks.append(conteneur)
                         else:
                             newNode.unwrap()
                         
                         if finScript.JMLid!=newNode.JMLid:
-                            listeBlocks.setNextBlock(finScript,None)
+                            listeBlocks.setNextBlock(finScript,None)                        
                         listeBlocks.setNextBlock(target,nextNode)
                         
                     elif dspr.location=='top':
@@ -384,44 +397,54 @@ def reconstruit(session_key,save=False,load=False):
                         #à target(sans prev)  et ancienprevdenewnode->newNode->...->finScript
                         aff("                                     --------")
                         aff("                                     ",dspr.targetId)    
-                        target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)                        
+                        target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)
+                        target.truc="prev"                        
                         listeBlocks.append(target)
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
                         newPrev=listeBlocks.lastNode(ancienNode.prevBlockId,theTime)
                         if newPrev is not None:
-                            newPrev=newPrev.copy(theTime)                            
+                            newPrev=newPrev.copy(theTime)
+                            newPrev.truc="next"                            
                             listeBlocks.append(newPrev)
                         listeBlocks.setPrevBlock(newNode,newPrev)
                         finScript=listeBlocks.lastNode(target.prevBlockId,theTime).copy(theTime)                        
                         if finScript.JMLid!=newNode.JMLid:
                             listeBlocks.append(finScript)
+                            finScript.truc="lastnode m5"
                             listeBlocks.setNextBlock(finScript,None)
                         else:
+                            newNode.truc+=" lastnode m6"
                             listeBlocks.setNextBlock(newNode,None)
                         listeBlocks.setPrevBlock(target,None)
                     elif dspr.location=='slot':
                         conteneur=listeBlocks.lastNode(dspr.parentId,theTime).copy(theTime)
+                        conteneur.truc="contenu"
                         listeBlocks.append(conteneur)
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
                         if ancienNode.conteneurBlockId is not None:
                             newAncienNodeConteneur=listeBlocks.lastNode(ancienNode.conteneurBlockId,theTime).copy(theTime)
                             newAncienNodeConteneur.setWrapped(newNode)
+                            newAncienNodeConteneur.truc="contenu"
                             listeBlocks.append(newAncienNodeConteneur)
                         else:
                             newNode.unwrap()
                         if ancienNode.prevBlockId is not None:
                             newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            newAncienPrevBlock.truc="next"
                             listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
                             listeBlocks.append(newAncienPrevBlock)                        
                         ancienConteneur=listeBlocks.lastNode(dspr.parentId,s['time'])
                         if ancienConteneur.wrappedBlockId is not None:
-                            contenu=listeBlocks.lastNode(ancienConteneur.wrappedBlockId,theTime).copy(theTime)                            
+                            contenu=listeBlocks.lastNode(ancienConteneur.wrappedBlockId,theTime).copy(theTime)
+                            contenu.truc="conteneur"                            
                             #la fin du script droppé est le block précédent l'ancien contenu
-                            finScript=listeBlocks.lastNode(contenu.prevBlockId,theTime)
+                            finScript=listeBlocks.lastNode(contenu.prevBlockId,theTime)                            
                             if finScript.JMLid != newNode.JMLid:
                                 newFinScript=listeBlocks.addSimpleBlock(theTime,finScript)
+                                newFinScript.truc="lastnode m7"
                                 listeBlocks.setNextBlock(newFinScript,None)
                             else:
+                                newNode.truc+=" lastnode m8"
                                 listeBlocks.setNextBlock(newNode,None)                                
                             contenu.setPrevBlock(None)                            
                             listeBlocks.append(contenu)
@@ -435,6 +458,7 @@ def reconstruit(session_key,save=False,load=False):
                         if newNode.wrappedBlockId is not None:
                             ancienContenu=listeBlocks.lastNode(newNode.wrappedBlockId,s['time']).copy(theTime)
                             contenu=listeBlocks.lastNode(newNode.wrappedBlockId,theTime).copy(theTime)
+                            contenu.truc="conteneur"
                             contenu.unwrap()
                             listeBlocks.append(contenu)
                             newNode.setWrapped(None)
@@ -442,6 +466,7 @@ def reconstruit(session_key,save=False,load=False):
                             ancienContenu=None
                         if ancienNode.prevBlockId is not None:
                             newPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime).copy(theTime)
+                            newPrevBlock.truc="next"
                             newPrevBlock.setNextBlock(newNode)
                             listeBlocks.append(newPrevBlock)
                         else:
@@ -449,6 +474,8 @@ def reconstruit(session_key,save=False,load=False):
                         #on replace l'ancien prevBlock du bloc contenu
                         if ancienContenu is not None and ancienContenu.prevBlockId is not None:
                             newPrevBlock=listeBlocks.lastNode(ancienContenu.prevBlockId,theTime).copy(theTime)
+                            newPrevBlock.truc="next"
+                            contenu.truc+=" prev"
                             newPrevBlock.setNextBlock(contenu)
                             listeBlocks.append(newPrevBlock)
                             
@@ -458,22 +485,33 @@ def reconstruit(session_key,save=False,load=False):
                         if ancienNode.conteneurBlockId is not None:
                             newAncienNodeConteneur=listeBlocks.lastNode(ancienNode.conteneurBlockId,theTime).copy(theTime)
                             newAncienNodeConteneur.setWrapped(newNode)
+                            newAncienNodeConteneur.truc="contenu"
                             listeBlocks.append(newAncienNodeConteneur)
                         else:
                             newNode.unwrap()
                         if ancienNode.prevBlockId is not None:
                             newAncienPrevBlock=listeBlocks.lastNode(ancienNode.prevBlockId,theTime,deleted=True).copy(theTime)
                             listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
-                            listeBlocks.append(newAncienPrevBlock)   
-                        nextNode=ancienNode                     
+                            newAncienPrevBlock.truc="next"
+                            listeBlocks.append(newAncienPrevBlock)
+                        #on ressort tous les blocs suivants   
+                        #nextNode=ancienNode    
+                        nextNode=newNode
                         while nextNode.nextBlockId is not None:
+                            node=nextNode
                             nextNode=listeBlocks.lastNode(nextNode.nextBlockId,theTime,deleted=True).copy(theTime)
                             listeBlocks.append(nextNode)
                             nextNode.deleted=False
-                            nextNode.conteneurBlockId=None
-                            listeBlocks.setNextBlock(newNode,nextNode)
-                            newNode=nextNode                   
+                            nextNode.conteneurBlockId=None                            
+                            listeBlocks.setNextBlock(node,nextNode)                                               
                             if deleted: break
+                        if nextNode.JMLid != newNode.JMLid:
+                            nextNode.truc="prev"
+                        if node.JMLid != newNode.JMLid:
+                            node.truc="lastnode m9"
+                        else:
+                            newNode.truc+=" lastnode m10"
+                            
                 elif dspr.type=="NEWVAL":
                     #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
                     if dspr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -573,7 +611,7 @@ def reconstruit(session_key,save=False,load=False):
                     if newNode.conteneurBlockId is not None:
                         conteneur=listeBlocks.lastNode(newNode.conteneurBlockId,theTime).copy(theTime)
                         conteneur.setWrapped(None)
-                        conteneur.truc="contenu none1"
+                        conteneur.truc="contenu"
                         listeBlocks.append(conteneur)
                         newNode.unwrap()
                 elif spr.location=="top":
@@ -618,7 +656,7 @@ def reconstruit(session_key,save=False,load=False):
                     target.setPrevBlock(None)
                     target.setConteneur(newNode)
                     newNode.truc="contenu"
-                    target.truc="conteneur prev"
+                    target.truc="conteneur"
                     listeBlocks.append(target)
                     
                                  
@@ -643,11 +681,7 @@ def reconstruit(session_key,save=False,load=False):
                     newNode.deleted=True
                     newNode.truc="me del drop"
                     listeBlocks.recordDrop(spr, theTime)
-                else:  
-                    if evtPrec.type=='DUPLIC':
-                        #c'est suite à une duplication, on le précise
-                        action+=' DUPLIC'
-                        #spr.type=spr.type+'_DUPLIC'
+                else:                      
                     if spr.location:
                         action+=' '+spr.location
                     if spr.typeMorph=='ReporterBlockMorph':
@@ -666,7 +700,7 @@ def reconstruit(session_key,save=False,load=False):
                     #On récupère le block et on le recopie
                     newNode=listeBlocks.lastNode(spr.blockId, theTime,deleted=True).copy(theTime,action)
                     newNode.deleted=False
-                    newNode.truc="me drop loc:%s" % spr.location
+                    newNode.truc="me drop loc:%s" % spr.location                   
                     #newNode.change="dropped"
                     #si ni le prevBlock ni le nextblock (ni wrapp?) ne change, c'est un simplement déplacement non pris en compte
                     #pour l'instant on le fait quand même                
@@ -713,13 +747,29 @@ def reconstruit(session_key,save=False,load=False):
                                     "Pas le bon formt lst%s new%s" %(type(lastFromNode.JMLid),type(newNode.JMLid))
                                 if lastFromNode.JMLid!=newNode.JMLid:
                                     lastFromNode=lastFromNode.copy(theTime)
-                                    lastFromNode.truc="lastnode"
+                                    lastFromNode.truc="lastnode"                                
                                     listeBlocks.append(lastFromNode)
-                                lastFromNode.truc+="next"                                
+                                else:
+                                    newNode.truc+=" lastnode"
+                                #lastFromNode.truc+=" next"                                
                                 newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
                                 newLastNextBlock.truc="prev"
                                 listeBlocks.append(newLastNextBlock)
                                 listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
+                            else:
+                                #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
+                                lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
+                                #print(lastFromNode.JMLid,newNode.JMLid,(lastFromNode.JMLid!=newNode.JMLid),('%s' % lastFromNode.JMLid!='%s' % newNode.JMLid))
+                                assert (lastFromNode.JMLid==newNode.JMLid or '%s' % lastFromNode.JMLid!='%s' % newNode.JMLid),\
+                                    "Pas le bon formt lst%s new%s" %(type(lastFromNode.JMLid),type(newNode.JMLid))
+                                if lastFromNode.JMLid!=newNode.JMLid:
+                                    lastFromNode=lastFromNode.copy(theTime)  
+                                    lastFromNode.truc="lastnode"                              
+                                    listeBlocks.append(lastFromNode)
+                                else:
+                                    newNode.truc+=" lastnode"
+                                
+                            #fin if newprevblock
                             newPrevBlock.truc="next"
                             listeBlocks.setNextBlock(newPrevBlock, newNode)                    
                             listeBlocks.addTick(theTime)
@@ -739,9 +789,10 @@ def reconstruit(session_key,save=False,load=False):
                         if finBlock.JMLid!=newNode.JMLid:
                             newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
                             newFinBlock.change='insert'
-                            newFinBlock.truc="last next"
+                            newFinBlock.truc="lastnode"
                             listeBlocks.setNextBlock(newFinBlock,newNextBlock)
                         else:
+                            newNode.truc+=" lastnode"
                             listeBlocks.setNextBlock(newNode,newNextBlock)
                         #on change le prevBlock                        
                         lastPrevBlock=listeBlocks.lastNode(newNode.prevBlockId,theTime)
@@ -757,7 +808,8 @@ def reconstruit(session_key,save=False,load=False):
                         listeBlocks.addTick(theTime)   
                     elif spr.location=="slot":
                         #c'est un drop dans le CSLotMorph d'une boucle englobante
-                        #parentId est le bloc englobant, targetId le CslotMorph                  
+                        #parentId est le bloc englobant, targetId le CslotMorph 
+                        newNode.truc+="conteneur"                 
                         newNode.change='wrapped'
                         conteneurNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime)
                         conteneurNode.truc="contenu"
@@ -791,18 +843,19 @@ def reconstruit(session_key,save=False,load=False):
                             #l'ancien contenu devient le nextblock
                             lastContenu=lastContenu.copy(theTime)
                             lastContenu.unwrap()
-                            lastContenu.truc="conteneur prev"
+                            lastContenu.truc="prev"
                             listeBlocks.append(lastContenu)
-                            #on va chercher le fin du script droppé (si c'en est un)
-                            finBlock=listeBlocks.lastFromBlock(theTime,newNode)
-                            if finBlock.JMLid!=newNode.JMLid:
-                                newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
-                                newFinBlock.change='insert'
-                                newFinBlock.truc="lastnode next"
-                                listeBlocks.setNextBlock(newFinBlock,lastContenu)
-                            else:
-                                #truc="lastnode" ?
-                                listeBlocks.setNextBlock(newNode,lastContenu)
+                        #on va chercher le fin du script droppé (si c'en est un)
+                        finBlock=listeBlocks.lastFromBlock(theTime,newNode)
+                        if finBlock.JMLid!=newNode.JMLid:
+                            newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
+                            newFinBlock.change='insert'
+                            newFinBlock.truc="lastnode"
+                            listeBlocks.setNextBlock(newFinBlock,lastContenu)
+                        else:
+                            #truc="lastnode" ?
+                            newNode.truc+=" lastnode"
+                            listeBlocks.setNextBlock(newNode,lastContenu)
                         conteneurNode.setWrapped(newNode)
                         aff('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
                         listeBlocks.addTick(theTime)
@@ -832,7 +885,7 @@ def reconstruit(session_key,save=False,load=False):
                         #on met à jour la cible                    
                         target.setPrevBlock(None)
                         target.setConteneur(newNode)
-                        target.truc="conteneur prev"
+                        target.truc="conteneur"
                         listeBlocks.append(target)
                         listeBlocks.addTick(theTime)
                     elif spr.location is None:
@@ -870,7 +923,7 @@ def reconstruit(session_key,save=False,load=False):
                                     if nextBlock is not None:
                                         newNextBlock=nextBlock.copy(theTime)
                                         newNextBlock.setPrevBlock(None)
-                                        newNextBlock.truc="conteneur prev"
+                                        newNextBlock.truc="conteneur"
                                         listeBlocks.append(newNextBlock)
                                         lastConteneur.truc+=" wrap"
                                         lastConteneur.setWrapped(newNextBlock)                                        
@@ -882,7 +935,17 @@ def reconstruit(session_key,save=False,load=False):
                                     newNextBlock.setPrevBlock(None)
                                     newNextBlock.truc="prev"
                                     listeBlocks.append(newNextBlock)
-                                    
+                        #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
+                        lastFromNode=listeBlocks.lastFromBlock(theTime, newNode)
+                        #print(lastFromNode.JMLid,newNode.JMLid,(lastFromNode.JMLid!=newNode.JMLid),('%s' % lastFromNode.JMLid!='%s' % newNode.JMLid))
+                        assert (lastFromNode.JMLid==newNode.JMLid or '%s' % lastFromNode.JMLid!='%s' % newNode.JMLid),\
+                                "Pas le bon formt lst%s new%s" %(type(lastFromNode.JMLid),type(newNode.JMLid))
+                        if lastFromNode.JMLid!=newNode.JMLid:
+                            lastFromNode=lastFromNode.copy(theTime)   
+                            lastFromNode.truc="lastnode"                              
+                            listeBlocks.append(lastFromNode)
+                        else:
+                            newNode.truc+=" lastnode" 
                         if deleted:
                             newNode.deleted=True
                             newNode.action+=" DEL"  
@@ -893,7 +956,23 @@ def reconstruit(session_key,save=False,load=False):
                             #    newNode.deleted=True
                             #    listeBlocks.append(newNode)
                         listeBlocks.addTick(theTime)
-                                                    
+                    if evtPrec.type=='DUPLIC':
+                        #c'est suite à une duplication, on le précise
+                        action+=' DUPLIC'
+                        newNode.truc+=" duplic %s" % (evtPrec.evenement.time-dtime)
+                        #on récupère les noeuds
+                        nodes=listeBlocks.getNodes(evtPrec.evenement.time-dtime)
+                        for n in nodes:
+                            node=listeBlocks.getNode(n.JMLid, theTime)
+                            if node is not None:
+                                #le noeud est aussi impacté à ce temps, on ne le rajoute pas
+                                try:
+                                    node.truc+=" %s" % n.truc
+                                except AttributeError:
+                                    node.truc=n.truc
+                            else:
+                                n.time=theTime
+                        #spr.type=spr.type+'_DUPLIC'                               
             elif spr.type=='VAL':
                 #c'est une modification de la valeur (directe) d'un inputSlotMorph
                 #on cherche l'input modifié (par le rang ou par le detail)
@@ -1105,9 +1184,10 @@ def reconstruit(session_key,save=False,load=False):
                                  "scripts":listeBlocks.firstBlocks,  
                                  "ticks":listeBlocks.ticks,
                                  })
+        commandes.sort(key=lambda c: c['evt']['realtime'])
         cmds=collection.insert_many([{'session_key':session_key,
-                                      'etape':c['evt']['realtime'],
-                                      'commandes':c} for c in commandes])
+                                      'etape':i,
+                                      'commandes':c} for i,c in enumerate(commandes)])
         
         print("sauvegarde %s: %s morceaux" %(p,len(cmds.inserted_ids)))
         created=True
