@@ -33,6 +33,7 @@ CeleryTask.prototype.lance=function(config) {
     var callback=config.callback || this.callback
     var me=this
     this.overlay.select("#progTitle").html(this.waittitle)
+    this.overlay.select("#divtete").selectAll("*").remove();
     this.overlay.select("#resultats").selectAll("*").remove();
     this.overlay.style("visibility","visible").style("display","initial")
 
@@ -92,7 +93,7 @@ CeleryTask.prototype.lance=function(config) {
                 //on a reçu, on affiche les resultats, une seule fois...
                 if (willstop==0) {
                     willstop = 1;
-                    callback(me.result,me.overlay.select("#progTitle"),me.overlay.select("#resultats"))
+                    callback(me.result,me.overlay.select("#progTitle"),me.overlay.select("#resultats"),me.overlay)
                 }
 
 

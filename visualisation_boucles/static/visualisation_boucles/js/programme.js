@@ -404,7 +404,7 @@ const graphNbCommandes=function(config) {
     tracePoints(svg)
     
 }
-const graphProgramme=function(donnees,div,forExport=false) {
+const graphProgramme=function(donnees,div,forExport=false,overlay) {
     const affTruc=function(s) {
         if (s) {
             const tapTruc=[["next","⬇"],["prev","⬆"],["me","⇒"],
@@ -424,7 +424,8 @@ const graphProgramme=function(donnees,div,forExport=false) {
     //données={commandes,infos,ticks,scripts}
     
     //ajout d'un checkbox pour n'afficher que les scripts ayant changé
-    div.append("div")
+    const div2=overlay.select("#divtete").append("span")
+    div2
         .append("label").attr("for","onlysScriptChanged").text("Seulement les scripts modifiés")
         .append("input").attr("type","checkbox")
             .property("checked",false)
@@ -435,7 +436,33 @@ const graphProgramme=function(donnees,div,forExport=false) {
                 d3.selectAll(".script.notChanged,.tetescript.notChanged")
                     .style("display",checked?"none":"inline-block")
                 })
-      
+    div2.append("label").attr("for","timeoffset").text(";    Offset")
+        .append("input")
+            .attr("type","time")
+            .attr("id","timeoffset")
+            .property("step",1)
+            .property("value","00:00:00") //todo:sauvegarder l'offset
+            .property("min","00:00:00")
+            .property("max","23:59:59")
+            .on("change",function(cb,j){     
+                var timeoffset=d3.timeParse("%H:%M:%S")(this.value)
+                if (timeoffset!=null) {
+                    var offsetms=timeoffset.getHours()*60*60*1000+timeoffset.getMinutes()*60*1000+timeoffset.getSeconds()*1000
+                } else {
+                    var offsetms=0
+                }
+                const divtetes=d3.selectAll(".tete")
+                divtetes.each(function(d,i) {
+                        if (d) {
+                            d3.select(this).html(formatTimeToHMS(d.temps)+" "+formatTimeToHMS(d.temps+offsetms)+d.evt.type+" "+(d.evt.detail?d.evt.detail:''))
+                        }
+                    })
+                
+             })
+    //div2.select("#timeoffset").append("title").text("Décalage en heure, minutes, secondes par rapport à la vidéo")
+    
+    const timeoffset=d3.timeParse("%H:%M:%S")(d3.select("#timeoffset").node().value)
+    const offsetms=timeoffset.getHours()*60*60*1000+timeoffset.getMinutes()*60*1000+timeoffset.getSeconds()*1000
     donnees.commandes.forEach(function(c) {
         //on commence par rechercher les blocks de tête
         let tetes=c.snap.filter(d=>d.commande 
@@ -444,7 +471,8 @@ const graphProgramme=function(donnees,div,forExport=false) {
                             (d.conteneurBlock!=null && d.conteneurBlock.indexOf('SCRIPT')!=-1 ))
                         )
         let firstTete=true
-        console.log("etape",c.temps,tetes)
+        console.log("etape",c.temps,tetes,c.temps+offsetms)
+        
         //on reconstruit
         let newData={}
         let divG=div.append("div").attr("class","blockcommands")
@@ -453,7 +481,8 @@ const graphProgramme=function(donnees,div,forExport=false) {
             let divCom=divG.append("div")
                     .attr("class","tete")
                     .attr("title","--")
-                    .html(c.temps+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+                    .datum(c)
+                    .html(formatTimeToHMS(c.temps)+" "+formatTimeToHMS(c.temps+offsetms)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
                     
         }
         if (c.epr==null) {
@@ -463,7 +492,8 @@ const graphProgramme=function(donnees,div,forExport=false) {
                 if (firstTete) {
                     divG.append("div")
                         .attr("class","tete")
-                        .html(formatTimeToHMS(c.temps)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+                        .datum(c)
+                        .html(formatTimeToHMS(c.temps)+" "+formatTimeToHMS(c.temps+offsetms)+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
                         .attr("title","évènement: "+c.evt.evenement)
                     firstTete=false
                 } /*else {

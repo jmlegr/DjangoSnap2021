@@ -201,9 +201,19 @@ p.CommentMorph {
 	background-color: #b7bfc8;
 	position: sticky;
 	left:0;
-	top:0;
+	
 }
-
+div.sticked {
+    background-color: #d9dbdd;
+    position: sticky;
+    left:0;
+    
+    
+}
+#divtete span {
+display:inline-block;
+padding: 10px;
+}
 .progress {
    width:75%;
    background:yellow;

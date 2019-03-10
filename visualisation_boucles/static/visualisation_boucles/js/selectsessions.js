@@ -659,11 +659,11 @@ var lance = function () {
             urlCancel:urls.task_cancel,
             overlay:'overlayDiv2',
             csrf_token:csrf_token,       
-            },function(result,elTitle,elResult) {
+            },function(result,elTitle,elResult,elOverlay) {
                 elTitle                    
                     .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
                     +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
-                graphProgramme(result,elResult,false)        
+                graphProgramme(result,elResult,false,elOverlay)        
             }
         )
     var reconstructionTaskForExport=new CeleryTask({
