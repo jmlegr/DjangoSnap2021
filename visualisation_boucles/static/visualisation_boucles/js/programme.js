@@ -15,7 +15,7 @@ const parcoursCommande=function(commandes,data,snap,index) {
     if (snap.wrappedBlock!=null) {
         //il y a des blocks contenus
         const wrap=commandes.filter(d=>d.JMLid==snap.wrappedBlock)[0]
-        data=data.concat(parcoursCommande(commandes,[],wrap,index+1))      
+        data=data.concat(parcoursCommande(commandes,[],wrap,index+1))
     }
     if (snap.nextBlock!=null) {
         const next=commandes.filter(d=>d.JMLid==snap.nextBlock)[0]
@@ -34,17 +34,17 @@ const graphStackNbCommandes=function(config) {
     height = 600 - margin.top - margin.bottom,
     xScale1 = d3.scaleLinear().range([0, width]),
     xScale2 = d3.scalePoint().range([0, width]),
-    yScale = d3.scaleLinear().range([height, 0]),    
-    //color = d3.scaleOrdinal(d3.schemeCategory10),        
-    xAxis1 = d3.axisBottom(xScale1),            
+    yScale = d3.scaleLinear().range([height, 0]),
+    //color = d3.scaleOrdinal(d3.schemeCategory10),
+    xAxis1 = d3.axisBottom(xScale1),
     xAxis2 = d3.axisBottom(xScale2),
     yAxis =  d3.axisLeft(yScale),
     color
-    
+
     console.log('tratiement',data)
-    
+
     const ordinal=true; //traitement par temps ou par evenement
-    
+
     /**
      * préparation des données
      */
@@ -53,13 +53,13 @@ const graphStackNbCommandes=function(config) {
         tabTemps.push(""+c.temps)
         //on commence par rechercher les blocks de tête
         if (c.snap==null) console.log("erreur:",c)
-        let tetes=c.snap.filter(d=>d.commande 
+        let tetes=c.snap.filter(d=>d.commande
                         && ((d.conteneurBlock==null && d.prevBlock==null)
-                            || 
+                            ||
                             (d.conteneurBlock!=null && d.conteneurBlock.indexOf('SCRIPT')!=-1 ))
                     )
-        let elt={temps:c.temps}             
-        
+        let elt={temps:c.temps}
+
         tetes.forEach(function(t){
              const cmds=parcoursCommande(c.snap,[],t,0)
              elt["Block_"+t.JMLid]={commandes:cmds,nb:cmds.length,nbPrev:last["Block_"+t.JMLid]}
@@ -68,9 +68,9 @@ const graphStackNbCommandes=function(config) {
             })
         donnees.push(elt)
     })
-    //console.log("-->donnees",donnees,liste_tetes,tabTemps)    
+    //console.log("-->donnees",donnees,liste_tetes,tabTemps)
     //on recherche le nombre maxi de commandes (cumulées)
-    var maxNbs = d3.max(donnees, function(d){        
+    var maxNbs = d3.max(donnees, function(d){
         var vals = d3.keys(d).map(function(key){ return key !== "temps" ? (d[key]?d[key].nb : 0):0 });
         return d3.sum(vals);
     });
@@ -79,10 +79,10 @@ const graphStackNbCommandes=function(config) {
     xScale1.domain([0,d3.max(donnees,d=>d.temps)])
     xScale2.domain(tabTemps)
     yScale.domain([0,maxNbs+1]).nice()
-   
+
     //definition des couleurs
     var color=d3.scaleOrdinal(d3.schemeSet3).domain(liste_tetes)
-    
+
     //constitution des stacks
     var stack=d3.stack()
                  .keys(liste_tetes)
@@ -97,7 +97,7 @@ const graphStackNbCommandes=function(config) {
                 .y1(function(d) { return yScale(d[1]); })
                 .curve(d3.curveLinear)
     //console.log('serie',series)
-    
+
     /**
      * preparation du svg
      */
@@ -108,11 +108,11 @@ const graphStackNbCommandes=function(config) {
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-    
+
     /**
      * tracage des axes
-     */    
-    const echelle=svg=>{        
+     */
+    const echelle=svg=>{
         svg.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + (height+5) + ")")
@@ -121,9 +121,9 @@ const graphStackNbCommandes=function(config) {
         svg.append("g")
         .attr("class", "axis axis--y")
         .attr("transform", "translate(0,0)")
-        .call(yAxis);       
+        .call(yAxis);
     }
-    
+
     /**
      * traçage des areas
      */
@@ -136,10 +136,10 @@ const graphStackNbCommandes=function(config) {
         const line=dataPath
                     .append('path')
                     .attr('class', 'area')
-                    .attr('d', area)  
+                    .attr('d', area)
                     .attr("fill",d=>color(d.key));
     }
-    
+
     /**
      * tracage des points
      */
@@ -162,26 +162,26 @@ const graphStackNbCommandes=function(config) {
                 .attr("cx", function(d) { return xScale2(d.data.temps) })
                 .attr("cy", function(d) { return yScale(d[1]) })
                 .attr("fill",function(d) {return d3.color(color(d3.select(this.parentNode).datum().key)).darker(1)})
-                .attr("r", 2)                
-                .on("mouseover", function(a, b, c) { 
-                    //console.log(a) 
+                .attr("r", 2)
+                .on("mouseover", function(a, b, c) {
+                    //console.log(a)
                     d3.select(this).classed('focus',true)
                 })
                 .on("mouseout", function() { d3.select(this).classed('focus',false) })
-                
+
         //ajout d'un tippy
           tippy('.dotcircle',{content:function(tip) {
                     var d=d3.select(tip).datum()
                     let jmlid=d3.select(tip.parentNode).datum().key
-                    return `<p>id:${jmlid}</p><p>temps:${d.temps}</vp><p>nb:<b>${d.nb}</b></p>`                    
+                    return `<p>id:${jmlid}</p><p>temps:${d.temps}</vp><p>nb:<b>${d.nb}</b></p>`
                     },
                     placement:'left',
-                    
-                    onShown: function(tip) {                        
+
+                    onShown: function(tip) {
                         let datum=d3.select(tip.reference).datum()
                         let jmlid=d3.select(tip.reference.parentNode).datum().key
                         let div=d3.select("#overlayDiv2").append("div")//.attr("class","progs").html("ici")
-                        //console.log("youy",datum,jmlid)    
+                        //console.log("youy",datum,jmlid)
                         div.append("div").html(`<p>id:${jmlid}</p>
                                                 <p>temps:${datum.data.temps}</p>
                                                 <p>nb:<b>${datum.data[jmlid].nb}</b></p>`)
@@ -192,15 +192,15 @@ const graphStackNbCommandes=function(config) {
                         .html(d=>'...'.repeat(d.index)+d.commande)
                         tip.setContent(div.node())
                     },
-                    
+
                     /*async onHide(tip) {
                         d3.select("#overlayDiv2").selectAll(".progs").remove()
                     }*/
         })
     }
-    
+
     /**
-     * traçage des epr     
+     * traçage des epr
      */
     const traceEvenements=svg=> {
         let evts=data.commandes.filter(d=>d.evt != null).map(function(d){return {temps:d.temps,evt:d.evt}})
@@ -229,7 +229,7 @@ const graphStackNbCommandes=function(config) {
                 svg.select("#lignetemps").remove()
             })
         tippy(".dotEvts",{
-            content:function(tip){                
+            content:function(tip){
                 var d=d3.select(tip).datum()
                 return `<p>temps: ${d.temps}</p>
                 <p>${d.evt.evenement_type}</p>
@@ -255,12 +255,12 @@ const graphNbCommandes=function(config) {
         height = 600 - margin.top - margin.bottom,
         xScale = d3.scaleLinear().range([0, width]),
         yScale = d3.scaleLinear().range([height, 0]),
-        //color = d3.scaleOrdinal(d3.schemeCategory10),        
-        xAxis = d3.axisBottom(xScale),            
+        //color = d3.scaleOrdinal(d3.schemeCategory10),
+        xAxis = d3.axisBottom(xScale),
         yAxis =  d3.axisLeft(yScale)
-        
+
     console.log('tratiement',data)
-    
+
     var toutesTetes=data.commandes.map(d=>d.snap.map(i=>i.JMLid))
                         .reduce((a,c)=>{c.forEach(i=>{if (a.indexOf(i)==-1) a.push(i)}); return a},[]).sort()
     var color=d3.scaleOrdinal(d3.schemeCategory10).domain(toutesTetes)
@@ -270,9 +270,9 @@ const graphNbCommandes=function(config) {
     data.commandes.forEach(function(c) {
         //on commence par rechercher les blocks de tête
         if (c.snap==null) console.log("erreur:",c)
-        let tetes=c.snap.filter(d=>d.commande 
+        let tetes=c.snap.filter(d=>d.commande
                         && ((d.conteneurBlock==null && d.prevBlock==null)
-                            || 
+                            ||
                             (d.conteneurBlock!=null && d.conteneurBlock.indexOf('SCRIPT')!=-1 ))
                         )
         let firstTete=true
@@ -280,17 +280,17 @@ const graphNbCommandes=function(config) {
         //on reconstruit
         let newData=[]
         if (c.epr==null) {
-            tetes.forEach(function(t) {            
-                newData.push({JMLid:t.JMLid,commande:parcoursCommande(c.snap,[],t,0)})                
+            tetes.forEach(function(t) {
+                newData.push({JMLid:t.JMLid,commande:parcoursCommande(c.snap,[],t,0)})
             })
             console.log('->',newData.length,newData)
-            
+
             commandes.push({temps:c.temps,commandes:newData,nb:newData.length})
         }
     })
     console.log('_>DAT',commandes,newData)
     //on remanie sous la forme JMLid=>[{temps,nb,cmds}...]
-  
+
     var donnees=commandes.reduce((a,c)=>{
         c.commandes.forEach(d=>{
             if (!a[d.JMLid]) a[d.JMLid]=[];
@@ -306,7 +306,7 @@ const graphNbCommandes=function(config) {
         else a[c.temps]+=c.nb
         return a
       },{})
-      
+
       xScale.domain([0,d3.max(commandes,d=>d.temps)])
       yScale.domain([0,d3.max(d3.values(total))])
     console.log("total",total,d3.entries(total))
@@ -320,24 +320,24 @@ const graphNbCommandes=function(config) {
     var line = (xacc,yacc)=>
             d3.line()
         .x(function(d, i) {return xScale(xacc(d)); }) // set the x values for the line generator
-        .y(function(d) { return yScale(yacc(d)); }) // set the y values for the line generator 
+        .y(function(d) { return yScale(yacc(d)); }) // set the y values for the line generator
         .curve(d3.curveMonotoneX)// apply smoothing to the line
-    
-    
-    const traceLine=svg=>{        
+
+
+    const traceLine=svg=>{
         svg.selectAll(".linenbcommandes").data(d3.entries(donnees),d=>d.key).enter()
             .append("path")
-            //.datum(d=>d.value) // 10. Binds data to the line 
-            .attr("class", "linenbcommandes") // Assign a class for styling 
+            //.datum(d=>d.value) // 10. Binds data to the line
+            .attr("class", "linenbcommandes") // Assign a class for styling
             .style("stroke",(d,i)=>color(d.key))
             .attr("d", d=>line(d=>d.temps,d=>d.nb)(d.value));
     }
     const traceTotal=svg=>{
         svg.append('path')
-      //.datum(d=>d.value) // 10. Binds data to the line 
-            .attr("class", "linenbtotalcommandes") // Assign a class for styling            
+      //.datum(d=>d.value) // 10. Binds data to the line
+            .attr("class", "linenbtotalcommandes") // Assign a class for styling
             .attr("d", line(d=>d.key,d=>d.value)(d3.entries(total)));
-        
+
     }
     const tracePoints=svg=>{
         let s=svg.selectAll(".dot")
@@ -353,16 +353,16 @@ const graphNbCommandes=function(config) {
                     //la clef (JMLid) est dans le datum du parent
                     return color(d3.select(this.parentNode).datum().key)
                 })
-                .attr("r", 4)                
-                .on("mouseover", function(a, b, c) { 
-                    console.log(a) 
+                .attr("r", 4)
+                .on("mouseover", function(a, b, c) {
+                    console.log(a)
                     d3.select(this).attr('class', 'focus')
                 })
                 .on("mouseout", function() {  })
         tippy('.dotcircle',{content:function(tip) {
                     var d=d3.select(tip).datum()
                     let jmlid=d3.select(tip.parentNode).datum().key
-                    return `<p>id:${jmlid}</p><p>temps:${d.temps}</vp><p>nb:<b>${d.nb}</b></p>`                    
+                    return `<p>id:${jmlid}</p><p>temps:${d.temps}</vp><p>nb:<b>${d.nb}</b></p>`
                     },
                     placement:'left',
                     onShown: function(tip) {
@@ -370,7 +370,7 @@ const graphNbCommandes=function(config) {
                         let datum=d3.select(tip.reference).datum()
                         let jmlid=d3.select(tip.reference.parentNode).datum().key
                         let div=d3.select("#overlayDiv2").append("div")//.attr("class","progs").html("ici")
-                            
+
                         div.append("div").html(`<p>id:${jmlid}</p>
                                                 <p>temps:${datum.temps}</p>
                                                 <p>nb:<b>${datum.nb}</b></p>`)
@@ -387,7 +387,7 @@ const graphNbCommandes=function(config) {
         })
     }
     const echelle=svg=>{
-        
+
         svg.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + (height+5) + ")")
@@ -396,13 +396,13 @@ const graphNbCommandes=function(config) {
         svg.append("g")
         .attr("class", "axis axis--y")
         .attr("transform", "translate(0,0)")
-        .call(yAxis);       
+        .call(yAxis);
     }
     echelle(svg)
     traceLine(svg)
     traceTotal(svg)
     tracePoints(svg)
-    
+
 }
 const graphProgramme=function(donnees,div,forExport=false,overlay) {
     const affTruc=function(s) {
@@ -422,14 +422,14 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
     }
     //reconstitue le graphe du programme donné en paramère
     //données={commandes,infos,ticks,scripts}
-    
+
     //ajout d'un checkbox pour n'afficher que les scripts ayant changé
     const div2=overlay.select("#divtete").append("span")
     div2
         .append("label").attr("for","onlysScriptChanged").text("Seulement les scripts modifiés")
         .append("input").attr("type","checkbox")
             .property("checked",false)
-            .attr("id","onlysScriptChanged")        
+            .attr("id","onlysScriptChanged")
             .on("change",function(cb,j){
                 const checked=d3.select(this).property("checked")
                 console.log("checked",checked,d3.selectAll(".script.notChanged"))
@@ -444,7 +444,7 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
             .property("value","00:00:00") //todo:sauvegarder l'offset
             .property("min","00:00:00")
             .property("max","23:59:59")
-            .on("change",function(cb,j){     
+            .on("change",function(cb,j){
                 var timeoffset=d3.timeParse("%H:%M:%S")(this.value)
                 if (timeoffset!=null) {
                     var offsetms=timeoffset.getHours()*60*60*1000+timeoffset.getMinutes()*60*1000+timeoffset.getSeconds()*1000
@@ -454,25 +454,33 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                 const divtetes=d3.selectAll(".tete")
                 divtetes.each(function(d,i) {
                         if (d) {
-                            d3.select(this).html(formatTimeToHMS(d.temps)+" "+formatTimeToHMS(d.temps+offsetms)+d.evt.type+" "+(d.evt.detail?d.evt.detail:''))
+                            d3.select(this).html(formatTimeToHMS(d.temps)+" <span class='offsettime'>"+formatTimeToHMS(d.temps+offsetms)+"</span>"+d.evt.type+" "+(d.evt.detail?d.evt.detail:''))
                         }
                     })
-                
+                //TODO
+                const divepr=d3.selectAll(".blockepr")
+                divepr.each(function(d,i) {
+                	if (d) {
+                            d3.select(this).select(".offsettime").html(formatTimeToHMS(d.temps+offsetms))
+                        }
+                })
+                //END TODO
+
              })
     //div2.select("#timeoffset").append("title").text("Décalage en heure, minutes, secondes par rapport à la vidéo")
-    
+
     const timeoffset=d3.timeParse("%H:%M:%S")(d3.select("#timeoffset").node().value)
     const offsetms=timeoffset.getHours()*60*60*1000+timeoffset.getMinutes()*60*1000+timeoffset.getSeconds()*1000
     donnees.commandes.forEach(function(c) {
         //on commence par rechercher les blocks de tête
-        let tetes=c.snap.filter(d=>d.commande 
+        let tetes=c.snap.filter(d=>d.commande
                         && ((d.conteneurBlock==null && d.prevBlock==null)
-                            || 
+                            ||
                             (d.conteneurBlock!=null && d.conteneurBlock.indexOf('SCRIPT')!=-1 ))
                         )
         let firstTete=true
         console.log("etape",c.temps,tetes,c.temps+offsetms)
-        
+
         //on reconstruit
         let newData={}
         let divG=div.append("div").attr("class","blockcommands")
@@ -482,18 +490,18 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                     .attr("class","tete")
                     .attr("title","--")
                     .datum(c)
-                    .html(formatTimeToHMS(c.temps)+" "+formatTimeToHMS(c.temps+offsetms)+" "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
-                    
+                    .html(formatTimeToHMS(c.temps)+" <span class='offsettime'>"+formatTimeToHMS(c.temps+offsetms)+"</span> "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+
         }
         if (c.epr==null) {
-            tetes.forEach(function(t) {            
+            tetes.forEach(function(t) {
                 newData[t.JMLid]=parcoursCommande(c.snap,[],t,0)
-                
+
                 if (firstTete) {
                     divG.append("div")
                         .attr("class","tete")
                         .datum(c)
-                        .html(formatTimeToHMS(c.temps)+" "+formatTimeToHMS(c.temps+offsetms)+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
+                        .html(formatTimeToHMS(c.temps)+" <span class='offsettime'>"+formatTimeToHMS(c.temps+offsetms)+"</span> "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
                         .attr("title","évènement: "+c.evt.evenement)
                     firstTete=false
                 } /*else {
@@ -541,7 +549,8 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                 .classed("snprepr",snp && c.epr.detail.substring(0,4)=='REPR')
                 .classed("pause",pause)
                 .classed("reprise",repr)
-                .append("div").html(formatTimeToHMS(c.temps)+"\n"+c.evt.type)
+                .datum(c)
+                .append("div").html("<span class='offsettime'>"+formatTimeToHMS(c.temps+offsetms)+"</span>"+"\n"+c.evt.type)
                 .append("p").html(c.evt.detail?`<span>${c.evt.detail}</span>`:c.epr.detail?`<span>${c.epr.detail}</span>`:'')
                 .append("p").html(startclic?'CLICK':'')
             //divG.append("div").html(fin?"END":"START")
@@ -559,7 +568,7 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                         canFetch: true
                     }
                     tippy(divG.node(),{
-                        theme:'light',                 
+                        theme:'light',
                         content:"belle image"+c.epr.snp.image,
                         placement:'right',
                         delay:200,
@@ -568,7 +577,7 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                         size: 'large',
                         duration: 500,
                         animation: 'perspective',
-                        async onShow(tip) {                     
+                        async onShow(tip) {
                             if ( state.isFetching || !state.canFetch) return
                             state.isFetching = true
                             state.canFetch = false
@@ -597,8 +606,8 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                 }
             }
         }
-        
-        
-        
+
+
+
     })
 }
