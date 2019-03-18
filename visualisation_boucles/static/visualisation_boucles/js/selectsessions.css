@@ -100,18 +100,18 @@ background-color: yellow;
 	background-color: DarkGoldenRod;
 	border-radius: 8px;
     padding-right: 5px;
-    padding-left: 5px;	
+    padding-left: 5px;
 }
 .script {
-	 width : 100%;   
-    
+	 width : 100%;
+
 }
 .script.haschanged {
     background-color: lightblue;
 }
 .blockcommands {
 	display:inline-block;
-    width : 20%;    
+    width : 20%;
     vertical-align: top;
 	border-style: dotted;
 	margin-bottom: 0.5em;
@@ -120,7 +120,7 @@ background-color: yellow;
 }
 .blockepr {
 	font-size:8;
-    width : 8em;    
+    width : 8em;
     background-color: lightblue;
 }
 .blockepr.start {
@@ -141,7 +141,7 @@ background-color: yellow;
 .blockepr.ask {
 	background-color: lightblue;
 }
- 
+
 .blockepr.answ {
 	width:auto;
     background-color: lightblue;
@@ -158,6 +158,9 @@ background-color: yellow;
 .blockepr.snprepr {
     background-color: #cccc00;
 }
+span.offsettime {
+	font-weight: bold;
+}
 p.command {
 	text-align: left;
 	font-size:10;
@@ -168,7 +171,7 @@ p.command {
 .command span {
 	border-radius: 5px;
     padding-right: 5px;
-    padding-left: 5px;    
+    padding-left: 5px;
 }
 .ask span, .answ span {
 	border-radius: 2px;
@@ -179,7 +182,7 @@ p.command {
 .command span, .ask span{
 	background-color: silver;
 }
- span.changed, .answ span {
+ span.changed, .answ span , span.added {
 	background-color: teal;
 }
 p.action {
@@ -201,14 +204,14 @@ p.CommentMorph {
 	background-color: #b7bfc8;
 	position: sticky;
 	left:0;
-	
+
 }
 div.sticked {
     background-color: #d9dbdd;
     position: sticky;
     left:0;
-    
-    
+
+
 }
 #divtete span {
 display:inline-block;
@@ -229,17 +232,17 @@ padding: 10px;
     width:250px;
     z-index:999;
     background-color: lightblue;
-    position:absolute; 
+    position:absolute;
     top:140px;
     left:40px;
   }
-  
+
   .noboucle {
     opacity: 0.6;
   }
   .boucle {
    /*stroke:gainsboro;*/
-   
+
   }
   rect.boucle {
   fill:green
@@ -248,17 +251,17 @@ padding: 10px;
   fill:grey
   }
   .noboucle .evtline  {
-   stroke:grey;   
+   stroke:grey;
   }
   .boucle .evtline {
   stroke:slategrey;
   }
-  
+
   [notselected] {
     fill: grey;
   }
   .linenbcommandes {
-    fill: none;    
+    fill: none;
     stroke-width: 1.5;
 }
  .linenbtotalcommandes {
@@ -268,7 +271,7 @@ padding: 10px;
 }
 
 .dotcircle {
- cursor: pointer;	
+ cursor: pointer;
 }
 .dotcircle.focus {
 	stroke:black;
@@ -281,12 +284,12 @@ padding: 10px;
     fill:blue;
 }
 .dotevts.env{
-    fill:grey;  
+    fill:grey;
 }
 .tippy-backdrop {
   width: 640px !important;
   }
-  
+
  .snapimage, .snapimageforexport {
     width:50px;
     position: relative;
