@@ -5023,8 +5023,23 @@ SpriteMorph.prototype.toggleVariableWatcher = function (varName, isGlobal) {
     watcher = this.findVariableWatcher(varName);
     if (watcher !== null) {
         if (watcher.isVisible) {
+            /**
+             * Modification JML (duff,  18 mars 2019)
+             **/
+            console.log("on cache[",varName,"] de valeur [",watcher.currentValue,"]")
+            /**
+             * Fin Modification JML
+             **/            
             watcher.hide();
         } else {
+            /**
+             * Modification JML (duff,  18 mars 2019)
+             **/
+            console.log("on montre[",varName,"] de valeur [",watcher.currentValue,"]")
+            /**
+             * Fin Modification JML
+             **/
+
             watcher.show();
             watcher.fixLayout(); // re-hide hidden parts
             watcher.keepWithin(stage);
@@ -5042,11 +5057,18 @@ SpriteMorph.prototype.toggleVariableWatcher = function (varName, isGlobal) {
         isGlobal ? globals : this.variables,
         varName
     );
+    /**
+     * Modification JML (duff,  18 mars 2019)
+     **/
+    console.log("on cré watcher[",varName,"] de valeur [",watcher.currentValue,"]")
+    /**
+     * Fin Modification JML
+     **/
     watcher.setPosition(stage.position().add(10));
     others = stage.watchers(watcher.left());
     if (others.length > 0) {
         watcher.setTop(others[others.length - 1].bottom());
-    }
+    }    
     stage.add(watcher);
     watcher.fixLayout();
     watcher.keepWithin(stage);
@@ -5054,13 +5076,13 @@ SpriteMorph.prototype.toggleVariableWatcher = function (varName, isGlobal) {
 };
 
 SpriteMorph.prototype.showingVariableWatcher = function (varName) {
-    var stage = this.parentThatIsA(StageMorph),
+   var stage = this.parentThatIsA(StageMorph),
         watcher;
     if (stage === null) {
         return false;
     }
     watcher = this.findVariableWatcher(varName);
-    if (watcher) {
+    if (watcher) {        
         return watcher.isVisible;
     }
     return false;

@@ -413,6 +413,7 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
         	    topBlockSelector:proc.topBlock.selector,
         	    topBlockId:proc.topBlock.JMLid,
         	});
+        	// à déplacer à la fin?
         	var ide = proc.topBlock.parentThatIsA(IDE_Morph);
     	    	ide.uploadCanvas(ide.stage.fullImageClassic(),'FIN'+proc.topBlock.JMLid);
         	
@@ -458,7 +459,15 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
                             proc.receiver
                         );
                     } else {
-                        proc.topBlock.showBubble(
+                            /**
+                             * Modification JML (duff,  18 mars 2019)
+                             **/
+                            console.log("showbuble",result,proc.topBlock)
+                            /**
+                             * Fin Modification JML
+                             **/
+
+                            proc.topBlock.showBubble(
                             result,
                             proc.exportResult,
                             proc.receiver
