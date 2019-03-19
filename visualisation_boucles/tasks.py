@@ -999,12 +999,17 @@ def reconstruit(session_key,save=False,load=False):
                     inputNode.blockSpec=detail[1] if (len(detail)>1) else spr.blockSpec
                     inputNode.action='VAL'
                     inputNode.change='changed'
+                    inputNode.truc="changed"
+                    newNode.truc="valchanged" if newNode.truc is None else newNode.truc+"valchanged"
                     listeBlocks.append(inputNode)
                 else:
                     inputBlock=spr.inputs.get(JMLid=spr.detail)
                     inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
                     inputNode.changeValue(inputBlock.contenu)
                     inputNode.action='VAL'
+                    inputNode.change='changed'
+                    inputNode.truc="changed"
+                    newNode.truc="valchanged" if newNode.truc is None else newNode.truc+"valchanged"
                     listeBlocks.append(inputNode)
                 listeBlocks.addTick(theTime)
                 #on pourrait faire un lien avec l'ancienne valeur
@@ -1114,6 +1119,8 @@ def reconstruit(session_key,save=False,load=False):
                                   rang=inp.rang
                                   )
                 newInput.change='added'
+                newInput.truc="added"
+                newNode.truc="me addinput"
                 newNode.addInput(newInput)
                 listeBlocks.append(newNode)
                 listeBlocks.addTick(theTime)

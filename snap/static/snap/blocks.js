@@ -341,7 +341,7 @@ SyntaxElementMorph.prototype.init = function (silently) {
      * Modification JML (duff,  31 déc. 2017)
      **/
     // ajout d'un id unique
-    this.JMLid=objectId(this);    
+    this.JMLid=objectId(this);
     /**
      * Fin Modification JML
      **/
@@ -2534,7 +2534,7 @@ BlockMorph.prototype.userMenu = function () {
                                      * Modification JML (duff,  30 déc. 2017)
                                      **/
 
-                                    console.log('blokcs 2416)');			
+                                    console.log('blokcs 2416)');
                                     /**
                                      * Fin Modification JML
                                      **/
@@ -2584,7 +2584,7 @@ BlockMorph.prototype.userMenu = function () {
                             menu.addLine();
                             menu.addItem(
                                     localize('renaSSme...'),
-                                    function () {                           
+                                    function () {
                                         myself.refactorThisVar(true); // just the template
                                     },
                                     'rename only\nthis reporter'
@@ -2689,17 +2689,17 @@ BlockMorph.prototype.userMenu = function () {
                         //dup.JMLid=objectId(dup);
                         //replace=myself.JMLid+"-"+dup.JMLid+";"; //chaine de remplacement
                         replace="";
-                        dup.allChildren().forEach(function (block) {        	
+                        dup.allChildren().forEach(function (block) {
                             if (block instanceof SyntaxElementMorph) {
                                 //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
-                                replace+=block.JMLid+"-";                    
+                                replace+=block.JMLid+"-";
                                 block.JMLid=objectId(block);
                                 block.JMLdroppedId=block.JMLid; //on considère qu'ils sont déjà droppés
                                 replace+=block.JMLid+";";
                             }
                         });
                         sendEvenement('ENV',{type:'DUPLIC',click:true,
-                            detail:replace, 
+                            detail:replace,
                             valueInt:myself.JMLid});
 
 
@@ -2736,17 +2736,17 @@ BlockMorph.prototype.userMenu = function () {
                              * Modification JML (duff,  1 déc. 2018)
                              **/
                             replace="";
-                            cpy.allChildren().forEach(function (block) {            
+                            cpy.allChildren().forEach(function (block) {
                                 if (block instanceof SyntaxElementMorph) {
                                     //console.log(block.constructor.name+":"+block.JMLid+","+block.selector);
-                                    replace+=block.JMLid+"-";                    
+                                    replace+=block.JMLid+"-";
                                     block.JMLid=objectId(block);
                                     block.JMLdroppedId=block.JMLid; //on considère qu'ils sont déjà droppés
                                     replace+=block.JMLid+";";
                                 }
                             });
                             sendEvenement('ENV',{type:'DUPLIC',click:true,
-                                detail:replace, 
+                                detail:replace,
                                 valueInt:myself.JMLid,
                                 valueBool:true});
                             /**
@@ -3499,7 +3499,7 @@ BlockMorph.prototype.refactorThisVar = function (justTheTemplate) {
              * Modification JML (duff,  4 janv. 2018)
              **/
             sendEvenement('SPR',{type:justTheTemplate?'RENVAT':'RENVAR',blockId:this.JMLid,detail:newName,location:oldName})
-            //sendJsonData({action:'rename',type:'variable',globale:true,valeur:oldName,newValeur:newName});	    
+            //sendJsonData({action:'rename',type:'variable',globale:true,valeur:oldName,newValeur:newName});
             /**
              * Fin Modification JML
              **/
@@ -6644,7 +6644,7 @@ ScriptsMorph.prototype.userMenu = function () {
                                         obj.customBlocks.push(definition);
                                     }
                                     ide.flushPaletteCache();
-                                    ide.refreshPalette();                            
+                                    ide.refreshPalette();
                                     new BlockEditorMorph(definition, obj).popUp();
                                 }
                             },
@@ -6790,7 +6790,7 @@ ScriptsMorph.prototype.undrop = function (origine=null,key=false,clic=false) {
             //valueInt:this.dropRecord.lastDroppedBlock.JMLid
             blockId:this.dropRecord.lastDroppedBlock.JMLid,
             selector:this.dropRecord.lastDroppedBlock.selector,
-    });    
+    });
     /**
      * Fin Modification JML
      **/
@@ -6840,7 +6840,7 @@ ScriptsMorph.prototype.redrop = function (origine=null,key=false,clic=false) {
             //valueInt:this.dropRecord.lastDroppedBlock.JMLid
             blockId:this.dropRecord.lastDroppedBlock.JMLid,
             selector:this.dropRecord.lastDroppedBlock.selector,
-    });    
+    });
     /**
      * Fin Modification JML
      **/
@@ -6992,7 +6992,7 @@ ScriptsMorph.prototype.clearDropInfo = function () {
 
 //données à envoyer
 ScriptsMorph.prototype.donnee = function(record) {
-    //console.info('record',record);	
+    //console.info('record',record);
     //console.info('action'+record.action);
     //data={action:record.action?record.action:'deplacement'};
     data={}
@@ -7007,11 +7007,11 @@ ScriptsMorph.prototype.donnee = function(record) {
         }
         switch (record.action) {
         case 'creation': data['type']='NEW'; break;
-        case 'delete': data['type']='DEL'; 
+        case 'delete': data['type']='DEL';
         if (record.lastDroppedBlock.JMLfrom) {
             data['detail']=record.lastDroppedBlock.JMLfrom
             record.lastDroppedBlock.JMLfrom=null
-        }		                  
+        }
         break;
         case 'deplacement':
         case null: data['type']='DROP';
@@ -7021,13 +7021,13 @@ ScriptsMorph.prototype.donnee = function(record) {
         }
         break;
         case 'valeur': {
-            data['type']='VAL'; 
+            data['type']='VAL';
             data['detail']=record.detailAction;
             if (record.lastDroppedBlock.inputs && record.lastDroppedBlock.inputs()){
                 childs=record.lastDroppedBlock.inputs()
                 child=childs.filter(function(d) {return d.JMLid==record.detailAction})[0]
                 data['location']=childs.indexOf(child); //index de l'input remplacé
-            } //sinon: c'est un CommentMorph, sans doute 
+            } //sinon: c'est un CommentMorph, sans doute
 
             break;
         }
@@ -7049,10 +7049,10 @@ ScriptsMorph.prototype.donnee = function(record) {
             data['type']='NEW';
             break;
         }
-        default: 
+        default:
             data['type']='AUTRE';
         data['detail']=record.detailAction;
-        } 
+        }
         if (record.lastReplacedInput) {
             // il y a un changement dans les inputs
             data['type']=data['type']+'VAL';
@@ -7068,14 +7068,14 @@ ScriptsMorph.prototype.donnee = function(record) {
         if (record.lastDroppedBlock.blockSpec) {
             data['blockSpec']=record.lastDroppedBlock.blockSpec;
         } else {
-            //si pas de blockSpec précisé, on récupère un contenu, s'il y a 
+            //si pas de blockSpec précisé, on récupère un contenu, s'il y a
             // par exemple en cas de CommentBlockMorph
             if (record.lastDroppedBlock.getContent) {
                 data['blockSpec']=record.lastDroppedBlock.getContent()
             } else if (record.lastDroppedBlock.contents) {
                 if (typeof record.lastDroppedBlock.contents == 'function') data['blockSpec']=record.lastDroppedBlock.contents().text
                 else data['blockSpec']=record.lastDroppedBlock.contents.text
-            } else data['blockSpec']=null
+            } else data['blockSpec']='' //avant:null //par exemple pour multiargmorph
             //on s'assure que ce n'est pas trop long (jml.maxSizeBlockSpec car)
             if (data['blockSpec'].length>jml.maxSizeBlockSpec) {
                 data['detail']=data['detail']+jml.longBlockSpec+data['blockSpec']
@@ -7085,7 +7085,7 @@ ScriptsMorph.prototype.donnee = function(record) {
 
 
         data['category']=record.lastDroppedBlock.category  ;
-        if (record.lastDroppedBlock.parent) { 
+        if (record.lastDroppedBlock.parent) {
             p=record.lastDroppedBlock.parent.parentThatIsA(BlockMorph);
             data['parentId']=p?p.JMLid:null;
         }
@@ -7095,7 +7095,7 @@ ScriptsMorph.prototype.donnee = function(record) {
                 data['targetId']=record.lastDropTarget.element.JMLid
                 if (record.lastDropTarget.element instanceof CSlotMorph ) data['location']='slot';
                 else {
-                    data['location']=record.lastDropTarget.loc;		
+                    data['location']=record.lastDropTarget.loc;
                     //inutile de préciser autre chose, c'est forcément dans le slot 1
                 }
             } else {
@@ -7104,13 +7104,13 @@ ScriptsMorph.prototype.donnee = function(record) {
             }
 
 
-            //console.log('target ',record.lastDropTarget.type);		
-        }    
+            //console.log('target ',record.lastDropTarget.type);
+        }
         if (record.lastDroppedBlock.nextBlock) {
             //console.log('childs'+record.lastDroppedBlock.nextBlock(),record.lastDroppedBlock.nextBlock());
             if (record.lastDroppedBlock.nextBlock()) data['nextBlock']=record.lastDroppedBlock.nextBlock().JMLid;
         }
-        //console.log('parent'+record.lastDroppedBlock.parent,record.lastDroppedBlock.parent,(record.lastDroppedBlock.parent instanceof BlockMorph));    	
+        //console.log('parent'+record.lastDroppedBlock.parent,record.lastDroppedBlock.parent,(record.lastDroppedBlock.parent instanceof BlockMorph));
         // récupération des entrées
         if (record.lastDroppedBlock.inputs && record.lastDroppedBlock.inputs()) {
             var t=record.lastDroppedBlock.inputs();
@@ -7118,11 +7118,11 @@ ScriptsMorph.prototype.donnee = function(record) {
             var inputs= new Array();
             var inputsBlock=new Array();
             t.forEach(function(input,i) {
-                if (!input.JMLdroppedId) {   
+                if (!input.JMLdroppedId) {
                     //c'est un input non encore rendu unique (une copie)
                     input.JMLid=objectId(input);
                     input.JMLdroppedId=objectId(input);
-                }    	    	
+                }
                 //console.log('->',input,input.contents?('<<'+input.contents().text+'>>'):'**',input.evaluate());
                 //console.log('eval',input.getContent())
                 var isColor=(input.constructor.name=="ColorSlotMorph")
@@ -7137,12 +7137,12 @@ ScriptsMorph.prototype.donnee = function(record) {
                                             rang:t.indexOf(input),
                                             isNumeric:input.isNumeric,
                                             isPredicate:input.isPredicate
-                });  	    		    	    	
+                });
                 if (record.action=='creation' && input.constructor.name=='MultiArgMorph') {
                     //c'est une création de multimorph, on rajoute les inputs dans scripts
                     //TODO voir pour les cas de custom blocks avec 2 multiargs? ou trop rare et pas nécessaire?
                     var script={
-                            JMLid:input.JMLid, 
+                            JMLid:input.JMLid,
                             typeMorph:input.constructor.name,
                             selector:input.selector,
                             blockSpec:input.blockSpec,
@@ -7150,12 +7150,12 @@ ScriptsMorph.prototype.donnee = function(record) {
                     }
                     var scriptInputs=new Array()
                     input.inputs().forEach(function (inp,i) {
-                        if (!inp.JMLdroppedId) {   
+                        if (!inp.JMLdroppedId) {
                             //	c'est un input non encore rendu unique (une copie)
                             inp.JMLid=objectId(inp);
                             inp.JMLdroppedId=objectId(inp);
-                        }    	    
-                        isColor=(inp.constructor.name=="ColorSlotMorph") 
+                        }
+                        isColor=(inp.constructor.name=="ColorSlotMorph")
                         scriptInputs.push({JMLid:inp.JMLid,typeMorph:inp.constructor.name,
                             contenu:inp.contents?inp.contents().text:
                                 isColor?(inp.color.r+','
@@ -7165,16 +7165,16 @@ ScriptsMorph.prototype.donnee = function(record) {
                                         rang:input.inputs().indexOf(inp),
                                         isNumeric:inp.isNumeric,
                                         isPredicate:inp.isPredicate
-                        });    	    		
+                        });
                     });
                     if (scriptInputs) script['inputs']=scriptInputs
                     data['scripts']=[script]
-                }    	    	
+                }
             });
         }
         if (inputs) data['inputs']=inputs;
 
-        //this.lastDroppedBlock.inputs=inputs;  
+        //this.lastDroppedBlock.inputs=inputs;
         //console.log('data',data)
         sendEvenement('SPR',data);
         record.lastDroppedBlock.JMLfrom=null
@@ -7200,13 +7200,13 @@ ScriptsMorph.prototype.recordDrop = function (lastGrabOrigin) {
             action: null,
             situation: null,
             lastRecord: this.dropRecord,
-            nextRecord: null        
+            nextRecord: null
     };
     /**
      * Modification JML (duff,  31 déc. 2017)
      **/
     //si le block n'a pas encore d'id de drop, c'est qu' il est nouvellement créé
-    if (record.lastDroppedBlock && !record.lastDroppedBlock.JMLdroppedId) {    
+    if (record.lastDroppedBlock && !record.lastDroppedBlock.JMLdroppedId) {
         record.lastDroppedBlock.JMLid=objectId(record.lastDroppedBlock);
         record.lastDroppedBlock.JMLdroppedId=objectId(record.lastDroppedBlock);
         record.action="creation";
@@ -7250,7 +7250,7 @@ ScriptsMorph.prototype.addToolbar = function () {
              * Modification JML (duff,  30 déc. 2017)
              **/
             //"undrop"
-            function() {this.undrop(origine='Button',key=false,clic=true)},	
+            function() {this.undrop(origine='Button',key=false,clic=true)},
             /**
              * Fin Modification JML
              **/
@@ -8805,7 +8805,7 @@ InputSlotMorph.prototype.setContents = function (aStringOrFloat) {
      * Modification JML (duff,  2 janv. 2018)
      **/
     if (this.parent && this.parent.JMLdroppedId) {
-        //c'est une modification 
+        //c'est une modification
         //console.log('8451INPUT setcontent',this,cnts,dta);
         var scripts = this.parentThatIsA(ScriptsMorph);
         record={};
@@ -9390,8 +9390,8 @@ InputSlotMorph.prototype.menuFromDict = function (
                     orig=v.originalContents;
                 }
             });
-            if (val != orig) {    	    	  
-                //scripts.clearDropInfo();     
+            if (val != orig) {
+                //scripts.clearDropInfo();
                 //scripts.dropRecord=this.parent;
                 //scripts.dropRecord.lastDroppedBlock = this.parent;
                 //scripts.dropRecord.action = 'valeur';
@@ -10028,7 +10028,7 @@ InputSlotMorph.prototype.menuFromDict = function (
              **/
             //console.log("(9646)switch boolean ",this,this.value);
             if (this.parent && this.parent.JMLdroppedId) {
-                //c'est une modification 
+                //c'est une modification
                 var scripts = this.parentThatIsA(ScriptsMorph);
                 record={};
                 record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
@@ -10775,7 +10775,7 @@ InputSlotMorph.prototype.menuFromDict = function (
                  * Modification JML (duff,  13 août 2018)
                  **/
                 if (myself.parent && myself.parent.JMLdroppedId) {
-                    //c'est une modification 
+                    //c'est une modification
                     var scripts = myself.parentThatIsA(ScriptsMorph);
                     record={};
                     record.lastDroppedBlock=myself.parentThatIsA(BlockMorph);
@@ -11176,7 +11176,7 @@ InputSlotMorph.prototype.menuFromDict = function (
                 record.lastDroppedBlock=newPart.parent;
                 record.action='+in';
                 record.detailAction=newPart.JMLid;
-                var donnee=new scripts.donnee(record);		    
+                var donnee=new scripts.donnee(record);
             }
 
             /**
@@ -12763,7 +12763,7 @@ InputSlotMorph.prototype.menuFromDict = function (
                 scripts.dropRecord.JMLfrom='justhis'
                 var donnee=new scripts.donnee(scripts.dropRecord);
             }
-            
+
             /**
              * Fin Modification JML
              **/
@@ -13558,7 +13558,7 @@ InputSlotMorph.prototype.menuFromDict = function (
                 return this.undrop(origine='ctrl z',key=true);
                 /**
                  * Fin Modification JML
-                 **/        
+                 **/
             case 'ctrl y':
             case 'ctrl shift z':
                 /**
