@@ -451,27 +451,28 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                 } else {
                     var offsetms=0
                 }
+                //on ne peut pas faire direct slectAll('.offsettime'), pas de datum (mias on pourrait le mettre)
                 const divtetes=d3.selectAll(".tete")
                 divtetes.each(function(d,i) {
                         if (d) {
-                            d3.select(this).html(formatTimeToHMS(d.temps)+" <span class='offsettime'>"+formatTimeToHMS(d.temps+offsetms)+"</span>"+d.evt.type+" "+(d.evt.detail?d.evt.detail:''))
+                            d3.select(this).html(formatTimeToHMS(d.temps)+" <span class='offsettime'>"+formatTimeToHMS(d.temps+offsetms)+"</span>"
+                            		+(d.evt?(d.evt.type+" "+(d.evt.detail?d.evt.detail:'')):'-'))
                         }
                     })
-                //TODO
                 const divepr=d3.selectAll(".blockepr")
                 divepr.each(function(d,i) {
                 	if (d) {
                             d3.select(this).select(".offsettime").html(formatTimeToHMS(d.temps+offsetms))
                         }
                 })
-                //END TODO
-
+                d3.selectAll(".blockaffvar").each(function(d,i){
+                	if (d) d3.select(this).select(".offsettime").html(formatTimeToHMS(d.temps+offsetms))
+                	})
              })
     //div2.select("#timeoffset").append("title").text("Décalage en heure, minutes, secondes par rapport à la vidéo")
 
     const timeoffset=d3.timeParse("%H:%M:%S")(d3.select("#timeoffset").node().value)
     const offsetms=timeoffset.getHours()*60*60*1000+timeoffset.getMinutes()*60*1000+timeoffset.getSeconds()*1000
-    console.log("colds",donnees.commandes)
     donnees.commandes.forEach(function(c) {
         //on commence par rechercher les blocks de tête
         let tetes=c.snap.filter(d=>d.commande
