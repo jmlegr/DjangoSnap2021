@@ -158,6 +158,21 @@ background-color: yellow;
 .blockepr.snprepr {
     background-color: #cccc00;
 }
+
+.blockaffvar {
+	font-size:10;
+    width : 8em;
+    background-color: #dd8012;
+}
+
+.blockaffvar p.varvisible span{
+	background-color: #4dcc6c;
+	border-radius: 5px;
+}
+.blockaffvar p:not(.varvisible) span{
+	background-color: #db6b6b;
+	border-radius: 5px;
+}
 span.offsettime {
 	font-weight: bold;
 }

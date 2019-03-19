@@ -271,7 +271,9 @@ def reconstruit(session_key,save=False,load=False):
                     #pour faire la différence avec DROP+DEL. Ainsi, soit DEL est précédé d'un DROPEX (et tout est à faire),
                     #soit il est précédé d'un DROP avec location=None, et il ne restera qu'à mettre deleted=True
                     listeBlocks.recordDrop(env,theTime)
-
+            if env.type=='AFFVAR':
+                evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueBool':env.valueBool}
+                listeBlocks.addTick(theTime)
             evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]

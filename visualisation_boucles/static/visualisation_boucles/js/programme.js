@@ -471,6 +471,7 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
 
     const timeoffset=d3.timeParse("%H:%M:%S")(d3.select("#timeoffset").node().value)
     const offsetms=timeoffset.getHours()*60*60*1000+timeoffset.getMinutes()*60*1000+timeoffset.getSeconds()*1000
+    console.log("colds",donnees.commandes)
     donnees.commandes.forEach(function(c) {
         //on commence par rechercher les blocks de tête
         let tetes=c.snap.filter(d=>d.commande
@@ -493,7 +494,8 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                     .html(formatTimeToHMS(c.temps)+" <span class='offsettime'>"+formatTimeToHMS(c.temps+offsetms)+"</span> "+c.evt.type+" "+(c.evt.detail?c.evt.detail:''))
 
         }
-        if (c.epr==null) {
+
+        if (c.epr==null && c.evt!=null && c.evt.type!='AFFVAR') {
             tetes.forEach(function(t) {
                 newData[t.JMLid]=parcoursCommande(c.snap,[],t,0)
 
@@ -522,13 +524,13 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                     .attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid} truc:${d.truc}`)
                     .html(d=>'...'.repeat(d.index)+affTruc(d.truc)+ d.commande)
             })
-            //console.log(newData)
-        } else {
+            console.log("kk")
+        } else if (c.epr!=null) {
             //traitement epr
-            let start=(c.epr.type=="START")
-            let startclic=(start && c.epr.click)
-            let fin=(c.epr.type=="FIN")
-            let arret=(c.epr.type=="STOP")
+        	let start=(c.epr.type=="START")
+        	let startclic=(start && c.epr.click)
+        	let fin=(c.epr.type=="FIN")
+        	let arret=(c.epr.type=="STOP")
             let snp=(c.epr.type=="SNP")
             let ask=(c.epr.type=="ASK")
             let answ=(c.epr.type=="ANSW")
@@ -605,6 +607,17 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                     })
                 }
             }
+        } else if (c.evt!=null && c.evt.type=='AFFVAR') {
+        	//affichage AFFVAR
+        	divG.classed("blockaffvar",true)
+        		.classed("varvisible",c.evt.valueBool)
+        		.datum(c)
+                .append("div").html("<span class='offsettime'>"+formatTimeToHMS(c.temps+offsetms)+"</span>"+"\n"+c.evt.type
+                		+(c.evt.valueBool?' Montre':' Cache'))
+                .append("p")
+                	.classed("varvisible",c.evt.valueBool).html(`<span>${c.evt.valueChar} = ${c.evt.detail}</span>`)
+
+
         }
 
 

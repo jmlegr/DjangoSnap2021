@@ -10,13 +10,13 @@ from snap.objets import BlockSnap
 from django.db.models.fields import related
 
 
-    
+
 
 class Classe(models.Model):
     nom= models.CharField(max_length=10)
     def __str__(self):
         return '%s' % self.nom
-    
+
 class Eleve(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     classe =models.ForeignKey(Classe,null=True,on_delete=models.SET_NULL)
@@ -24,9 +24,9 @@ class Eleve(models.Model):
                           on_delete=models.SET_NULL,verbose_name='Programme de la séance')
     def __str__(self):
         return '%s' % self.user.username
-    
 
-    
+
+
 def user_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
     return 'user_{0}/{1}'.format(instance.user.id, filename)
@@ -40,7 +40,7 @@ class ProgrammeBase(models.Model):
     creation=models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return '%s (%s)' % (self.nom,self.user_id)
-    
+
 class Evenement(models.Model):
     ENVIRONNEMENT='ENV'
     ETAT_PROGRAMME='EPR'
@@ -69,7 +69,7 @@ class Evenement(models.Model):
         res['numero']=self.numero
         res['time']=self.time
         return res
-    
+
     def getEvenementType(self):
         """
         renvoi le sous evenement (de type ENV, SPR ou EPR)
@@ -79,11 +79,11 @@ class Evenement(models.Model):
         elif self.type==self.STRUCTURE_PROGRAMME: return self.evenementspr.all()[0]
         else:
             raise KeyError(u'Type evenement inconnu (%s)' % self.type)
-        
+
     def __str__(self):
         #return '(%s) %s n°%s' % (self.user,self.get_type_display(),self.numero)
         return '(%s) %s n°%s %s' % (self.user,self.get_type_display(),self.numero,self.getEvenementType().type)
-    
+
     class Meta:
         ordering=('-creation',)
 
@@ -98,9 +98,9 @@ class EvenementENV(models.Model):
         ('PARAM','Clic Menu paramètres'),
         ('NEW','Nouveau programme vide'),
         ('LOBA','Chargement programme de Base'), #nom dans detail, id dans valueInt (à la création)
-        ('LOVER','Chargement d\'une version sauvegardée'), # id dans detail 
+        ('LOVER','Chargement d\'une version sauvegardée'), # id dans detail
         ('IMPORT','Importation fichier local'), # normalement suivi d'un EPR  LOAD (pas encore) ou/et SPR OPEN
-        ('EXPORT','Exportation fichier local'),        
+        ('EXPORT','Exportation fichier local'),
         ('FULL','Plein écran'),
         ('APP','Ecran application'),
         ('SSCRN','Ecran réduit'),
@@ -112,10 +112,10 @@ class EvenementENV(models.Model):
         ('STOP','Clic Stop'),
         ('KEY','Evènement Clavier'),
         ('AFFBL','Affichage Blocs'), # category  detail?
-        ('AFFVAR','Affichage ou non Variable'), #avec nom en option et valeur en bool   
-        ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression 
+        ('AFFVAR','Affichage ou non Variable'), #avec nom en valueChar et vrai.faux en bool et valeur en detail
+        ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression
         #('UNDROP','Undrop'), #origine dans detail
-        #('REDROP','Redrop'),   
+        #('REDROP','Redrop'),
         ('DUPLIC','Duplication'), #menu dupliquer, detail=JMLid(orig), valueInt=JMLid(copie) , valueBool=vrai si un seul bloc
         ('POPUP','Ouverture popup'),
         ('AUTRE','(Non identifié)'),
@@ -123,13 +123,13 @@ class EvenementENV(models.Model):
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='environnement')
     type=models.CharField(max_length=6,choices=ENV_CHOICES, default='AUTRE') #type d'évènement
     click=models.BooleanField(default=False)
-    key=models.BooleanField(default=False)    
+    key=models.BooleanField(default=False)
     detail=models.TextField(null=True,blank=True)
     valueBool=models.NullBooleanField(null=True)
     valueInt=models.BigIntegerField(null=True)
     valueChar=models.CharField(max_length=30,null=True,blank=True)
     #block=models.ForeignKey(Block,on_delete=models.CASCADE)
-    
+
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
@@ -140,10 +140,10 @@ class EvenementENV(models.Model):
         res['type_display']=self.get_type_display()
         res['detail']=self.detail
         return res
-    
+
     def __str__(self):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
-    
+
     class Meta:
         ordering=('-evenement__time',)
         get_latest_by=['evenement__time',]
@@ -167,7 +167,7 @@ def userSnapShot(instance, filename):
 class SnapSnapShot(models.Model):
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='image')
     image=models.ImageField(upload_to=userSnapShot,blank=True)
-    
+
     def delete(self,*args,**kwargs):
         #ne marche pas sur un delete ou sur un queryset.delete
         # You have to prepare what you need before delete the model
@@ -176,10 +176,10 @@ class SnapSnapShot(models.Model):
         super(SnapSnapShot, self).delete(*args, **kwargs)
         # Delete the file after the model
         storage.delete(path)
-        
 
-    
-    
+
+
+
 class EvenementEPR(SnapProcess):
     """
         Evenement lié à la modification de l'état du programme
@@ -201,10 +201,10 @@ class EvenementEPR(SnapProcess):
         ('AUTRE','(Non identifié)'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementepr')
-    type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement    
+    type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement
     detail=models.CharField(max_length=100,null=True,blank=True)
     processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
-    
+
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
@@ -215,10 +215,10 @@ class EvenementEPR(SnapProcess):
         res['type_display']=self.get_type_display()
         res['detail']=self.detail
         return res
-    
+
     def __str__(self):
         return '(%s) %s: %s %s' % (self.evenement,self.get_type_display(),self.detail,"(clic)" if (self.click) else "")
-    
+
     class Meta:
         ordering=('-evenement__time',)
         get_latest_by=['evenement__time',]
@@ -231,16 +231,16 @@ class BlockInput(models.Model):
     typeMorph=models.CharField(max_length=30,null=True,blank=True)
     rang=models.IntegerField(default=0) #rang de l'entrée
     contenu=models.CharField(max_length=50,null=True,blank=True)#contenu de l'entrée
-    isNumeric=models.BooleanField(default=True) 
+    isNumeric=models.BooleanField(default=True)
     isPredicate=models.BooleanField(default=False)
-    
+
     class Meta:
         ordering = ['rang']
-        
+
     def __str__(self):
         return '%s, %s (JML %s)' % (self.rang,self.contenu,self.JMLid)
 
-    
+
 class EvenementSPR(models.Model):
     """
         Evenement lié à la modification de la structure du programme
@@ -250,8 +250,8 @@ class EvenementSPR(models.Model):
     """
     SPR_CHOICES=(
         ('DROP','Déplacement d\'un bloc'), #si insertion, droppedTarget indiqué, location=
-        ('NEW','Création d\'une brique'),        
-        ('DUPLIC','Duplication de bloc' )  ,       
+        ('NEW','Création d\'une brique'),
+        ('DUPLIC','Duplication de bloc' )  ,
         ('DEL','Suppression d\'un bloc'),
         ('NEWVAR','Création nouvelle variable globale'), #nom dans detail
         ('NEWVARL','Création nouvelle variable locale'), #nom dans detail
@@ -271,17 +271,17 @@ class EvenementSPR(models.Model):
         ('ERR','Erreur'), #erreur détectée, précision dans détail
         ('OPEN','Ouverture de Scripts'),
         ('UNDROP','Undrop'), #origine dans detail
-        ('REDROP','Redrop'),  
+        ('REDROP','Redrop'),
         ('AUTRE','(Non identifié'),
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementspr')
-    type=models.CharField(max_length=7,choices=SPR_CHOICES, default='AUTRE') #type d'évènement    
+    type=models.CharField(max_length=7,choices=SPR_CHOICES, default='AUTRE') #type d'évènement
     detail=models.TextField(null=True,blank=True)
     location=models.CharField(max_length=30,null=True,blank=True)
-    #Informations sur le block    
+    #Informations sur le block
     blockId=models.IntegerField(null=True) #JMLid du block en cause
     typeMorph=models.CharField(max_length=30,null=True,blank=True) #type du block
-    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block 
+    selector=models.CharField(max_length=30,null=True,blank=True) #selector du block
     blockSpec=models.CharField(max_length=50,null=True,blank=True) #blockSpec du block ou valeur
     category=models.CharField(max_length=30,null=True,blank=True) #categorie du block
     parentId=models.IntegerField(null=True) #JMLid du block parent (ou lieu d'insertion)
@@ -292,7 +292,7 @@ class EvenementSPR(models.Model):
     scripts=models.ManyToManyField('Block') #les blocks de départ des scripts
     def __str__(self):
         return '(%s) %s (%s) %s' % (self.evenement,self.get_type_display(),self.blockId,self.detail if self.detail else '')
-    
+
     def toBlockSnap(self,time,action):
         """
         crée un BlockSnap de base (sans les inputs/nextblocks etc
@@ -316,8 +316,8 @@ class EvenementSPR(models.Model):
             b.addInput(bi)
             liste.addBlock(bi)
         return b
-    
-            
+
+
     def toD3(self):
         """rendu json pour d3.js"""
         res={}
@@ -329,7 +329,7 @@ class EvenementSPR(models.Model):
         res['detail']=self.detail
         return res
     def aff(self,niv=0):
-        print('type:%s blockId:%s spec:%s morph:%s detail:%s' 
+        print('type:%s blockId:%s spec:%s morph:%s detail:%s'
               % (self.type,self.blockId,self.blockSpec,self.typeMorph,self.detail))
         if niv>0:
             print('    loc:%s parentId:%s next:%s child:%s target:%s'
@@ -338,7 +338,7 @@ class EvenementSPR(models.Model):
             print('    inputs',[i for i in self.inputs.all()])
         if niv>2:
             print('    scripts:',[(s, [si for si in s.inputs.all()]) for s in self.scripts.all()])
-        
+
     class Meta:
         ordering=('-evenement__time',)
         get_latest_by=['evenement__time',]
@@ -358,18 +358,18 @@ class Block(models.Model):
     #child=models.ForeignKey('Block',null=True,on_delete=models.CASCADE,related_name='child_Block') #block enfant (si wrap)
     inputs=models.ManyToManyField(BlockInput,null=True) #entrée(s) du block (inputSlotMorph ou Cslotmorph
     inputsBlock=models.ManyToManyField('self',null=True,symmetrical=False) #entrée(s) du block qui sont des blocks
- 
+
     def __str__(self):
         return '%s(JML %s, id %s)' %(self.selector,self.JMLid,self.id)
-    
+
 class InfoReceived(models.Model):
     block_id=models.IntegerField()
     time=models.IntegerField()
     action=models.CharField(max_length=30,null=True,blank=True)
     blockSpec=models.CharField(max_length=100,null=True,blank=True)
     user=models.CharField(max_length=10)
-    
-   
+
+
 
 
 
@@ -378,7 +378,7 @@ class Document(models.Model):
     description = models.CharField(max_length=255, blank=True)
     user=models.ForeignKey(User,null=True,on_delete=models.CASCADE)
     document = models.FileField(upload_to=user_directory_path)
-    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='Date de sauvegarde')    
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='Date de sauvegarde')
     def __str__(self):
         return '{0} ({1}, {2})'.format(self.description,self.user,self.uploaded_at.strftime('%Y-%m-%d à %H:%M:%S'))
 

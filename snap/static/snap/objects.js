@@ -1780,7 +1780,7 @@ SpriteMorph.prototype.variableBlock = function (varName) {
 
 SpriteMorph.prototype.blockTemplates = function (category) {
     var blocks = [], myself = this, varNames, button,
-        cat = category || 'motion', txt,    
+        cat = category || 'motion', txt,
         inheritedVars = this.inheritedVariableNames();
 
     function block(selector, isGhosted) {
@@ -1856,13 +1856,13 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 		 **/
         	sendEvenement('SPR',{type:'ERR',detail:'creation variable existante ('+
         	    pair[0]+pair[1]?"-globale":'locale'+')'});
-        	
+
         	//sendJsonData({action:'erreur',type:,globale:pair[1],valeur:pair[0]});
 		/**
 		 * Fin Modification JML
 		 **/
 
-            	
+
                 myself.inform('that name is already in use');
             } else {
                 ide = myself.parentThatIsA(IDE_Morph);
@@ -2364,7 +2364,7 @@ SpriteMorph.prototype.makeBlock = function () {
             each.setColor(clr);
         each.refresh();
         });
-    }    
+    }
     /**
      * Modification JML (duff,  30 déc. 2017)
      **/
@@ -2417,7 +2417,7 @@ SpriteMorph.prototype.freshPalette = function (category) {
     palette.growth = new Point(0, MorphicPreferences.scrollBarSize);
 
     // toolbar:
-    
+
     palette.toolBar = new AlignmentMorph('column');
 
     searchButton = new PushButtonMorph(
@@ -3083,7 +3083,7 @@ SpriteMorph.prototype.addVariable = function (name, isGlobal) {
      * Modification JML (duff,  4 janv. 2018)
      **/
     sendEvenement('SPR',{type:isGlobal?'NEWVAR':'NEWVARL',detail:name});
-    //sendJsonData({action:'creation',type:'variable',globale:isGlobal,valeur:name});    
+    //sendJsonData({action:'creation',type:'variable',globale:isGlobal,valeur:name});
     /**
      * Fin Modification JML
      **/
@@ -3105,7 +3105,7 @@ SpriteMorph.prototype.deleteVariable = function (varName) {
      * Modification JML (duff,  4 janv. 2018)
      **/
     sendEvenement('SPR',{type:'DELVAR',detail:varName});
-    //sendJsonData({action:'delete',type:'variable',valeur:varName});    
+    //sendJsonData({action:'delete',type:'variable',valeur:varName});
     /**
      * Fin Modification JML
      **/
@@ -5023,26 +5023,28 @@ SpriteMorph.prototype.toggleVariableWatcher = function (varName, isGlobal) {
     watcher = this.findVariableWatcher(varName);
     if (watcher !== null) {
         if (watcher.isVisible) {
+        	 watcher.hide();
             /**
              * Modification JML (duff,  18 mars 2019)
              **/
-            console.log("on cache[",varName,"] de valeur [",watcher.currentValue,"]")
+            //console.log("on cache[",varName,"] de valeur [",watcher.currentValue,"]")
+            sendEvenement('ENV',{type:'AFFVAR',valueChar:varName,valueBool:false,detail:watcher.currentValue});
             /**
              * Fin Modification JML
-             **/            
-            watcher.hide();
+             **/
         } else {
-            /**
-             * Modification JML (duff,  18 mars 2019)
-             **/
-            console.log("on montre[",varName,"] de valeur [",watcher.currentValue,"]")
-            /**
-             * Fin Modification JML
-             **/
-
             watcher.show();
             watcher.fixLayout(); // re-hide hidden parts
             watcher.keepWithin(stage);
+            /**
+             * Modification JML (duff,  18 mars 2019)
+             **/
+            watcher.update()
+            //console.log("on montre[",varName,"] de valeur [",watcher.currentValue,"]")
+            sendEvenement('ENV',{type:'AFFVAR',valueChar:varName,valueBool:true,detail:watcher.currentValue});
+            /**
+             * Fin Modification JML
+             **/
         }
         return;
     }
@@ -5060,7 +5062,7 @@ SpriteMorph.prototype.toggleVariableWatcher = function (varName, isGlobal) {
     /**
      * Modification JML (duff,  18 mars 2019)
      **/
-    console.log("on cré watcher[",varName,"] de valeur [",watcher.currentValue,"]")
+    //console.log("on cré watcher[",varName,"] de valeur [",watcher.currentValue,"]")
     /**
      * Fin Modification JML
      **/
@@ -5068,7 +5070,7 @@ SpriteMorph.prototype.toggleVariableWatcher = function (varName, isGlobal) {
     others = stage.watchers(watcher.left());
     if (others.length > 0) {
         watcher.setTop(others[others.length - 1].bottom());
-    }    
+    }
     stage.add(watcher);
     watcher.fixLayout();
     watcher.keepWithin(stage);
@@ -5082,7 +5084,7 @@ SpriteMorph.prototype.showingVariableWatcher = function (varName) {
         return false;
     }
     watcher = this.findVariableWatcher(varName);
-    if (watcher) {        
+    if (watcher) {
         return watcher.isVisible;
     }
     return false;
@@ -6809,7 +6811,7 @@ StageMorph.prototype.processKeyEvent = function (event, action) {
     } else if (event.type=='keyup') {this.keyanc=null; };
     //console.log('process key',event.type,event.keyCode,action);
     //fin jml
-    
+
     /**
      * Fin Modification JML
      **/
@@ -6884,7 +6886,7 @@ StageMorph.prototype.fireKeyEvent = function (key) {
 	 if (!ide.isAppMode) {ide.currentSprite.scripts.undrop(origine=evt,key=true); }
 	/**
 	 * Fin Modification JML
-	 **/       
+	 **/
          return;
     }
     if (evt === 'ctrl shift z' || (evt === 'ctrl y')) {
@@ -6895,7 +6897,7 @@ StageMorph.prototype.fireKeyEvent = function (key) {
 	if (!ide.isAppMode) {ide.currentSprite.scripts.redrop(origine=evt,key=true); }
 	/**
 	 * Fin Modification JML
-	 **/        
+	 **/
          return;
     }
     if (evt === 'ctrl n') {
@@ -7025,7 +7027,7 @@ StageMorph.prototype.editScripts = function () {
 
 StageMorph.prototype.blockTemplates = function (category) {
     var blocks = [], myself = this, varNames, button,
-        cat = category || 'motion', txt;        
+        cat = category || 'motion', txt;
 
     function block(selector) {
         if (myself.hiddenPrimitives[selector]) {
