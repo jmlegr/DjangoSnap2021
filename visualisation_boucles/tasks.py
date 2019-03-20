@@ -6,7 +6,7 @@ Created on 16 déc. 2018
 from celery import shared_task,current_task
 from snap.models import Evenement, EvenementEPR, ProgrammeBase, Document,\
     EvenementSPR, SnapSnapShot, EvenementENV
-from visualisation_boucles.models import Reconstitution
+#from visualisation_boucles.models import Reconstitution
 from visualisation_boucles.reconstitution import SimpleListeBlockSnap
 from lxml import etree
 from snap import serializers
