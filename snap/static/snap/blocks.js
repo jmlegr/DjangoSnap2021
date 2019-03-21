@@ -12742,14 +12742,32 @@ InputSlotMorph.prototype.menuFromDict = function (
         CommentMorph.prototype.destroy = function () {
             if (this.block) {
                 this.block.comment = null;
+                /**
+                 * Modification JML (duff,  20 mars 2019)
+                 **/
+                //on ajoute l'évènement de suppression avec le block d'attache
+                //il ne sera pas undropé si le block a été préalablement supprimé
+                //il le sera dans le cas contraire, mais sans récupérer son block d'attache
+                sendEvenement('SPR',{type:'DEL',
+					detail:'delcomment',
+					blockId:this.JMLid,
+					targetId:this.block.JMLid
+							})
+				 /**
+	             * Fin Modification JML
+	             **/
+
             }
             /**
              * Modification JML (duff,  13 janv. 2019)
              **/
+            //si pas de block d'attache, l'évènement est déjà géré en DROPEX+DEL
+            /*
             var scripts
             if (this.block) {
                 var top = this.block.topBlock()
                 scripts = top.parentThatIsA(ScriptsMorph);
+                if (scripts == null) scripts=this.parentThatIsA(ScriptsMorph);
             } else {
                 scripts=this.parent
             }
@@ -12763,7 +12781,7 @@ InputSlotMorph.prototype.menuFromDict = function (
                 scripts.dropRecord.JMLfrom='justhis'
                 var donnee=new scripts.donnee(scripts.dropRecord);
             }
-
+			*/
             /**
              * Fin Modification JML
              **/

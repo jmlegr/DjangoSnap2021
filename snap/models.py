@@ -252,7 +252,8 @@ class EvenementSPR(models.Model):
         ('DROP','Déplacement d\'un bloc'), #si insertion, droppedTarget indiqué, location=
         ('NEW','Création d\'une brique'),
         ('DUPLIC','Duplication de bloc' )  ,
-        ('DEL','Suppression d\'un bloc'),
+        ('DEL','Suppression d\'un bloc'), #si detail=delcomment, blocKid est le comment, targetId est le bloc cible.
+                                        # note: pas de undrop dans le cas ou la cible existe, undrop si tout seul
         ('NEWVAR','Création nouvelle variable globale'), #nom dans detail
         ('NEWVARL','Création nouvelle variable locale'), #nom dans detail
         ('DELVAR','Suppression variable'), #nom dans detail
