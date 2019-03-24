@@ -847,7 +847,7 @@ def reconstruit(session_key,save=False,load=False):
                                 listeBlocks.append(newLastPrevBlock)
                             else:
                                 #le conteneur est l'ancien prev
-                                conteneurNode+=" next"
+                                conteneurNode.truc+=" next"
                                 conteneurNode.setNextBlock(None)
                         else:
                             listeBlocks.setPrevBlock(newNode,None)
