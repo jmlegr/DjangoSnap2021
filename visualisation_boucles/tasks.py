@@ -696,6 +696,7 @@ def reconstruit(session_key,save=False,load=False):
                     newNode.deleted=True
                     newNode.truc="me del drop"
                     listeBlocks.recordDrop(spr, theTime)
+                    #attention, si le suivant est un newval sur un même bloc, c'est une suppresionn+silent-replaced
                 else:
                     if spr.location:
                         action+=' '+spr.location
@@ -713,6 +714,10 @@ def reconstruit(session_key,save=False,load=False):
                     else:
                         action+=" %s" % history
                     #On récupère le block et on le recopie
+                    if listeBlocks.lastNode(spr.blockId, theTime,deleted=True) is None:
+                        assert (spr.typeMorph=="CommentMorph"),"Ne devrait pas arriver avec un non commentmorph %s %s"%(spr,spr.typeMorph)
+                        #on ignore, c'est du au bug du comment supprimé mais non enlevé
+                        continue
                     newNode=listeBlocks.lastNode(spr.blockId, theTime,deleted=True).copy(theTime,action)
                     newNode.deleted=False
                     newNode.truc="me drop loc:%s" % spr.location
@@ -1218,7 +1223,11 @@ def reconstruit(session_key,save=False,load=False):
                                  "scripts":listeBlocks.firstBlocks,
                                  "ticks":listeBlocks.ticks,
                                  })
-        commandes.sort(key=lambda c: c['evt']['realtime'])
+        for c in commandes:
+            #on enlève les éventuelles commandes vides (par exemple un DROP+DEL ne fera qu'un evenement)
+            if c is None or c['evt'] is None:
+                commandes.remove(c)
+        commandes.sort(key=lambda c: c['evt']['realtime'] )
         cmds=collection.insert_many([{'session_key':session_key,
                                       'etape':i,
                                       'commandes':c} for i,c in enumerate(commandes)])
