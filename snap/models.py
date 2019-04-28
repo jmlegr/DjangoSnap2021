@@ -113,6 +113,8 @@ class EvenementENV(models.Model):
         ('KEY','Evènement Clavier'),
         ('AFFBL','Affichage Blocs'), # category  detail?
         ('AFFVAR','Affichage ou non Variable'), #avec nom en valueChar et vrai.faux en bool et valeur en detail
+        ('BUBBLE','Affichage bulle'), #id dans valueInt (si pas connue c'est un block de la palette,
+                                      #text dans detail, selector dans valueChar
         ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression
         #('UNDROP','Undrop'), #origine dans detail
         #('REDROP','Redrop'),

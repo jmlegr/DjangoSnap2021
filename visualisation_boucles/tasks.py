@@ -274,6 +274,9 @@ def reconstruit(session_key,save=False,load=False):
             if env.type=='AFFVAR':
                 evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueBool':env.valueBool}
                 listeBlocks.addTick(theTime)
+            if env.type=='BUBBLE':
+                evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueInt':env.valueInt}
+                listeBlocks.addTick(theTime)
             evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]

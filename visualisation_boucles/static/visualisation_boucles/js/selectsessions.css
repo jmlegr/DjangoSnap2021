@@ -118,7 +118,7 @@ background-color: yellow;
 	background-color: lavender;
 	white-space: pre-wrap;
 }
-.blockepr {
+.bubble, .blockepr {
 	font-size:8;
     width : 8em;
     background-color: lightblue;
