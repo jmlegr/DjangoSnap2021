@@ -9351,8 +9351,7 @@ InputSlotMorph.prototype.menuFromDict = function (
                 if (world) {
                     world.stopEditing();
                 }
-                this.selectForEdit().contents().edit();
-            }
+                this.selectForEdit().contents().edit();                            }
         };
 
         InputSlotMorph.prototype.mouseClickLeft = function (pos) {
@@ -9361,7 +9360,7 @@ InputSlotMorph.prototype.menuFromDict = function (
             } else if (this.isReadOnly) {
                 this.dropDownMenu();
             } else {
-                this.contents().edit();
+            	this.contents().edit();
             }
         };
 
@@ -9391,20 +9390,26 @@ InputSlotMorph.prototype.menuFromDict = function (
                 }
             });
             if (val != orig) {
-                //scripts.clearDropInfo();
-                //scripts.dropRecord=this.parent;
-                //scripts.dropRecord.lastDroppedBlock = this.parent;
-                //scripts.dropRecord.action = 'valeur';
-                //scripts.dropRecord.detailAction={originale:orig,nouvelle:val};
-                record={};
-                //modif 13/08
-                //record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
-                record.lastDroppedBlock=this.parent;
-                record.action='valeur';
-                record.detailAction=this.JMLid;
-                //var donnee=new scripts.donnee(scripts.dropRecord);
-                var donnee=new scripts.donnee(record);
-                //console.log('donne'+JSON.stringify(donnee));
+            	if (scripts) {
+            		//scripts.clearDropInfo();
+            		//scripts.dropRecord=this.parent;
+            		//scripts.dropRecord.lastDroppedBlock = this.parent;
+            		//scripts.dropRecord.action = 'valeur';
+            		//scripts.dropRecord.detailAction={originale:orig,nouvelle:val};
+            		record={};
+            		//modif 13/08
+            		//record.lastDroppedBlock=this.parentThatIsA(BlockMorph);
+            		record.lastDroppedBlock=this.parent;
+            		record.action='valeur';
+            		record.detailAction=this.JMLid;
+            		//var donnee=new scripts.donnee(scripts.dropRecord);
+            		var donnee=new scripts.donnee(record);
+            		//console.log('donne'+JSON.stringify(donnee));
+            	} else {
+            		//c'est une modification dans la palette, on n'enregistre pas l'évènement
+            		//console.log("palette?",typeof this.parent.parent)
+
+            	}
             }
 
 
