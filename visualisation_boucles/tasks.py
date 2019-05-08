@@ -152,7 +152,8 @@ def reconstruit(session_key,save=False,load=False):
             for i in listeBlocks.lastNodes(theTime):
                 newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
                 newi.deleted=True
-            if len(listeBlocks.liste)>0: listeBlocks.addTick(theTime-1)
+            #if len(listeBlocks.liste)>0: listeBlocks.addTick(theTime-1)
+            listeBlocks.addTick(theTime)
             evtPrec=evtType
         elif evt.type=='ENV' and evtType.type in ['LOBA','LOVER']:
             #c'est un chargement de fichier
