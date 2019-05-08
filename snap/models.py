@@ -204,8 +204,8 @@ class EvenementEPR(SnapProcess):
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementepr')
     type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement
-    detail=models.CharField(max_length=100,null=True,blank=True)
-    processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
+    detail=models.TextField(null=True,blank=True)
+    processes=models.TextField(null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
 
     def toD3(self):
         """rendu json pour d3.js"""
