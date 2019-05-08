@@ -1376,14 +1376,14 @@ class SimpleListeBlockSnap:
         pour un ensemble de blocks ayant block comme block de tête,
         cherche  le block de fin
         """
-        p=0
+        #p=0 (pour arrêter les boucles infinies)
         while block.nextBlockId is not None:
             print(".",block.nextBlockId,block.JMLid)
             assert (block.nextBlockId != block.JMLid), "erreur nextBlock %s " % block
             block=self.lastNode(block.nextBlockId,thetime)
-            p+=1
-            if p>10:
-                print("ouille")
+            #p+=1
+            #if p>10:
+            #    print("ouille")
         print('---')
         return block
 
@@ -1538,7 +1538,7 @@ class SimpleListeBlockSnap:
             """
             traite l'input correspondant au % elt de rang ranf
             """
-            print("input de",block,elt,rang)
+            #print("input de",block,elt,rang)
             rang='%s' %rang
             inpId=block.inputs[rang]
             inputNode=self.lastNode(inpId,thetime,veryLast=True)
