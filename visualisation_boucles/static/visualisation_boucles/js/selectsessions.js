@@ -277,22 +277,22 @@ var lance = function () {
         // on demarre avec une selection vide
         sessionDim.filter("")
 
-        //filtre par programme        
+        //filtre par programme
         selectProgramme
         .dimension(programmeDim)
         .group(programmeDim.group())
         .multiple(true)
         .title(d=> isNaN(d.key)?`BASE: ${d.key} (${d.value})`:`id: ${d.key} (${d.value})`)
-        .order((a,b)=> isNaN(a.key) > isNaN(b.key) ? -1 
-                : isNaN(b.key) > isNaN(a.key) ? 1 
-                        : a.value > b.value ? -1 
-                                : b.value > a.value ? 1 
+        .order((a,b)=> isNaN(a.key) > isNaN(b.key) ? -1
+                : isNaN(b.key) > isNaN(a.key) ? 1
+                        : a.value > b.value ? -1
+                                : b.value > a.value ? 1
                                         : 0)
                                         .promptText('Tous les programmes')
                                         filterProgramme.dimension(programmeDim)
                                         .on("postRender",function(){
                                             // on reinitialise le selectProgramme, et on décale le filtrage
-                                            var s=d3.select("#filterProgramme input"), //elt input                
+                                            var s=d3.select("#filterProgramme input"), //elt input
                                             f=s.on('input') //event function
 
                                             s.on('input.a',function() {
@@ -432,7 +432,7 @@ var lance = function () {
         if (lastSave==undefined) return false
         let index=reperes.indexOf(lastSave)
         if (index<=0) return false
-        return isPlan(user,nom,reperes[index-1],reperes)         
+        return isPlan(user,nom,reperes[index-1],reperes)
     }
 
     const statsGraphSession=function(d) {
@@ -467,17 +467,17 @@ var lance = function () {
                 case "EPR": obj.data=obj.evenementepr[0];break;
                 case "SPR": obj.data=obj.evenementspr[0];  break;
                 case "ENV": obj.data=obj.environnement[0];break;
-                default: obj.data={}                    
+                default: obj.data={}
                 }
-                delete obj["evenementepr"]; 
+                delete obj["evenementepr"];
                 delete obj["evenementspr"];
-                delete obj["environnement"]; 
+                delete obj["environnement"];
                 obj.data.type=obj.data.type+"_"+obj.type
                 return obj
             }
 
             let dtime=null, fromStartTime=null
-            response.forEach(function(d){                    
+            response.forEach(function(d){
                 d.dtime=dtime?(d.time-dtime):0
                         dtime=d.time
                         if (fromStartTime==null) fromStartTime=d.time
@@ -498,7 +498,7 @@ var lance = function () {
                         newData.push(newNodes);
                         newNodes=null;
                     }
-                    newData.push(d);        
+                    newData.push(d);
                 }
                 else {
                     //changement de vindex sinon
@@ -521,7 +521,7 @@ var lance = function () {
             countDataType=typeDataDimension.group().reduceCount(),
             countByDataType=typeDimension.group().reduce(
                     function(p, v) {//add
-                        p[v.data.type]=(p[v.data.type]||0)+1                                     
+                        p[v.data.type]=(p[v.data.type]||0)+1
                         return p;
                     },
                     function(p, v) {//remove
@@ -534,7 +534,7 @@ var lance = function () {
                     }
             )
             d3.select("#overlayDiv").append("div").attr("id","statsDetail").attr("class","dc-chart")
-            d3.select("#overlayDiv").append("div").attr("id","statsgen").attr("class","dc-chart")               
+            d3.select("#overlayDiv").append("div").attr("id","statsgen").attr("class","dc-chart")
             var chart = dc.barChart('#statsgen');
             chart
             //.width("70%")
@@ -626,12 +626,12 @@ var lance = function () {
                     return this.layer+": " + d.value[this.layer];
                 })
                 .outerPadding(0.5)
-                .group(countByDataType,allTypes[0],function(d){                        
+                .group(countByDataType,allTypes[0],function(d){
                     return d.value[allTypes[0]] || 0
                 });
             allTypes.forEach(function(i,j){
                 if (j>0) {
-                    gchart.stack(countByDataType,i,function(d){ 
+                    gchart.stack(countByDataType,i,function(d){
                         return d.value[i] || 0
                     })
                 }
@@ -642,7 +642,7 @@ var lance = function () {
             .on("click",function() {d3.select("#overlayDiv").style("visibility","hidden")})
 
 
-        })     
+        })
     }
     var testcel=new CeleryTask({
             urlTask:'testadd',
@@ -652,18 +652,18 @@ var lance = function () {
             csrf_token:csrf_token,
             method:'POST'
     },function(r,d,v) {console.log('recu',r,d,v)})
-    
+
     var reconstructionTask=new CeleryTask({
             urlTask:urls.programmes,
             urlStatus:urls.task_status,
             urlCancel:urls.task_cancel,
             overlay:'overlayDiv2',
-            csrf_token:csrf_token,       
+            csrf_token:csrf_token,
             },function(result,elTitle,elResult,elOverlay) {
-                elTitle                    
+                elTitle
                     .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
                     +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}`)
-                graphProgramme(result,elResult,false,elOverlay)        
+                graphProgramme(result,elResult,false,elOverlay)
             }
         )
     var reconstructionTaskForExport=new CeleryTask({
@@ -671,32 +671,32 @@ var lance = function () {
         urlStatus:urls.task_status,
         urlCancel:urls.task_cancel,
         overlay:'overlayDiv2',
-        csrf_token:csrf_token,       
-        },function(result,elTitle,elResult) {
-            elTitle                    
+        csrf_token:csrf_token,
+        },function(result,elTitle,elResult,elOverlay) {
+            elTitle
                 .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
                 +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}
                 (pour export)`
                 )
-            graphProgramme(result,elResult,true)        
+            graphProgramme(result,elResult,true,elOverlay)
         }
     )
-   
+
     var reperesTask=new CeleryTask({
         urlTask:urls.celrep,
         urlStatus:urls.task_status,
         urlCancel:urls.task_cancel,
         overlay:'overlayDiv2',
-        csrf_token:csrf_token,   
+        csrf_token:csrf_token,
         method:'POST'
         },function(result,elTitle,elResult) {
             //console.log("repere",result,elResult)
-            elTitle                    
+            elTitle
                 .html(`Repères de ${d3.map(result,d=>d.evenement.user_nom).keys()}`
-                )       
+                )
             graphSujets({result:result,callback:statsGraphSession,element:elResult})
     })
-    
+
     var graphbouclesTask=new CeleryTask({
         urlTask:urls.boucle,
         urlStatus:urls.task_status,
@@ -705,7 +705,7 @@ var lance = function () {
         csrf_token:csrf_token,
         method:'POST'
         },function(result,elTitel,elResult) {})
-    
+
     var reconstruction=false, //vrai si on est en train de calculer la reconstruction du prg
     task_id
     d3.select("#visualiser")
@@ -715,7 +715,7 @@ var lance = function () {
         var valueSplit = d3.select("#visualisation-type input:checked").node().value.split('_'),
             valueSelected=valueSplit[0],
             option=valueSplit.length>1?valueSplit[1]:null
-                    
+
         // marche pas plus:var liste = JSON.parse(JSON.stringify(selectedCountChart.dimension().all()))
         let liste = selectedCountChart.dimension().all()
         var session_keys= selectedCountChart.dimension().all().map(d=>d.session_key)
@@ -753,7 +753,7 @@ var lance = function () {
                                     }); break;
                     default: alert("Option non reconnue ("+option+")");
                     }
-                }                
+                }
             } else if (valueSelected=='boucle') {
                 if (liste.length==0) {
                     alert("Sélectionner au moins une session!")
@@ -762,38 +762,38 @@ var lance = function () {
                     graphbouclesTask.lance({
                         data:{session_keys:session_keys},
                         callback:function(result,elTitle,elResult) {
-                            elTitle                    
+                            elTitle
                                 .html(`Recherche des boucles`)
                             //console.log("result",result,d3.entries(result))
                             let data=new Array()
                             let databoucles={}, datacommandes={}
                             d3.entries(result).forEach(d=>{
-                                
+
                                 data=data.concat(d.value.evts)
                                 databoucles[d.value.session]=d.value.boucle
                                 datacommandes[d.value.session]=d.value.commandes
                             })
-                                                                    
-                                    
+
+
                                   //  datacommandes[session]=result[session].commandes
-                            
+
                             const setDataType=function(obj) {
                                 switch (obj.type) {
                                 case "EPR": obj.data=obj.evenementepr[0];break;
                                 case "SPR": obj.data=obj.evenementspr[0];  break;
                                 case "ENV": obj.data=obj.environnement[0];break;
-                                default: obj.data={}                    
+                                default: obj.data={}
                                 }
-                                
+
                                 if (obj.data) {
                                     obj.datatype=obj.type+"_"+obj.data.type
                                 } else {
                                     obj.datatype=obj.type+"_ZZZ"
                                     console.error("ZARB",obj)
                                 }
-                                delete obj["evenementepr"]; 
+                                delete obj["evenementepr"];
                                 delete obj["evenementspr"];
-                                delete obj["environnement"]; 
+                                delete obj["environnement"];
                                 return obj
                             }
                             data.forEach(d=>setDataType(d))
@@ -805,12 +805,12 @@ var lance = function () {
                                 liste:liste,
                                 key:d3.map(data,function(d){return d.datatype}).keys(),
                                 element:elResult
-                            })                  
+                            })
                         }
                     })
                 }
-                
-                
+
+
             } else if (valueSelected=="evolution") {
                 if (liste.length!=1) {
                     alert("Sélectionner une et une seule session!")
@@ -819,7 +819,7 @@ var lance = function () {
                         data:liste.map(d=>d.session_key)[0],
                         ajout_url:liste.map(d=>d.session_key)[0]+"/?load",
                         callback:function(result,elTitle,elResult) {
-                            elTitle                    
+                            elTitle
                             .html(`Utilisateur <b>${result.infos.user}</b>, programme "<b>${result.infos.type}</b>", `
                                     +`le ${locale.utcFormat("%x à %X")(new Date(result.infos.date))}: évolution`)
                                     graphStackNbCommandes({data:result,element:elResult})
