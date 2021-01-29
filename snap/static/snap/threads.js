@@ -283,7 +283,12 @@ ThreadManager.prototype.startProcess = function (
             });
     }
     var ide = top.parentThatIsA(IDE_Morph);    
-    if (jml.SnapAtStart) { 
+    if (jml.SnapAtStart) {
+        /**
+         * TODO: ne pas envoyer si top.category="operators" ou top.selector="reportGetVar"         *
+         * ou mieux: (proc.topBlock instanceof ReporterBlockMorph ||
+                    proc.isShowingResult) 
+         */
         ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
     }
     /**
@@ -414,6 +419,17 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
         	    topBlockId:proc.topBlock.JMLid,
         	});
         	// à déplacer à la fin?
+        	/**
+        	 * TODO: ne pas envoyer si porc.topBlock.category="operators" ou si proc.topBlock.selector="reportGetVar"
+        	 * ou mieux: (proc.topBlock instanceof ReporterBlockMorph ||
+                    proc.isShowingResult)
+        	 * en revanche, un nouveau evenement sera envoyé (voir showbubbles plus loin(472)
+        	 
+        	if (proc.topBlock instanceof ReporterBlockMorph ||
+                    proc.isShowingResult) {
+        	    console.info("c'est un bubble ",proc.homeContext.inputs[0])
+        	}
+        	*/
         	var ide = proc.topBlock.parentThatIsA(IDE_Morph);
     	    	ide.uploadCanvas(ide.stage.fullImageClassic(),'FIN'+proc.topBlock.JMLid);
         	
