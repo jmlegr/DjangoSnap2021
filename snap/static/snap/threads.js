@@ -210,7 +210,7 @@ ThreadManager.prototype.toggleProcess = function (block, receiver,click=false) {
 	 * Fin Modification JML
 	 **/
 
-        
+
     } else {
         return this.startProcess(block, receiver, null, null, null, true);
     }
@@ -224,7 +224,7 @@ ThreadManager.prototype.startProcess = function (
     callback,
     isClicked,
     rightAway
-) {  
+) {
     var top = block.topBlock(),
         active = this.findProcess(top, receiver),
         glow,
@@ -239,7 +239,7 @@ ThreadManager.prototype.startProcess = function (
     newProc = new Process(top, receiver, callback, isClicked);
     newProc.exportResult = exportResult;
     newProc.isClicked = isClicked || false;
-   
+
     // show a highlight around the running stack
     // if there are more than one active processes
     // for a block, display the thread count
@@ -262,7 +262,7 @@ ThreadManager.prototype.startProcess = function (
     var click=isClicked?isClicked:false
     liste="";
     this.processes.forEach(function(p){
-        liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","        
+        liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","
         });
     if (top.JMLdroppedId) {
         //c'est un block déjà droppé, pas de soucis
@@ -282,11 +282,11 @@ ThreadManager.prototype.startProcess = function (
             processes:liste
             });
     }
+         * ou mieux: (proc.topBlock instanceof ReporterBlockMorph ||
     var ide = top.parentThatIsA(IDE_Morph);    
     if (jml.SnapAtStart) {
         /**
          * TODO: ne pas envoyer si top.category="operators" ou top.selector="reportGetVar"         *
-         * ou mieux: (proc.topBlock instanceof ReporterBlockMorph ||
                     proc.isShowingResult) 
          */
         ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
@@ -294,12 +294,12 @@ ThreadManager.prototype.startProcess = function (
     /**
      * Fin Modification JML
      **/
-	
+
     return newProc;
 };
 
 ThreadManager.prototype.stopAll = function (excpt) {
-    // excpt is optional    
+    // excpt is optional
     this.processes.forEach(function (proc) {
         if (proc !== excpt) {
             proc.stop();
@@ -404,7 +404,7 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
     var remaining = [],
         count,
         myself = this;
-    
+
     this.processes.forEach(function (proc) {
         var result,
             glow;
@@ -432,9 +432,9 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
         	*/
         	var ide = proc.topBlock.parentThatIsA(IDE_Morph);
     	    	ide.uploadCanvas(ide.stage.fullImageClassic(),'FIN'+proc.topBlock.JMLid);
-        	
+
             }
-            
+
 	    /**
 	     * Fin Modification JML
 	     **/
@@ -478,7 +478,11 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
                             /**
                              * Modification JML (duff,  18 mars 2019)
                              **/
-                            console.log("showbuble",result,proc.topBlock)
+                            //console.log("showbuble",result,proc.topBlock)
+                            sendEvenement('ENV',{type:'BUBBLE',
+                            					 valueInt:proc.topBlock.JMLid,
+                            					 valueChar:proc.topBlock.selector,
+                            					 detail:result})
                             /**
                              * Fin Modification JML
                              **/
@@ -769,7 +773,7 @@ Process.prototype.stop = function (click=false,onError=false) {
 	var ide = this.topBlock.parentThatIsA(IDE_Morph);
 	    ide.uploadCanvas(ide.stage.fullImageClassic(),'STOP');
     }
-    
+
     /**
      * Fin Modification JML
      **/
@@ -1129,7 +1133,7 @@ Process.prototype.handleError = function (error, element) {
      * Modification JML (duff,  4 janv. 2018)
      **/
     //this.stop();
-    this.stop(false,true);    
+    this.stop(false,true);
     /**
      * Fin Modification JML
      **/
@@ -1141,8 +1145,8 @@ Process.prototype.handleError = function (error, element) {
      * Modification JML (duff,  4 janv. 2018)
      **/
     sendEvenement('EPR',{type:'ERR',receiver:this.receiver.name,
-	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid, 
-	detail:(m === element ? '' : 'Inside: ')    
+	topBlockSelector:this.topBlock.selector, topBlockId:this.topBlock.JMLid,
+	detail:(m === element ? '' : 'Inside: ')
         + error.name+ ' : '+ error.message
 		});
     /**
@@ -2408,7 +2412,7 @@ Process.prototype.doAsk = function (data) {
         isStage = rcvr instanceof StageMorph,
         isHiddenSprite = rcvr instanceof SpriteMorph && !rcvr.isVisible,
         activePrompter;
-    
+
     stage.keysPressed = {};
     if (!this.prompter) {
         activePrompter = detect(
@@ -2422,7 +2426,7 @@ Process.prototype.doAsk = function (data) {
             liste="";
             stage.threads.processes.forEach(function(p){liste=liste+p.topBlock.JMLid+"-"+p.receiver.name+","});
             sendEvenement('EPR',{type:'ASK',processes:liste,detail:data})
-    	    //console.log('debut entrée');		
+    	    //console.log('debut entrée');
             /**
              * Fin Modification JML
              **/

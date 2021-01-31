@@ -496,7 +496,7 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
 
         }
 
-        if (c.epr==null && c.evt!=null && c.evt.type!='AFFVAR') {
+        if (c.epr==null && c.evt!=null && c.evt.type!='AFFVAR' && c.evt.type!='BUBBLE') {
             tetes.forEach(function(t) {
                 newData[t.JMLid]=parcoursCommande(c.snap,[],t,0)
 
@@ -619,6 +619,14 @@ const graphProgramme=function(donnees,div,forExport=false,overlay) {
                 	.classed("varvisible",c.evt.valueBool).html(`<span>${c.evt.valueChar} = ${c.evt.detail}</span>`)
 
 
+        } else if (c.evt!=null && c.evt.type=='BUBBLE') {
+        	//Affichage d'une bulle de résultat (lors d'un clic sur un reporter par ex.)
+        	divG.classed("bubble",true)
+        		.datum(c)
+        		.append("div")
+        		.html("<span class='offsettime'>"+formatTimeToHMS(c.temps+offsetms)+"</span>"+"\n"
+        				+c.evt.type+" "+c.evt.valueInt
+        				+"<p>"+c.snap.find(d=>d.JMLid==c.evt.valueInt).commande+'='+c.evt.detail+"</p>")
         }
 
 

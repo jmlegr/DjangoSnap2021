@@ -152,7 +152,8 @@ def reconstruit(session_key,save=False,load=False):
             for i in listeBlocks.lastNodes(theTime):
                 newi=listeBlocks.addSimpleBlock(theTime-1,block=i,action="DELETE")
                 newi.deleted=True
-            if len(listeBlocks.liste)>0: listeBlocks.addTick(theTime-1)
+            #if len(listeBlocks.liste)>0: listeBlocks.addTick(theTime-1)
+            listeBlocks.addTick(theTime)
             evtPrec=evtType
         elif evt.type=='ENV' and evtType.type in ['LOBA','LOVER']:
             #c'est un chargement de fichier
@@ -273,6 +274,9 @@ def reconstruit(session_key,save=False,load=False):
                     listeBlocks.recordDrop(env,theTime)
             if env.type=='AFFVAR':
                 evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueBool':env.valueBool}
+                listeBlocks.addTick(theTime)
+            if env.type=='BUBBLE':
+                evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueInt':env.valueInt}
                 listeBlocks.addTick(theTime)
             evtPrec=evtType
         if evt.type=='SPR':
@@ -696,6 +700,7 @@ def reconstruit(session_key,save=False,load=False):
                     newNode.deleted=True
                     newNode.truc="me del drop"
                     listeBlocks.recordDrop(spr, theTime)
+                    #attention, si le suivant est un newval sur un même bloc, c'est une suppresionn+silent-replaced
                 else:
                     if spr.location:
                         action+=' '+spr.location
@@ -713,6 +718,10 @@ def reconstruit(session_key,save=False,load=False):
                     else:
                         action+=" %s" % history
                     #On récupère le block et on le recopie
+                    if listeBlocks.lastNode(spr.blockId, theTime,deleted=True) is None:
+                        assert (spr.typeMorph=="CommentMorph"),"Ne devrait pas arriver avec un non commentmorph %s %s"%(spr,spr.typeMorph)
+                        #on ignore, c'est du au bug du comment supprimé mais non enlevé
+                        continue
                     newNode=listeBlocks.lastNode(spr.blockId, theTime,deleted=True).copy(theTime,action)
                     newNode.deleted=False
                     newNode.truc="me drop loc:%s" % spr.location
@@ -1002,7 +1011,6 @@ def reconstruit(session_key,save=False,load=False):
                     inputNode.action='VAL'
                     inputNode.change='changed'
                     inputNode.truc="changed"
-                    newNode.truc="valchanged" if newNode.truc is None else newNode.truc+"valchanged"
                     listeBlocks.append(inputNode)
                 else:
                     inputBlock=spr.inputs.get(JMLid=spr.detail)
@@ -1011,7 +1019,6 @@ def reconstruit(session_key,save=False,load=False):
                     inputNode.action='VAL'
                     inputNode.change='changed'
                     inputNode.truc="changed"
-                    newNode.truc="valchanged" if newNode.truc is None else newNode.truc+"valchanged"
                     listeBlocks.append(inputNode)
                 listeBlocks.addTick(theTime)
                 #on pourrait faire un lien avec l'ancienne valeur
@@ -1038,15 +1045,23 @@ def reconstruit(session_key,save=False,load=False):
                     newInput.change='added'
                     parentNode.truc="me varinit"
                     #on récupère et modifie l'input modifié
-                    oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    print("NEWVAL SLOT",spr,spr.detail)
+                    oldInput=listeBlocks.lastNode(spr.detail,theTime,deleted=True).copy(theTime,action)
                     oldInput.change='replaced-silent'
                     oldInput.parentBlockId=None
                     oldInput.action='DROPPED'
-                    if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
-                        listeBlocks.liste.append(oldInput)
+                    #assert (oldInput.deleted),"parent: %s, new:%s, oldrang:%s "%(parentNode,newInput,oldInput.rang)
+                    if not oldInput.deleted:
+                        if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
+                            listeBlocks.liste.append(oldInput)
+                        else:
+                            listeBlocks.liste.append(oldInput)
+                            listeBlocks.setFirstBlock(oldInput)
                     else:
-                        listeBlocks.liste.append(oldInput)
-                        listeBlocks.setFirstBlock(oldInput)
+                        #on fixe le temps du DEL d'un input avec le replaced-silent (sinon on essaye de récupérer un input insexistant)
+                        oldInput.time=theTime
+
+
                     #on ajuste le parent
                     parentNode.addInput(block=newInput,rang=oldInput.rang)
                     listeBlocks.addTick(theTime)
@@ -1080,9 +1095,10 @@ def reconstruit(session_key,save=False,load=False):
                     parentNode.truc="me varchange"
                     listeBlocks.addTick(theTime)
 
-            elif spr.type=='DROPVAL':
+            elif spr.type=='DROPVAL' and spr.typeMorph!="CommentMorph":
                 """
-                c'est un reporter existant déplacé
+                c'est un reporter existant déplacé,
+                si c'est un commentMorph, c'est un bug, sans doute changement de target, on ignore
                 """
                 #on récupère le parent
                 parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
@@ -1092,6 +1108,8 @@ def reconstruit(session_key,save=False,load=False):
                 newInputNode.change='added'
                 listeBlocks.append(newInputNode)
                 #on récupère et modifie l'input modifié
+                #d=spr.detail.split('(longBlockSpec)')[0] #pour gérer le cas ou detail contient un longBlockSpec (pour CommentMorph)
+                #print("detail de dropval:",d)
                 oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
                 oldInput.change='replaced'
                 oldInput.parentBlockId=None
@@ -1209,7 +1227,11 @@ def reconstruit(session_key,save=False,load=False):
                                  "scripts":listeBlocks.firstBlocks,
                                  "ticks":listeBlocks.ticks,
                                  })
-        commandes.sort(key=lambda c: c['evt']['realtime'])
+        for c in commandes:
+            #on enlève les éventuelles commandes vides (par exemple un DROP+DEL ne fera qu'un evenement)
+            if c is None or c['evt'] is None:
+                commandes.remove(c)
+        commandes.sort(key=lambda c: c['evt']['realtime'] )
         cmds=collection.insert_many([{'session_key':session_key,
                                       'etape':i,
                                       'commandes':c} for i,c in enumerate(commandes)])

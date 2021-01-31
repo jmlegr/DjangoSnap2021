@@ -113,6 +113,8 @@ class EvenementENV(models.Model):
         ('KEY','Evènement Clavier'),
         ('AFFBL','Affichage Blocs'), # category  detail?
         ('AFFVAR','Affichage ou non Variable'), #avec nom en valueChar et vrai.faux en bool et valeur en detail
+        ('BUBBLE','Affichage bulle'), #id dans valueInt (si pas connue c'est un block de la palette,
+                                      #text dans detail, selector dans valueChar
         ('DROPEX','Drop dans la palette (suppression)'), # normalement suivi d'un évènement suppression
         #('UNDROP','Undrop'), #origine dans detail
         #('REDROP','Redrop'),
@@ -202,8 +204,8 @@ class EvenementEPR(SnapProcess):
         )
     evenement=models.ForeignKey(Evenement,on_delete=models.CASCADE,related_name='evenementepr')
     type=models.CharField(max_length=5,choices=EPR_CHOICES, default='AUTRE') #type d'évènement
-    detail=models.CharField(max_length=100,null=True,blank=True)
-    processes=models.CharField(max_length=100,null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
+    detail=models.TextField(null=True,blank=True)
+    processes=models.TextField(null=True,blank=True) # liste des process en cours, sous la forme "id-nom"
 
     def toD3(self):
         """rendu json pour d3.js"""
