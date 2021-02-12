@@ -1009,18 +1009,24 @@ def reconstruit(session_key,save=False,load=False):
                     inputNode.changeValue(spr.blockSpec)
                     inputNode.blockSpec=detail[1] if (len(detail)>1) else spr.blockSpec
                     inputNode.action='VAL'
-                    inputNode.change='changed'
-                    inputNode.truc="changed"
+                    inputNode.change='valchanged <<%s>>' % inputNode.getValue()
+                    inputNode.truc="valchanged"
                     listeBlocks.append(inputNode)
                 else:
                     inputBlock=spr.inputs.get(JMLid=spr.detail)
                     inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
+                    ancValue=inputNode.getValue()
+                    inputNode.change='valchanged <<%s>>' % ancValue
                     inputNode.changeValue(inputBlock.contenu)
-                    inputNode.action='VAL'
-                    inputNode.change='changed'
-                    inputNode.truc="changed"
+                    inputNode.action='VAL'                    
+                    inputNode.truc="valchanged"
+                    parentNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime)
+                    parentNode.truc="me inputChanged <<%s>>" % ancValue
+                    listeBlocks.append(parentNode)
                     listeBlocks.append(inputNode)
+                    
                 listeBlocks.addTick(theTime)
+                
                 #on pourrait faire un lien avec l'ancienne valeur
             elif spr.type=='NEWVAL':
                 """
