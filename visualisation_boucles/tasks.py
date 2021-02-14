@@ -35,6 +35,7 @@ def reconstruit(session_key,save=False,load=False):
         me copyto: block copié (tous)
         me deleted: block supprimé (début)
         me deleted undrop: block supprimé (undrop d'un duplic)
+    dans change (pour le parent) et truc (pour l'input) ajout de val_%s
 
 
     """
@@ -52,6 +53,7 @@ def reconstruit(session_key,save=False,load=False):
                                   rang=spr.location,
                                   action=action
                                   )
+        
         listeBlocks.setFirstBlock(newNode) #a supprimer, on a listeJMLids
         for inp in spr.inputs.all():
             newInput=listeBlocks.addSimpleBlock(JMLid=inp.JMLid,
@@ -281,7 +283,7 @@ def reconstruit(session_key,save=False,load=False):
             evtPrec=evtType
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]
-            spr=evtType
+            spr=evtType            
             action='SPR_%s' % spr.type
             spr.aff(niv=3)
             if spr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -544,11 +546,11 @@ def reconstruit(session_key,save=False,load=False):
                     parentNode=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime,action)
                     listeBlocks.append(parentNode)
                     newInputNode=listeBlocks.lastNode(dspr.detail,theTime).copy(theTime)
-                    newInputNode.change='newval'
+                    newInputNode.change='val_newval'
                     listeBlocks.append(newInputNode)
                     #on récupère et modifie l'input modifié
                     oldInput=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime)
-                    oldInput.change='replaced'
+                    oldInput.change='val_replaced'
                     oldInput.parentBlockId=None
                     oldInput.deleted=True
                     if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -563,11 +565,11 @@ def reconstruit(session_key,save=False,load=False):
                     parentNode=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime,action)
                     listeBlocks.append(parentNode)
                     newInputNode=listeBlocks.lastNode(dspr.detail,theTime).copy(theTime)
-                    newInputNode.change='dropval'
+                    newInputNode.change='val_dropval'
                     listeBlocks.append(newInputNode)
                     #on récupère et modifie l'input modifié
                     oldInput=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime)
-                    oldInput.change='replaced'
+                    oldInput.change='val_replaced'
                     #on recherche s'il avait un parent
                     ancienInput=listeBlocks.lastNode(dspr.blockId,s['time'])
                     if ancienInput.parentBlockId is not None:
@@ -593,11 +595,10 @@ def reconstruit(session_key,save=False,load=False):
                 s=listeBlocks.redrop()
                 spr=EvenementSPR.objects.get(id=s['spr'])
                 aff("REdrop de ",spr,s['time'])
-
             #traitement NEW: il faut inclure les inputs,
-            if spr.type=='NEW':
+            if spr.type=='NEW':               
                 action+=" %s" % spr.location
-                if history is None:
+                if history is None:                    
                     newNode=createNew(spr,theTime,action)
                     newNode.truc="me new"
                     listeBlocks.recordDrop(spr, theTime)
@@ -1009,19 +1010,19 @@ def reconstruit(session_key,save=False,load=False):
                     inputNode.changeValue(spr.blockSpec)
                     inputNode.blockSpec=detail[1] if (len(detail)>1) else spr.blockSpec
                     inputNode.action='VAL'
-                    inputNode.change='valchanged <<%s>>' % inputNode.getValue()
-                    inputNode.truc="valchanged"
+                    inputNode.change='val_changed <<%s>>' % inputNode.getValue()
+                    inputNode.truc="val_changed"
                     listeBlocks.append(inputNode)
                 else:
                     inputBlock=spr.inputs.get(JMLid=spr.detail)
                     inputNode=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
                     ancValue=inputNode.getValue()
-                    inputNode.change='valchanged <<%s>>' % ancValue
+                    inputNode.change='val_changed <<%s>>' % ancValue
                     inputNode.changeValue(inputBlock.contenu)
                     inputNode.action='VAL'                    
-                    inputNode.truc="valchanged"
+                    inputNode.truc="val_changed"
                     parentNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime)
-                    parentNode.truc="me inputChanged <<%s>>" % ancValue
+                    parentNode.truc="me val_inputChanged <<%s>>" % ancValue
                     listeBlocks.append(parentNode)
                     listeBlocks.append(inputNode)
                     
@@ -1048,12 +1049,12 @@ def reconstruit(session_key,save=False,load=False):
                                                     action=action,
                                                     value=spr.blockSpec
                                                     )
-                    newInput.change='added'
-                    parentNode.truc="me varinit"
+                    newInput.change='val_added'
+                    parentNode.truc="me val_varinit"
                     #on récupère et modifie l'input modifié
                     print("NEWVAL SLOT",spr,spr.detail)
                     oldInput=listeBlocks.lastNode(spr.detail,theTime,deleted=True).copy(theTime,action)
-                    oldInput.change='replaced-silent'
+                    oldInput.change='val_replaced-silent'
                     oldInput.parentBlockId=None
                     oldInput.action='DROPPED'
                     #assert (oldInput.deleted),"parent: %s, new:%s, oldrang:%s "%(parentNode,newInput,oldInput.rang)
@@ -1075,7 +1076,7 @@ def reconstruit(session_key,save=False,load=False):
                     if history is None:
                         #on crée le nouveau block (et ajout dans la liste)
                         newInputNode=createNew(spr,theTime,action)
-                        newInputNode.change='added'
+                        newInputNode.change='val_added'
                         listeBlocks.recordDrop(spr, theTime)
                     else:
                         #c'est un redrop, on récupère la dernière version du noeud
@@ -1089,7 +1090,7 @@ def reconstruit(session_key,save=False,load=False):
                     listeBlocks.append(parentNode)
                     #on récupère et modifie l'input modifié
                     oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime)
-                    oldInput.change='replaced'
+                    oldInput.change='val_replaced'
                     oldInput.parentBlockId=None
                     if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
                         listeBlocks.liste.append(oldInput)
@@ -1098,7 +1099,7 @@ def reconstruit(session_key,save=False,load=False):
                         listeBlocks.setFirstBlock(oldInput)
                     #on change l'input
                     parentNode.addInput(newInputNode)
-                    parentNode.truc="me varchange"
+                    parentNode.truc="me val_varchange"
                     listeBlocks.addTick(theTime)
 
             elif spr.type=='DROPVAL' and spr.typeMorph!="CommentMorph":
@@ -1111,13 +1112,13 @@ def reconstruit(session_key,save=False,load=False):
                 listeBlocks.append(parentNode)
                 #on récupère le nouvel input
                 newInputNode=listeBlocks.lastNode(spr.blockId, theTime).copy(theTime,action)
-                newInputNode.change='added'
+                newInputNode.change='val_added'
                 listeBlocks.append(newInputNode)
                 #on récupère et modifie l'input modifié
                 #d=spr.detail.split('(longBlockSpec)')[0] #pour gérer le cas ou detail contient un longBlockSpec (pour CommentMorph)
                 #print("detail de dropval:",d)
                 oldInput=listeBlocks.lastNode(spr.detail,theTime).copy(theTime,action)
-                oldInput.change='replaced'
+                oldInput.change='val_replaced'
                 oldInput.parentBlockId=None
                 oldInput.action="DROPPED"
                 if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -1127,7 +1128,7 @@ def reconstruit(session_key,save=False,load=False):
                     listeBlocks.setFirstBlock(oldInput)
                 #on change l'input
                 parentNode.addInput(block=newInputNode,rang=oldInput.rang)
-                parentNode.truc="me varchange"
+                parentNode.truc="me val_varchange"
                 listeBlocks.addTick(theTime)
                 if history is None: listeBlocks.recordDrop(spr, theTime)
 
@@ -1144,9 +1145,9 @@ def reconstruit(session_key,save=False,load=False):
                                   value=inp.contenu,
                                   rang=inp.rang
                                   )
-                newInput.change='added'
-                newInput.truc="added"
-                newNode.truc="me addinput"
+                newInput.change='val_added'
+                newInput.truc="val_added"
+                newNode.truc="me val_addinput"
                 newNode.addInput(newInput)
                 listeBlocks.append(newNode)
                 listeBlocks.addTick(theTime)
@@ -1160,7 +1161,7 @@ def reconstruit(session_key,save=False,load=False):
                 assert inputNodeId==spr.detail
                 del newNode.inputs[spr.location]
                 oldInput=listeBlocks.lastNode(inputNodeId,theTime).copy(theTime,action)
-                oldInput.change='replaced'
+                oldInput.change='val_replaced'
                 oldInput.action='DROPPED'
                 oldInput.parentBlockId=None
                 if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:

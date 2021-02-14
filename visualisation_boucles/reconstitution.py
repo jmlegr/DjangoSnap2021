@@ -1649,7 +1649,9 @@ class SimpleListeBlockSnap:
                   'nextBlock':block.nextBlockId,
                   'prevBlock':block.prevBlockId,
                   'conteneurBlock':block.conteneurBlockId,
-                  'wrappedBlock':block.wrappedBlockId}
+                  'wrappedBlock':block.wrappedBlockId,
+                  'category':block.category,
+                  'selector':block.selector}
         #print('nom',nom,' résultat de niom',resultat)
         try:
             resultat['truc']=block.truc if block.time==thetime else ''
@@ -1676,8 +1678,10 @@ class SimpleListeBlockSnap:
             #c'est un ['CommandBlockMorph', 'HatBlockMorph','ReporterBlockMorph'] avec blockSpec
             if item.tag=='custom-block':
                 block.blockSpec=item.get('s')
+                block.selector=item.tag
             else:
                 block.blockSpec=item.get('blockSpec')
+                block.selector=item.get('s')
             params=re.findall(r'(%\w+)',u'%s' % block.blockSpec)
             #aff('params',params)
             rang=0

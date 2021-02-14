@@ -197,7 +197,7 @@ p.command {
 .command span, .ask span{
 	background-color: silver;
 }
- span.changed, .answ span , span.added {
+ span.val_changed, .answ span , span.val_added {
 	background-color: teal;
 }
 p.action {
