@@ -755,8 +755,7 @@ var lance = function () {
                                     }); break;
                     case "debug":
                         let limit=d3.select('#limite').node().valueAsNumber
-                        console.log('debug:',limit,limit?`?limit=${limit}`:'')
-                        xsend('/snap/tr/'+liste.map(d=>d.session_key)[0]+(limit?`?limit=${limit}`:''),csrf_token,{"limit":200000},'GET')
+                        xsend('/snap/tr/'+liste.map(d=>d.session_key)[0]+'?load'+(limit?`&limit=${limit} `:''),csrf_token,{},'GET')
                                     //.then(response=> console.log("resp",response))
                                     .then(response=>{
                                         const div=d3.select("#overlayDiv2")

@@ -921,7 +921,7 @@ def aff(*str):
     if affprint:
         print(*str)
 
-def reconstruit(session_key,limit=100000,save=False,load=True):
+def reconstruit(session_key,limit=None,save=False,load=False):
     """
     Reconstruit l'histoire du programme jusqu'au temps (depuis le départ) limite
     pour chanque block, on ajoute un attribut truc qui indique les changements:
@@ -2061,7 +2061,7 @@ def reconstruit(session_key,limit=100000,save=False,load=True):
         #if theTime in listeBlocks.ticks:
         #    print("XXXXXXXXXXXXXXXXXXXXXXXXXXX")
         #    print("ITICK",theTime)
-        if theTime > limit:
+        if limit is not None and theTime > limit:
             break
     #on parcours et on affiche les commandes
     commandes=[]

@@ -2176,5 +2176,6 @@ def testReconstruit(request,id=None):
     if 'limit' in request.GET:
         limit=int(request.GET['limit'])
     else:
-        limit=100000
-    return JsonResponse(reconstruit(id,limit))
+        limit=None
+    
+    return JsonResponse(reconstruit(id,limit,load=('load'in request.GET)))
