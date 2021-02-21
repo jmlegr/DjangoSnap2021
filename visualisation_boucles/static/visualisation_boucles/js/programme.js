@@ -1,4 +1,4 @@
-export {graphProgramme, graphNbCommandes, graphStackNbCommandes}
+export {graphProgramme, graphNbCommandes, graphStackNbCommandes, parcoursCommande}
 
 function formatTimeToHMS(num) {
     num=Math.floor(num/1000)

@@ -12,6 +12,7 @@ import {
 import {
     graphProgramme, graphNbCommandes, graphStackNbCommandes
 } from './programme.js'
+import {graphDebug} from './debug.js'
 import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
 import {initSessionStackedBarChart} from './sessionstackedbar.js'
@@ -112,9 +113,20 @@ var selectAllSessions = function () {
     selectedCountChart.redraw()
     // dc.redrawAll()
 }
-
+var initInputVisibility=()=>{
+    const visualisation_type=d3.selectAll('#visualisation-type')
+    const limite=d3.select('#limite')
+    limite.style('visibility',d3.select("#visualisation-type input:checked").node().value=='reconstitution_debug'?'visible':'hidden')
+    visualisation_type.on('click',()=>{
+        let value = d3.select("#visualisation-type input:checked").node().value
+        limite.style('visibility',value=='reconstitution_debug'?'visible':'hidden')
+    })
+}
 var lance = function () {
     //d3.json("https://api.myjson.com/bins/gnn28").then(function (data) {
+    //entrée invisible si debug non sélectionné
+    initInputVisibility()
+
     d3.json("sessions").then(function (data) {
         data.forEach(function (e) {
             e.debut = new Date(e.debut);
@@ -741,8 +753,17 @@ var lance = function () {
                                         data:liste.map(d=>d.session_key)[0],
                                         ajout_url:liste.map(d=>d.session_key)[0]+"/?load"
                                     }); break;
-                    case "debug": xsend('tb/'+liste.map(d=>d.session_key)[0],csrf_token,{"truc":"bidule"},'GET')
-                                    .then(response=> console.log("resp",response)); break;
+                    case "debug":
+                        let limit=d3.select('#limite').node().valueAsNumber
+                        console.log('debug:',limit,limit?`?limit=${limit}`:'')
+                        xsend('/snap/tr/'+liste.map(d=>d.session_key)[0]+(limit?`?limit=${limit}`:''),csrf_token,{"limit":200000},'GET')
+                                    //.then(response=> console.log("resp",response))
+                                    .then(response=>{
+                                        const div=d3.select("#overlayDiv2")
+                                        div.style('visibility','visible')
+                                        graphDebug(response,div);                                        
+                                    }); 
+                                    break;
                     case "save": reconstructionTask.lance({
                                     data:liste.map(d=>d.session_key)[0],
                                     ajout_url:liste.map(d=>d.session_key)[0]+"/?save"

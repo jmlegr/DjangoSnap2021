@@ -109,6 +109,7 @@ background-color: yellow;
 .script.haschanged {
     background-color: lightblue;
 }
+
 .blockcommands {
 	display:inline-block;
     width : 20%;
@@ -118,6 +119,10 @@ background-color: yellow;
 	background-color: lavender;
 	white-space: pre-wrap;
 }
+.debug.blockcommands {
+    width : 8%;
+    }
+    
 .bubble, .blockepr {
 	font-size:8;
     width : 8em;
@@ -183,6 +188,10 @@ p.command {
     margin-bottom: 0.1em;
     margin-left: 0.1em;
 }
+.debug.command {
+    font-size:6;
+}
+
 .command span {
 	border-radius: 5px;
     padding-right: 5px;

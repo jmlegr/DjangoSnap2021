@@ -34,6 +34,7 @@ import copy
 from snap.objets import BlockSnap, CytoElements, ListeBlockSnap
 from django.contrib import messages
 from django.contrib.auth.views import logout
+from snap.reconstitution import reconstruit
 
 def aff(r,message='JSON'):
     print(message)
@@ -2168,3 +2169,12 @@ def testAjax(request):
     data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
     print('ok,data fait')
     return 
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def testReconstruit(request,id=None):
+    if 'limit' in request.GET:
+        limit=int(request.GET['limit'])
+    else:
+        limit=100000
+    return JsonResponse(reconstruit(id,limit))
