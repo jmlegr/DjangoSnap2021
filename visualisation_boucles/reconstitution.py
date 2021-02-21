@@ -1330,8 +1330,17 @@ class SimpleListeBlockSnap:
         #on vérifie s'il a déjà été ajouté
         ancBlocks=[b for b in self.liste if b.JMLid==block.JMLid and b.time==block.time]
         if len(ancBlocks)>0:
+            block.JMLid='DOUBLON_'+block.JMLid
+            print("ouilleleou",block.JMLid)
             print("ouilleleou")
-        #assert (len(ancBlocks)==0), "Block déjà existant %s à %s" % (block.JMLid,block.time)
+            print("ouilleleou")
+            print("ouilleleou")
+            print("ouilleleou")
+            print("ouilleleou")
+            print("ouilleleou")
+            print("ouilleleou")
+            
+       # assert (len(ancBlocks)==0), "Block déjà existant %s à %s" % (block.JMLid,block.time)
         self.liste.append(block)
 
     def addSimpleBlock(self,thetime,block=None,
