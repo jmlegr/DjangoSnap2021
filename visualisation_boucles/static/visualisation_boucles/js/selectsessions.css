@@ -221,6 +221,13 @@ p.CommentMorph {
 	font-style: normal;
 	color: cadetblue;
 }
+
+.debug.command.truc {
+    background-color: #99bfcd;
+}
+.debug.command.truc_copyfrom {
+    background-color: #D1E1D1;
+}
 .separation {
     background-color: lightsteelblue;
     font-size:10;

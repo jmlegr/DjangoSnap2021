@@ -10,6 +10,26 @@ import {parcoursCommande} from './programme.js'
  */
 const graphDebug = (result,div) => {
     /**
+     * ajoute une icone suivant la modification
+     * @param s
+     * @returns {string}
+     */
+    const affModif=function(s) {
+        if (s) {
+            const tapTruc=[["next","⬇"],["prev","⬆"],["me","⇒"],
+                ["contenu","⤵"],["conteneur","↖"],
+                ["undrop","↩"],["redrop","↪"],
+                ["lastnode","⇏"],["del","❌"],
+                ["copyfrom","⇺"],["copyto","⇻"]
+            ]
+            const mapTruc=new Map(tapTruc)
+            var ret=""
+            s.split(" ").forEach(d=>ret+=(mapTruc.get(d)!=undefined?mapTruc.get(d):" "))
+            return ret
+        }
+        return ""
+    }
+    /**
      * update: met à jour les affichages des scripts (sur changement du tick)
      * @param v: l'indice du tick dans le tableau des donnees
      */
@@ -28,8 +48,15 @@ const graphDebug = (result,div) => {
                     .classed("notChanged",!hasChanged)
                     .selectAll('p.command')
                     .data(donnees[v][block].commandes)
-                b.enter().append('p').attr('class','debug command')
-                    .merge(b).html(d=>'...'.repeat(d.index)+d.commande)
+                b.enter().append('p')
+                    .merge(b)
+                    .attr('class',d=>'debug command '
+                            +(d.action?'action ':'')
+                            +(d.typeMorph?d.typeMorph:'')
+                            +(d.truc?` truc truc_${d.truc}`:'')
+                    )
+                    .attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid} `+(d.truc?`truc:${d.truc}`:''))
+                    .html(d=>affModif(d.truc)+'...'.repeat(d.index)+d.commande)
                 b.exit().remove()
             })
         } else {
