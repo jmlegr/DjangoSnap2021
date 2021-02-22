@@ -57,6 +57,10 @@
 	line-height: 1;
 	margin: 0 0 2px;
 }
+.tippy-content p.debug_tippy {
+    font-size: 2em;
+}
+
 .imagetooltip {
 background: none repeat scroll 0 0 lavender;
 pointer-events: none;

@@ -35,6 +35,7 @@ from snap.objets import BlockSnap, CytoElements, ListeBlockSnap
 from django.contrib import messages
 from django.contrib.auth.views import logout
 from snap.reconstitution import reconstruit
+from visualisation_boucles.serializers import SimpleEvenementSerializer
 
 def aff(r,message='JSON'):
     print(message)
@@ -2187,7 +2188,7 @@ def testEnvoi(request,id=None):
     ev=Evenement.objects.get(id=id)
     evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lt=ev.numero)
     
-    print(EvenementSerializer(evs,many=True).data)
+    print(SimpleEvenementSerializer(evs,many=True).data)
     #json = JSONRenderer().render(EvenementSerializer(evs,many=True).data)
     #print(json)
-    return JsonResponse({'evt':ev.numero,'evt_prec':EvenementSerializer(evs,many=True).data})
+    return JsonResponse({'evt':ev.numero,'evt_prec':SimpleEvenementSerializer(evs,many=True).data})

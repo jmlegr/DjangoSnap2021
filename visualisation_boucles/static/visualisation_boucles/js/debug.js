@@ -10,6 +10,47 @@ import {parcoursCommande} from './programme.js'
  */
 const graphDebug = (result,div) => {
     /**
+     * modifie l'objet reçu par SimpleEvenementSerializer
+     * @param obj
+     * @returns {*}
+     */
+    const setDataType=(obj)=>{
+
+        switch (obj.type) {
+            case "EPR":
+                obj.data=obj.evenementepr[0];
+                obj.toString=()=>{
+                    return `EPR-${obj.data.type} (detail: ${obj.data.detail}, topBlock: ${obj.data.topBlockId})`
+                }
+                break;
+            case "SPR":
+                obj.data=obj.evenementspr[0];
+                obj.toString=()=>{
+                    let r=`SPR-${obj.data.type} Block: ${obj.data.blockId}`
+                    r+=obj.data.location?` loc: ${obj.data.location}`:''
+                    r+=obj.data.targetId?` target: ${obj.data.targetid}`:''
+                    r+=obj.data.detail?` detail: ${obj.data.detail}}`:''
+                    r+=obj.data.parentId?` parent: ${obj.data.parentId}`:''
+                    r+=obj.data.nextBlockId?` next: ${obj.data.nextBlockId}`:''
+                    r+=obj.data.inputs?' inputs: '+obj.data.inputs.join(';'):''
+                    return r
+                }
+                break;
+            case "ENV":
+                obj.data=obj.environnement[0];
+                obj.toString=()=>{
+                    return `ENV-${obj.data.type} (detail: ${obj.data.detail})`
+                }
+                break;
+            default: obj.data={}
+        }
+        delete obj["evenementepr"];
+        delete obj["evenementspr"];
+        delete obj["environnement"];
+        obj.data.type=obj.data.type+"_"+obj.type
+        return obj
+    }
+    /**
      * ajoute une icone suivant la modification
      * @param s
      * @returns {string}
@@ -44,12 +85,14 @@ const graphDebug = (result,div) => {
             .datum(donnees[v].infos)
             .text(e=>`${e.evt.evenement_type}-${e.evt.type}`)
         tippy('#evt', {
+            hideOnClick: true,
+            trigger:'click',
             content: 'loading...',
             async onShow(instance) {
                 let r = '',
                     d = d3.select(instance.reference).datum().evt,
                     k = d3.keys(d)
-                k.forEach(e => r += `<p>${e}: ${d[e]}</p>`)
+                k.forEach(e => r += `<p class="debug_tippy">${e}: ${d[e]}</p>`)
                 if (d.type == 'SNP') {
                     if (state.isFetching || !state.canFetch) return
                     state.isFetching = true
@@ -75,8 +118,12 @@ const graphDebug = (result,div) => {
                         .then(response => response.json())
                         .then(response => {
                             let rr=''
-                            response.evt_prec.forEach(e=>rr+=`<p>(${e.numero}) ${e.type} [id: ${e.id}]`)
-                            instance.setContent(`</p>Évènement n°${response.evt}</p>`+r+'<p></p>'+rr)
+                            response.evt_prec.forEach(e=>{
+                                e=setDataType(e)
+                                rr+=`<p class="debug_tippy">n°${e.numero} id${e.id} `+e.toString()+'</p>'
+                            })
+                            //response.evt_prec.forEach(e=>rr+=`<p>(${e.numero}) ${e.type} [id: ${e.id}]`)
+                            instance.setContent(`</p>Évènement n°${response.evt}</p>`+r+'<p>précédents: </p>'+rr)
                         })
                 }
             },
@@ -112,7 +159,7 @@ const graphDebug = (result,div) => {
             tippy(".debug.command",{
                 content:function(tip){
                     var d=d3.select(tip).datum()
-                    let r='<p>tesstipu</p>'
+                    let r=''
                     d3.keys(d).forEach(e=>{
                         r+=`<p>${e}: ${d[e]}</p>`
                     })
