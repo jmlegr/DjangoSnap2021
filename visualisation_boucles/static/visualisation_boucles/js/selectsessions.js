@@ -32,6 +32,16 @@ selectedCountChart = dc.dataCount("#selectedLines"),
 selectProgramme = dc.selectMenu('#selectProgramme'),
 filterProgramme = dc.textFilterWidget("#filterProgramme"),
 pieChart=dc.pieChart("#piechart")
+/**
+ * renvoie un objet sous la forme utilisable en option d'un get
+ * ie {a:1,b:3} => 'a=1,b=3'
+ * @param o
+ */
+var objectToOption=o=>{
+    let opt=[]
+    d3.keys(o).forEach(e=>opt.push(e+'='+o[e]))
+    return opt.join('&')
+}
 
 var findSelected = function () {
     // renvoi la liste des sessions
@@ -113,19 +123,25 @@ var selectAllSessions = function () {
     selectedCountChart.redraw()
     // dc.redrawAll()
 }
-var initInputVisibility=()=>{
+var initDebugVisibilit=()=>{
     const visualisation_type=d3.selectAll('#visualisation-type')
     const limite=d3.select('#limite')
+    const debug_load=d3.select("#debug_load")
+    const debug_load_label=d3.select('#debug_load_label')
     limite.style('visibility',d3.select("#visualisation-type input:checked").node().value=='reconstitution_debug'?'visible':'hidden')
+    debug_load.style('visibility',d3.select("#visualisation-type input:checked").node().value=='reconstitution_debug'?'visible':'hidden')
+    debug_load_label.style('visibility',d3.select("#visualisation-type input:checked").node().value=='reconstitution_debug'?'visible':'hidden')
     visualisation_type.on('click',()=>{
         let value = d3.select("#visualisation-type input:checked").node().value
         limite.style('visibility',value=='reconstitution_debug'?'visible':'hidden')
+        debug_load.style('visibility',value=='reconstitution_debug'?'visible':'hidden')
+        debug_load_label.style('visibility',value=='reconstitution_debug'?'visible':'hidden')
     })
 }
 var lance = function () {
     //d3.json("https://api.myjson.com/bins/gnn28").then(function (data) {
     //entrée invisible si debug non sélectionné
-    initInputVisibility()
+    initDebugVisibilit()
 
     d3.json("sessions").then(function (data) {
         data.forEach(function (e) {
@@ -754,8 +770,14 @@ var lance = function () {
                                         ajout_url:liste.map(d=>d.session_key)[0]+"/?load"
                                     }); break;
                     case "debug":
+                        let options={}
                         let limit=d3.select('#limite').node().valueAsNumber
-                        xsend('/snap/tr/'+liste.map(d=>d.session_key)[0]+'?load'+(limit?`&limit=${limit} `:''),csrf_token,{},'GET')
+                        if (limit) options.limit=limit
+                        let debug_load=d3.select('#debug_load').node().checked
+                        if (debug_load) options.load=true
+
+
+                        xsend('/snap/tr/'+liste.map(d=>d.session_key)[0]+'?'+objectToOption(options),csrf_token,{},'GET')
                                     //.then(response=> console.log("resp",response))
                                     .then(response=>{
                                         const div=d3.select("#overlayDiv2")

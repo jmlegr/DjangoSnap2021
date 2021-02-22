@@ -109,7 +109,9 @@ background-color: yellow;
 .script.haschanged {
     background-color: lightblue;
 }
-
+.debug.haschanged {
+    background-color: lightblue;
+}
 .blockcommands {
 	display:inline-block;
     width : 20%;

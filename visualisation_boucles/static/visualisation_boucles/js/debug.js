@@ -23,10 +23,13 @@ const graphDebug = (result,div) => {
             divblocks.enter().append('div').attr('class',d=>`debug blockcommands ${d}`).text(d=>d)
             divblocks.exit().remove()
             blocks.forEach(block=>{
-                let b=divProgs.select(`.${block}`)
+                let hasChanged=donnees[v][block].commandes.some(ez=>ez.change.includes("AAchange"))
+                let b=divProgs.select(`.${block}`).classed("hasChanged",hasChanged)
+                    .classed("notChanged",!hasChanged)
                     .selectAll('p.command')
                     .data(donnees[v][block].commandes)
-                b.enter().append('p').attr('class','debug command').merge(b).html(d=>'...'.repeat(d.index)+d.commande)
+                b.enter().append('p').attr('class','debug command')
+                    .merge(b).html(d=>'...'.repeat(d.index)+d.commande)
                 b.exit().remove()
             })
         } else {
@@ -94,5 +97,5 @@ const graphDebug = (result,div) => {
     divtete.append('div').attr('id','evt')
 
     update(0)
-    //console.log(donnees)
+    console.log(donnees)
 }
