@@ -35,10 +35,60 @@ const graphDebug = (result,div) => {
      */
     const divResult=div.select('#resultats')
     const divProgs=divResult.append('div').attr('class','prog')
+    const state = {
+        isFetching: false,
+        canFetch: true
+    }
     const update= v=> {
-        let blocks=d3.keys(donnees[v]).filter(d=>d!='temps')
+        div.select('#evt')
+            .datum(donnees[v].infos)
+            .text(e=>`${e.evt.evenement_type}-${e.evt.type}`)
+        tippy('#evt', {
+            content: 'loading...',
+            async onShow(instance) {
+                let r = '',
+                    d = d3.select(instance.reference).datum().evt,
+                    k = d3.keys(d)
+                k.forEach(e => r += `<p>${e}: ${d[e]}</p>`)
+                if (d.type == 'SNP') {
+                    if (state.isFetching || !state.canFetch) return
+                    state.isFetching = true
+                    state.canFetch = false
+                    try {
+                        const response = await fetch(d3.select(instance.reference).datum().epr.snp.image)
+                        const blob = await response.blob()
+                        const url = URL.createObjectURL(blob)
+                        if (instance.state.isVisible) {
+                            const img = new Image()
+                            img.width = 300
+                            img.height = 300
+                            img.src = url
+                            instance.setContent(img)
+                        }
+                    } catch (e) {
+                        instance.setContent(`Fetch failed. ${e}`)
+                    } finally {
+                        state.isFetching = false
+                    }
+                } else {
+                    fetch('/snap/testr/'+d.evenement)
+                        .then(response => response.json())
+                        .then(response => {
+                            let rr=''
+                            response.evt_prec.forEach(e=>rr+=`<p>(${e.numero}) ${e.type} [id: ${e.id}]`)
+                            instance.setContent(`</p>Évènement n°${response.evt}</p>`+r+'<p></p>'+rr)
+                        })
+                }
+            },
+            onHidden(tip) {
+                state.canFetch = true
+                tip.setContent("nothing")
+            }
+        })
+
+        let blocks=d3.keys(donnees[v]).filter(d=>d!='temps' && d!='infos')
         if (blocks.length>0) {
-            div.select('#evt').text(`${donnees[v][blocks[0]].evenement} - ${donnees[v][blocks[0]].type}`)
+
             let divblocks=divProgs.selectAll('.blockcommands').data(blocks)
             divblocks.enter().append('div').attr('class',d=>`debug blockcommands ${d}`).text(d=>d)
             divblocks.exit().remove()
@@ -59,15 +109,25 @@ const graphDebug = (result,div) => {
                     .html(d=>affModif(d.truc)+'...'.repeat(d.index)+d.commande)
                 b.exit().remove()
             })
+            tippy(".debug.command",{
+                content:function(tip){
+                    var d=d3.select(tip).datum()
+                    let r='<p>tesstipu</p>'
+                    d3.keys(d).forEach(e=>{
+                        r+=`<p>${e}: ${d[e]}</p>`
+                    })
+                    return r
+                }
+            })
         } else {
             divProgs.selectAll('div').data([]).exit().remove()
-            div.select('#evt').text('rien')
+            //div.select('#evt').text('rien')
         }
     }
     /**
      * initialisation et raz du contenu
      */
-    div.select('#progTitle').append('span').text("en debug")
+    div.select('#progTitle').append('span').text(`debug de ${result.infos.user} le ${result.infos.date} (${result.session})`)
     div.select('#fermerBtn').on('click',()=>{
         div.style('visibility','hidden')
         div.select('#progTitle').html(null)
@@ -87,8 +147,13 @@ const graphDebug = (result,div) => {
                 ||
                 (d.conteneurBlock!=null && d.conteneurBlock.indexOf('SCRIPT')!=-1 ))
         )
-        let elt={temps:c.temps}
 
+        //on récupère les infos du temps donné
+        let infos=result.commandes.find(e=>e.temps==c.temps)
+        //console.log('infos',infos)
+        //on construit les données du temps
+        //let elt={temps:c.temps,informas:'blo'}
+        let elt={temps:c.temps,infos:infos}
         tetes.forEach(function(t){
             const cmds=parcoursCommande(c.snap,[],t,0)
             elt["Block_"+t.JMLid]={commandes:cmds,nb:cmds.length,nbPrev:last["Block_"+t.JMLid],

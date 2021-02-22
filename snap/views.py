@@ -2179,3 +2179,15 @@ def testReconstruit(request,id=None):
         limit=None
     
     return JsonResponse(reconstruit(id,limit,load=('load'in request.GET)))
+
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def testEnvoi(request,id=None):
+    print(id)
+    ev=Evenement.objects.get(id=id)
+    evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lt=ev.numero)
+    
+    print(EvenementSerializer(evs,many=True).data)
+    #json = JSONRenderer().render(EvenementSerializer(evs,many=True).data)
+    #print(json)
+    return JsonResponse({'evt':ev.numero,'evt_prec':EvenementSerializer(evs,many=True).data})

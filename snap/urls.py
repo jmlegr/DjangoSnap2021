@@ -61,6 +61,7 @@ urlpatterns = [
      path('c2',TemplateView.as_view(template_name='testcyto2.html')),
      path('ajax',views.testAjax),
      path('tr/<str:id>/',views.testReconstruit),
+     path('testr/<int:id>',views.testEnvoi),
     ]
 
 urlpatterns += [
