@@ -153,18 +153,22 @@ const graphDebug = (result,div) => {
                             +(d.typeMorph?d.typeMorph:'')
                             +(d.truc?` truc truc_${d.truc}`:'')
                     )
-                    .attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid} `+(d.truc?`truc:${d.truc}`:''))
-                    .html(d=>affModif(d.truc)+'...'.repeat(d.index)+d.commande)
+                    //.attr("title",d=>(d.action?(d.action+"\n"):"")+`id:${d.JMLid} `+(d.truc?`truc:${d.truc}`:''))
+                    .html(d=>affModif(d.truc)+'......'.repeat(d.index)+d.commande)
                 b.exit().remove()
             })
+            /*
+            le tippy doit être mis à jour à chaque affichage
+             */
             tippy(".debug.command",{
-                content:function(tip){
-                    var d=d3.select(tip).datum()
+                content:'...',
+                onShow:function(tip){
+                    var d=d3.select(tip.reference).datum()
                     let r=''
                     d3.keys(d).forEach(e=>{
                         r+=`<p>${e}: ${d[e]}</p>`
                     })
-                    return r
+                    tip.setContent(r)
                 }
             })
         } else {
