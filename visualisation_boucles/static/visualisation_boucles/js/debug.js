@@ -85,6 +85,7 @@ const graphDebug = (result,div) => {
             .datum(donnees[v].infos)
             .text(e=>`${e.evt.evenement_type}-${e.evt.type}`)
         tippy('#evt', {
+            maxWidth: 750,
             hideOnClick: true,
             trigger:'click',
             content: 'loading...',
@@ -118,12 +119,12 @@ const graphDebug = (result,div) => {
                         .then(response => response.json())
                         .then(response => {
                             let rr=''
-                            response.evt_prec.forEach(e=>{
+                            response.evts_proches.sort((a,b)=>d3.ascending(a.numero,b.numero)).forEach(e=>{
                                 e=setDataType(e)
-                                rr+=`<p class="debug_tippy">n°${e.numero} id${e.id} `+e.toString()+'</p>'
+                                let dn=e.numero-response.n_evt
+                                rr+=`<p class="debug_tippy dn_${dn}">[${dn}] n°${e.numero} id${e.id} `+e.toString()+'</p>'
                             })
-                            //response.evt_prec.forEach(e=>rr+=`<p>(${e.numero}) ${e.type} [id: ${e.id}]`)
-                            instance.setContent(`</p>Évènement n°${response.evt}</p>`+r+'<p>précédents: </p>'+rr)
+                            instance.setContent(`</p>Évènement n°${response.n_evt}</p>`+rr)
                         })
                 }
             },

@@ -58,9 +58,39 @@
 	margin: 0 0 2px;
 }
 .tippy-content p.debug_tippy {
+    line-height: 2;
+    margin: 0 0 2px;
+}
+/**
+.tippy-content p.debug_tippy {
+    font-size: 1em;
+}
+**/
+.tippy-content.debug_tippy {
+    max-width: 750px;
+    text-align: left;
+}
+.dn_0 {
     font-size: 2em;
 }
-
+.dn_1 {
+    font-size: 1.7em;
+}
+.dn_-1 {
+    font-size: 1.7em;
+}
+.dn_-2 {
+    font-size: 1.5em;
+}
+.dn_-3 {
+    font-size: 1.3em;
+}
+.dn_-4 {
+    font-size: 1.1em;
+}
+.dn_-5 {
+    font-size: 1em;
+}
 .imagetooltip {
 background: none repeat scroll 0 0 lavender;
 pointer-events: none;

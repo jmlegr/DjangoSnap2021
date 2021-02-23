@@ -2184,11 +2184,14 @@ def testReconstruit(request,id=None):
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
 def testEnvoi(request,id=None):
+    '''
+    renvoie les evènements proches de celui dont l'id est envoyée (ie de n-4 à n+1)
+    '''
     print(id)
     ev=Evenement.objects.get(id=id)
-    evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lt=ev.numero)
+    evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lte=ev.numero+1)
     
     print(SimpleEvenementSerializer(evs,many=True).data)
     #json = JSONRenderer().render(EvenementSerializer(evs,many=True).data)
     #print(json)
-    return JsonResponse({'evt':ev.numero,'evt_prec':SimpleEvenementSerializer(evs,many=True).data})
+    return JsonResponse({'n_evt':ev.numero,'evts_proches':SimpleEvenementSerializer(evs,many=True).data})
