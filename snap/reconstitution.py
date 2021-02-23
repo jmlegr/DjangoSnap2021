@@ -1597,7 +1597,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         sinon c'est un simple déplacement
                         """
                         aff('DROP déjà traité',spr)
-
+                    redrop=False #passe à vrai si on fait un redrop (un drop à la même place)
                     if history is None:
                         listeBlocks.recordDrop(spr, theTime)
                     else:
@@ -1722,7 +1722,26 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         newNode.change='wrapped'
                         conteneurNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime)
                         conteneurNode.truc="contenu"
-                        listeBlocks.append(conteneurNode)
+                        if lastConteneur and conteneurNode.JMLid==lastConteneur.JMLid:
+                            '''
+                            C'est un redrop dans le même slot
+                            le conteneur est déj
+                            '''
+                            redrop=True
+                            conteneurNode=lastConteneur
+                            conteneurNode.truc+=' redrop'
+                            newNode.truc+=" redrop"
+                            lastContenu=newNode
+                        else:                            
+                            listeBlocks.append(conteneurNode)                            
+                            lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
+                            if lastContenu is not None and conteneurNode.wrappedBlockId!=lastContenu.JMLid:
+                                aff('lastcontenu',lastContenu)
+                                #l'ancien contenu devient le nextblock
+                                lastContenu=lastContenu.copy(theTime)
+                                lastContenu.unwrap()
+                                lastContenu.truc="prev"
+                                listeBlocks.append(lastContenu)
                         """
                         conteneurNode=listeBlocks.lastNode(spr.parentId,theTime,veryLast=True)
                         if conteneurNode.time<theTime:
@@ -1746,25 +1765,21 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         else:
                             listeBlocks.setPrevBlock(newNode,None)
 
-                        lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
-                        if lastContenu is not None:
-                            aff('lastcontenu',lastContenu)
-                            #l'ancien contenu devient le nextblock
-                            lastContenu=lastContenu.copy(theTime)
-                            lastContenu.unwrap()
-                            lastContenu.truc="prev"
-                            listeBlocks.append(lastContenu)
+                        
                         #on va chercher le fin du script droppé (si c'en est un)
                         finBlock=listeBlocks.lastFromBlock(theTime,newNode)
                         if finBlock.JMLid!=newNode.JMLid:
                             newFinBlock=listeBlocks.addSimpleBlock(theTime,block=finBlock)
                             newFinBlock.change='insert'
                             newFinBlock.truc="lastnode"
-                            listeBlocks.setNextBlock(newFinBlock,lastContenu)
+                            if not redrop:
+                                listeBlocks.setNextBlock(newFinBlock,lastContenu)
+                            #sinon on ne change rien, le nextBlock de la fin du script ne change pas
                         else:
-                            #truc="lastnode" ?
+                            #une seule instruction
                             newNode.truc+=" lastnode"
-                            listeBlocks.setNextBlock(newNode,lastContenu)
+                            if redrop:
+                                listeBlocks.setNextBlock(newNode,lastContenu)
                         conteneurNode.setWrapped(newNode)
                         aff('                                                                MMM',newNode.JMLid,newNode.conteneurBlockId,newNode.prevBlockId,'cont',conteneurNode.wrappedBlockId)
                         listeBlocks.addTick(theTime)
