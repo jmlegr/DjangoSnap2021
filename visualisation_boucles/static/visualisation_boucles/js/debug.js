@@ -124,7 +124,7 @@ const graphDebug = (result,div) => {
                         Promise.all([divimg,divevt]).then(([img,txt])=>{
                             instance.setContent(img.outerHTML+txt)
                         }).finally(()=>{
-                            instance._isFetching = false;
+                            state.isFetching = false;
                         })
                 } else {
                     fetch('/snap/testr/'+d.evenement)
