@@ -28,7 +28,7 @@ const graphDebug = (result,div) => {
                 obj.toString=()=>{
                     let r=`SPR-${obj.data.type} Block: ${obj.data.blockId}`
                     r+=obj.data.location?` loc: ${obj.data.location}`:''
-                    r+=obj.data.targetId?` target: ${obj.data.targetid}`:''
+                    r+=obj.data.targetId?` target: ${obj.data.targetId}`:''
                     r+=obj.data.detail?` detail: ${obj.data.detail}}`:''
                     r+=obj.data.parentId?` parent: ${obj.data.parentId}`:''
                     r+=obj.data.nextBlockId?` next: ${obj.data.nextBlockId}`:''
@@ -138,7 +138,11 @@ const graphDebug = (result,div) => {
         if (blocks.length>0) {
 
             let divblocks=divProgs.selectAll('.blockcommands').data(blocks)
-            divblocks.enter().append('div').attr('class',d=>`debug blockcommands ${d}`).text(d=>d)
+            divblocks.enter().append('div')
+                .merge(divblocks)
+                .attr('class',d=>'debug blockcommands '+d)
+                //.attr('id', d=>d)
+                .text(d=>d)
             divblocks.exit().remove()
             blocks.forEach(block=>{
                 let hasChanged=donnees[v][block].commandes.some(ez=>ez.change.includes("AAchange"))

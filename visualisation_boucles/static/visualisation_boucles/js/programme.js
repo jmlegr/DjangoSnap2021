@@ -19,6 +19,7 @@ const parcoursCommande=function(commandes,data,snap,index) {
     }
     if (snap.nextBlock!=null) {
         const next=commandes.filter(d=>d.JMLid==snap.nextBlock)[0]
+        if (!next) console.log('oula',snap)
         data=data.concat(parcoursCommande(commandes,[],next,index))
     }
     return data
