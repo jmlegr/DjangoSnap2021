@@ -1609,6 +1609,8 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     listeBlocks.recordDrop(spr, theTime)
                     #attention, si le suivant est un newval sur un même bloc, c'est une suppresionn+silent-replaced
                 else:
+                    if theTime > 320000:
+                            print()
                     if spr.location:
                         action+=' '+spr.location
                     if spr.typeMorph=='ReporterBlockMorph':
@@ -1648,7 +1650,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         lastConteneur=None
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':
-                        if theTime > 983151:
+                        if theTime > 320000:
                             print()
                         #c'est un bloc ajouté à la suite d'un autre
                         #on vérifie d'abord s'il n'a pas été remis à sa place
@@ -1775,13 +1777,21 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         else:                            
                             listeBlocks.append(conteneurNode)                            
                             lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
-                            if lastContenu is not None and conteneurNode.wrappedBlockId!=lastContenu.JMLid:
-                                aff('lastcontenu',lastContenu)
-                                #l'ancien contenu devient le nextblock
-                                lastContenu=lastContenu.copy(theTime)
-                                lastContenu.unwrap()
-                                lastContenu.truc="prev"
-                                listeBlocks.append(lastContenu)
+                            if lastContenu is not None:
+                                if conteneurNode.wrappedBlockId!=lastContenu.JMLid: #comment est-ce possible?
+                                    aff('lastcontenu',lastContenu)
+                                    #l'ancien contenu devient le nextblock
+                                    lastContenu=lastContenu.copy(theTime)
+                                    lastContenu.unwrap()
+                                    lastContenu.truc="prev"
+                                    listeBlocks.append(lastContenu)
+                                else:                                    
+                                    #l'ancien contenu deviendra le nextblock
+                                    pass
+                                    #lastContenu=lastContenu.copy(theTime)
+                                    #lastContenu.unwrap()
+                                    #lastContenu.truc="prev"
+                                    #listeBlocks.append(lastContenu)
                         """
                         conteneurNode=listeBlocks.lastNode(spr.parentId,theTime,veryLast=True)
                         if conteneurNode.time<theTime:
@@ -1798,6 +1808,9 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                                 newLastPrevBlock.setNextBlock(None)
                                 newLastPrevBlock.truc="next"
                                 listeBlocks.append(newLastPrevBlock)
+                                if lastContenu.JMLid==newLastPrevBlock.JMLid:
+                                    #on remplace le haut du script
+                                    lastContenu=newLastPrevBlock
                             else:
                                 #le conteneur est l'ancien prev
                                 conteneurNode.truc+=" next"
