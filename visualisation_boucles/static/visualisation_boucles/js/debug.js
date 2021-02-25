@@ -88,6 +88,7 @@ const graphDebug = (result,div) => {
             maxWidth: 750,
             hideOnClick: true,
             trigger:'click',
+            allowHTML: true,
             content: 'loading...',
             async onShow(instance) {
                 let r = '',
@@ -98,22 +99,33 @@ const graphDebug = (result,div) => {
                     if (state.isFetching || !state.canFetch) return
                     state.isFetching = true
                     state.canFetch = false
-                    try {
-                        const response = await fetch(d3.select(instance.reference).datum().epr.snp.image)
-                        const blob = await response.blob()
-                        const url = URL.createObjectURL(blob)
-                        if (instance.state.isVisible) {
+                        const responseImg= fetch(d3.select(instance.reference).datum().epr.snp.image)
+                        const responseEvs=fetch('/snap/testr/'+d.evenement)
+                        const divimg=responseImg.then(response=> response.blob())
+                            .then(blob=>{
+                            //const blob=response.blob()
+                            const url = URL.createObjectURL(blob)
                             const img = new Image()
                             img.width = 300
                             img.height = 300
                             img.src = url
-                            instance.setContent(img)
-                        }
-                    } catch (e) {
-                        instance.setContent(`Fetch failed. ${e}`)
-                    } finally {
-                        state.isFetching = false
-                    }
+                            return img
+                        });
+                        const divevt=responseEvs.then(response => response.json())
+                            .then(response=>{
+                                let rr=''
+                                response.evts_proches.sort((a,b)=>d3.ascending(a.numero,b.numero)).forEach(e=>{
+                                    e=setDataType(e)
+                                    let dn=e.numero-response.n_evt
+                                    rr+=`<p class="debug_tippy dn_${dn}">[${dn}] n°${e.numero} id${e.id} `+e.toString()+'</p>'
+                                })
+                                return`</p>Évènement n°${response.n_evt}</p>`+rr
+                        })
+                        Promise.all([divimg,divevt]).then(([img,txt])=>{
+                            instance.setContent(img.outerHTML+txt)
+                        }).finally(()=>{
+                            instance._isFetching = false;
+                        })
                 } else {
                     fetch('/snap/testr/'+d.evenement)
                         .then(response => response.json())
