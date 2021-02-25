@@ -1002,6 +1002,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
     nb_evts=evts.count()
     infos={'type':''}
     eprInfos={}
+    sprInfos={}
     evtTypeInfos={}
     user=debut.user
     infos['user']=user.username
@@ -1169,6 +1170,12 @@ def reconstruit(session_key,limit=None,save=False,load=False):
         if evt.type=='SPR':
             #spr=evt.evenementspr.all()[0]
             spr=evtType            
+            sprInfos['%s' % theTime]={
+                'blockId':spr.blockId,
+                'blockSpec':spr.blockSpec,
+                'location':spr.location,
+                'targetId':spr.targetId
+                }
             action='SPR_%s' % spr.type
             spr.aff(niv=3)
             if spr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
@@ -2151,6 +2158,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
         #puis reconstruire
         commandes.append({'temps':temps,'snap':res,
                           'epr':eprInfos['%s' % temps] if '%s' % temps in eprInfos else None,
+                          'spr':sprInfos['%s' % temps] if '%s' % temps in sprInfos else None,
                           'evt':evtTypeInfos['%s' % temps] if '%s' % temps in evtTypeInfos else None})
     #print('-----------------------------------------------------------------------------------------')
     #for i in listeBlocks.liste:

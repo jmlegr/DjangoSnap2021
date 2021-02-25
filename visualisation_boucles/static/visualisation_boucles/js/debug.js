@@ -83,7 +83,12 @@ const graphDebug = (result,div) => {
     const update= v=> {
         div.select('#evt')
             .datum(donnees[v].infos)
-            .text(e=>`${e.evt.evenement_type}-${e.evt.type}`)
+            .text(e=>{
+                if (e.evt.evenement_type=="EPR") return `${e.evt.evenement_type}-${e.evt.type} ${e.epr.detail}`
+                else if (e.evt.evenement_type=="SPR") return `${e.evt.evenement_type}-${e.evt.type} (${e.spr.blockSpec}) ${e.spr.blockId}`+
+                                `>${e.spr.location}:${e.spr.targetId}`
+                else return `${e.evt.evenement_type}-${e.evt.type}`
+            })
         tippy('#evt', {
             maxWidth: 750,
             hideOnClick: true,
