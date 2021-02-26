@@ -1317,7 +1317,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)
                         target.truc="prev"
                         listeBlocks.append(target)
-                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
                         #normamelement, ça ne peut pas être un nomve (nomove à la même place)
                         newPrev=listeBlocks.lastNode(ancienNode.prevBlockId,theTime)
                         if newPrev is not None:
@@ -1338,7 +1338,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         conteneur=listeBlocks.lastNode(dspr.parentId,theTime).copy(theTime)
                         conteneur.truc="contenu"
                         listeBlocks.append(conteneur)
-                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
                         if ancienNode.conteneurBlockId==newNode.targetId:
                             #c'est un drop nomove
                             newNode.truc+=' nomove'
@@ -1355,7 +1355,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                                 newAncienPrevBlock.truc="next"
                                 listeBlocks.setNextBlock(newAncienPrevBlock,newNode)
                                 listeBlocks.append(newAncienPrevBlock)
-                            ancienConteneur=listeBlocks.lastNode(dspr.parentId,s['time'])
+                            ancienConteneur=listeBlocks.lastNode(dspr.parentId,s['time']) #verLast=dleted?
                             if ancienConteneur.wrappedBlockId is not None:
                                 contenu=listeBlocks.lastNode(ancienConteneur.wrappedBlockId,theTime).copy(theTime)
                                 contenu.truc="conteneur"
@@ -1377,7 +1377,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     elif dspr.location=='wrap':
                         #on remet le block conteneur a sa place (et donc maj de son prevBlock
                         # pas de nomove normalement
-                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
                         if newNode.wrappedBlockId is not None:
                             ancienContenu=listeBlocks.lastNode(newNode.wrappedBlockId,s['time']).copy(theTime)
                             contenu=listeBlocks.lastNode(newNode.wrappedBlockId,theTime).copy(theTime)
@@ -1404,7 +1404,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
 
                     elif dspr.location==None:
                         #on récupère l'ancien node
-                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
                         if ancienNode.prevBlockId is None and ancienNode.conteneurBlockId is None:
                             #c'est un nomove
                             newNode.truc+=" nomove"
@@ -1477,7 +1477,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     oldInput=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime)
                     oldInput.change='val_replaced'
                     #on recherche s'il avait un parent
-                    ancienInput=listeBlocks.lastNode(dspr.blockId,s['time'])
+                    ancienInput=listeBlocks.lastNode(dspr.blockId,s['time'],veryLast=deleted)
                     if ancienInput.parentBlockId is not None:
                         ancienParent=listeBlocks.lastNode(ancienInput.parentBlockId,theTime).copy(theTime)
                         ancienParent.addInput(oldInput)
@@ -1650,7 +1650,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         lastConteneur=None
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':
-                        if theTime > 320000:
+                        if theTime > 108112:
                             print()
                         #c'est un bloc ajouté à la suite d'un autre
                         #on vérifie d'abord s'il n'a pas été remis à sa place
@@ -1691,8 +1691,11 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                                     listeBlocks.append(lastFromNode)
                                     newLastNextBlock=listeBlocks.lastNode(newPrevBlock.nextBlockId,theTime).copy(theTime)
                                     newLastNextBlock.truc="prev"
-                                    listeBlocks.append(newLastNextBlock)
-                                    listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
+                                    if newLastPrevBlock is not None and newLastPrevBlock.JMLid==newLastNextBlock.JMLid:
+                                        listeBlocks.setNextBlock(lastFromNode,newLastPrevBlock)
+                                    else:                                    
+                                        listeBlocks.append(newLastNextBlock)
+                                        listeBlocks.setNextBlock(lastFromNode,newLastNextBlock)
                                 else:
                                     #c'est un bloc seul
                                     newNode.truc+=" lastnode"
@@ -1808,7 +1811,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                                 newLastPrevBlock.setNextBlock(None)
                                 newLastPrevBlock.truc="next"
                                 listeBlocks.append(newLastPrevBlock)
-                                if lastContenu.JMLid==newLastPrevBlock.JMLid:
+                                if lastContenu is not None and lastContenu.JMLid==newLastPrevBlock.JMLid:
                                     #on remplace le haut du script
                                     lastContenu=newLastPrevBlock
                             else:
