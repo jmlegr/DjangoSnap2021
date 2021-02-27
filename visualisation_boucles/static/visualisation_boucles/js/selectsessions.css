@@ -103,7 +103,7 @@ pointer-events: none;
     width: 72%;
     height: 72%;
     background-color: #bbbbda;
-    z-index:999;
+    z-index:989;
     visibility: hidden;
 }
 #overlayDiv2 {
@@ -119,6 +119,11 @@ pointer-events: none;
     background-color: gainsboro;
     z-index:990;
     visibility: hidden;
+}
+
+
+#overlayDiv2:focus-within {
+    border: 4px solid darkgray;
 }
 #actionsDiv {
 	float:left

@@ -207,6 +207,28 @@ const graphDebug = (result,div) => {
         div.select('#divtete').html(null)
         div.select('#resultats').html(null)
     });
+    div.on('keydown',()=>{
+        //on change le tick sur fleche droite ou gauche
+        if (['ArrowLeft','ArrowRight'].includes(d3.event.key)) {
+            d3.event.preventDefault()
+            const node=div.select('#selectTick').node()
+            if (d3.event.key=='ArrowRight' && node.selectedIndex+1<node.options.length) {
+                node.options[node.selectedIndex+1].selected=true
+            } else if (d3.event.key=='ArrowLeft' && node.selectedIndex>0) {
+                node.options[node.selectedIndex - 1].selected = true
+            }
+            div.select('#selectTick').dispatch('change')
+        }
+    })
+    div.on('focus',()=>console.log('focus'))
+    /*div.on("click",(d,v,i)=>{
+        console.log("click",d,v,i,d3.event)
+        d3.select(d3.event.target).node().focus();
+    })
+    */
+    div.attr('tabindex',0)
+    div.node().focus()
+
     /**
      * préparation des données (depuis programme.js granphNbstack)
      */
@@ -240,7 +262,7 @@ const graphDebug = (result,div) => {
     /**
      * ajout du select pour les ticks
      */
-    div.select("#divtete").append('select').on('change',()=>update(div.select('select').property('value')))
+    div.select("#divtete").append('select').attr('id','selectTick').on('change',()=>update(div.select('select').property('value')))
         .selectAll('option')
         .data(tabTemps)
         .enter().append('option').attr('value',(d,r)=>r).text(d=>d)
