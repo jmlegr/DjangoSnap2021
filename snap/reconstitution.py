@@ -1266,7 +1266,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         target.truc="next"
                         listeBlocks.append(target)
                         ancienTarget=listeBlocks.lastNode(dspr.targetId,s['time'],veryLast=deleted)
-                        if target.nextBlockId==newNode.JMLid:
+                        if ancienTarget.nextBlockId==newNode.JMLid:
                             # c'était un drop nomove
                             newNode.truc+=' nomove'
                         else:
