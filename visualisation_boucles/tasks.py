@@ -433,7 +433,7 @@ def reconstruit(session_key,save=False,load=False):
                         target=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime)
                         target.truc="prev"
                         listeBlocks.append(target)
-                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
                         #normamelement, ça ne peut pas être un nomve (nomove à la même place)
                         newPrev=listeBlocks.lastNode(ancienNode.prevBlockId,theTime)
                         if newPrev is not None:
@@ -454,7 +454,7 @@ def reconstruit(session_key,save=False,load=False):
                         conteneur=listeBlocks.lastNode(dspr.parentId,theTime).copy(theTime)
                         conteneur.truc="contenu"
                         listeBlocks.append(conteneur)
-                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
                         if ancienNode.conteneurBlockId==newNode.targetId:
                             #c'est un drop nomove
                             newNode.truc+=' nomove'
@@ -493,7 +493,7 @@ def reconstruit(session_key,save=False,load=False):
                     elif dspr.location=='wrap':
                         #on remet le block conteneur a sa place (et donc maj de son prevBlock
                         # pas de nomove normalement
-                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'])
+                        ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
                         if newNode.wrappedBlockId is not None:
                             ancienContenu=listeBlocks.lastNode(newNode.wrappedBlockId,s['time']).copy(theTime)
                             contenu=listeBlocks.lastNode(newNode.wrappedBlockId,theTime).copy(theTime)
@@ -556,7 +556,7 @@ def reconstruit(session_key,save=False,load=False):
                                 newNode.truc+=" lastnode m10"
 
                 elif dspr.type=="NEWVAL":
-                    #TODO Voir pour traitement silencieux et règel de undrop/redrop avec les reporter (pas correct sur snap)
+                    #TODO Voir pour traitement silencieux et règel de undrop/nomove avec les reporter (pas correct sur snap)
                     if dspr.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
                         #si on a créé un inp directement, la valeur est dans blockspec
                         contenu=dspr.blockSpec
@@ -593,7 +593,7 @@ def reconstruit(session_key,save=False,load=False):
                     oldInput=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime)
                     oldInput.change='val_replaced'
                     #on recherche s'il avait un parent
-                    ancienInput=listeBlocks.lastNode(dspr.blockId,s['time'])
+                    ancienInput=listeBlocks.lastNode(dspr.blockId,s['time'],veryLast=deleted)
                     if ancienInput.parentBlockId is not None:
                         ancienParent=listeBlocks.lastNode(ancienInput.parentBlockId,theTime).copy(theTime)
                         ancienParent.addInput(oldInput)
@@ -788,7 +788,15 @@ def reconstruit(session_key,save=False,load=False):
                             #on configure le nouveau prevblock
                             newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
                             newPrevBlock.change="yaya"
-                            listeBlocks.append(newPrevBlock)
+                             #si on drop un contenu sous son conteneur, le lastconteneur est le newprevblock
+                            if lastConteneur is not None:
+                                if newPrevBlock.JMLid!=lastConteneur.JMLid:
+                                    listeBlocks.append(newPrevBlock)
+                                else:
+                                    newPrevBlock=lastConteneur
+                            else:
+                                listeBlocks.append(newPrevBlock)
+                                
                             #s'il avait un nextblock, c'est une insertion
                             if newPrevBlock.nextBlockId is not None:
                                 #on prend le dernier block du script commençant par newNode (ce peut-être luui même)
@@ -933,14 +941,7 @@ def reconstruit(session_key,save=False,load=False):
                         else:
                             listeBlocks.setPrevBlock(newNode,None)
 
-                        lastContenu=listeBlocks.lastNode(conteneurNode.wrappedBlockId,theTime)
-                        if lastContenu is not None:
-                            aff('lastcontenu',lastContenu)
-                            #l'ancien contenu devient le nextblock
-                            lastContenu=lastContenu.copy(theTime)
-                            lastContenu.unwrap()
-                            lastContenu.truc="prev"
-                            listeBlocks.append(lastContenu)
+                        
                         #on va chercher le fin du script droppé (si c'en est un)
                         finBlock=listeBlocks.lastFromBlock(theTime,newNode)
                         if finBlock.JMLid!=newNode.JMLid:
