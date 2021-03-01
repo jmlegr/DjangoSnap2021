@@ -2007,7 +2007,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         listeBlocks.recordDrop(spr, theTime)
                     # blockid est le nouvel input, detail l'input remplacé, parentId le block parent
                     #on récupère le parent
-                    parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
+                    parentNode=listeBlocks.lastNode(spr.parentId,theTime).copy(theTime,action)
                     listeBlocks.append(parentNode)
                     newInput=listeBlocks.addSimpleBlock(thetime=theTime,
                                                     JMLid=spr.blockId,
