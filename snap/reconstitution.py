@@ -1610,7 +1610,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     #attention, si le suivant est un newval sur un même bloc, c'est une suppresionn+silent-replaced
                 else:
                     if theTime > 320000:
-                            print()
+                            print() 
                     if spr.location:
                         action+=' '+spr.location
                     if spr.typeMorph=='ReporterBlockMorph':
@@ -1650,7 +1650,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         lastConteneur=None
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':
-                        if theTime > 108112:
+                        if theTime > 480915:
                             print()
                         #c'est un bloc ajouté à la suite d'un autre
                         #on vérifie d'abord s'il n'a pas été remis à sa place
@@ -1675,7 +1675,14 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                             #on configure le nouveau prevblock
                             newPrevBlock=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime)
                             newPrevBlock.change="yaya"
-                            listeBlocks.append(newPrevBlock)
+                            #si on drop un contenu sous son conteneur, le lastconteneur est le newprevblock
+                            if lastConteneur is not None:
+                                if newPrevBlock.JMLid!=lastConteneur.JMLid:
+                                    listeBlocks.append(newPrevBlock)
+                                else:
+                                    newPrevBlock=lastConteneur
+                            else:
+                                listeBlocks.append(newPrevBlock)
                             
                             #s'il avait un nextblock, c'est une insertion
                             if newPrevBlock.nextBlockId is not None:
@@ -1992,7 +1999,8 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                 c'est un reporter nouveau(NEW) déplacé dans un inputSlotMorph de l'element targetId,
                 ou un nouveau inputSlot dans le cas d'un remplacement silencieux (isSlot=True)
                 """
-
+                if theTime>614859:
+                    print()
                 if isSlot:
                     #c'est un remplacement silencieux
                     if history is None:
