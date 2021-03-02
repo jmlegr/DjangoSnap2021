@@ -2193,10 +2193,10 @@ def testEnvoi(request,id=None):
     nextDeb=Evenement.objects.filter(numero=1,session_key=ev.session_key,time__gt=ev.time).order_by('time').first()
     if nextDeb is not None:
         #il y a un autre lancement après
-        evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lte=ev.numero+1,
+        evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lte=ev.numero+2,
                                  time__gte=deb.time,time__lt=nextDeb.time)
     else:
-        evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lte=ev.numero+1,
+        evs=Evenement.objects.filter(session_key=ev.session_key,numero__gt=(ev.numero-5),numero__lte=ev.numero+2,
                                  time__gte=deb.time)
     
     print(SimpleEvenementSerializer(evs,many=True).data)
