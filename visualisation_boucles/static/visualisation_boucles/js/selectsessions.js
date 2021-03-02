@@ -178,7 +178,7 @@ var lance = function () {
         .sortKeys((a, b) => new Date(a) - new Date(b))
         .entries(data)
         .map(d => new Date(d.key))
-        // console.log('classes,heures,jours',classes,heures,jours)
+        //console.log('classes,heures,jours',classes,heures,jours)
 
         // .tickValues(heures)
 
@@ -187,11 +187,16 @@ var lance = function () {
         .domain([d3.timeDay.offset(d3.min(sessionsLimites, d => d3.min(d.values, e => e.value.fmin)), -1),
             d3.timeDay.offset(d3.max(sessionsLimites, d => d3.max(d.values, e => e.value.fmax)), 1)])
             .range([0, width]);
+        let linearTimeScale=d3.scalePoint()
+            .domain(heures)
+            .range([0, width]);
         var yScale = d3.scalePoint().domain(classes).range([0, height])
         var xAxis = d3.axisBottom()
-        .scale(timeScale)
-        .ticks(d3.timeDay)
-        .tickValues(jours)
+        //.scale(timeScale)
+            .scale(linearTimeScale)
+        //.ticks(d3.timeDay)
+        //.tickValues(jours)
+            .tickFormat(d=>d3.timeFormat('%e/%m/%y %Hh')(d))
         .tickSize(20, 0, 0)
         .tickSizeOuter(10);
         var yAxis = d3.axisLeft()
@@ -226,7 +231,7 @@ var lance = function () {
                 })
             })
         })
-        var color = d3.scaleOrdinal(d3.schemeCategory10)
+        var color = d3.scaleOrdinal(d3.schemeDark2)
         .domain(classes);
         var sessionsSelected = [];
 
@@ -235,16 +240,19 @@ var lance = function () {
         projectEnter
         .append("rect")
         .attr("rx", 3).attr("ry", 3)
-        .attr("x", (d, i) => timeScale(d.heure))
+        //.attr("x", (d, i) => timeScale(d.heure))
+            .attr("x", (d, i) => linearTimeScale(d.heure))
         .attr("y", (d, i) => yScale(d.classe))
-        .attr("width", (d, i) => timeScale(d3.timeHour.offset(d.heure, 1)) - timeScale(d.heure))
+        //.attr("width", (d, i) => timeScale(d3.timeHour.offset(d.heure, 1)) - timeScale(d.heure))
+            .attr("width", (d, i) => linearTimeScale(d3.timeHour.offset(d.heure, 1)) - linearTimeScale(d.heure))
         .attr("height", ySize - 4)
         .attr("fill", d => color(d.classe))
         projectEnter
         .append("circle")
         // .attr("class","session")
         .attr("r", 5)
-        .attr("cx", (d, i) => timeScale(d.heure))
+        //.attr("cx", (d, i) => timeScale(d.heure))
+            .attr("cx", (d, i) => linearTimeScale(d.heure))
         .attr("cy", (d, i) => yScale(d.classe) + ySize / 2 - 2)
         .attr("fill", d => d3.hsl(color(d.classe)).darker())
         // .classed("notselected",true)
