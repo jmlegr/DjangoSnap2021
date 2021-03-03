@@ -789,7 +789,6 @@ var lance = function () {
                                     //.then(response=> console.log("resp",response))
                                     .then(response=>{
                                         const div=d3.select("#overlayDiv2")
-                                        div.style('visibility','visible')
                                         graphDebug(response,div);                                        
                                     }); 
                                     break;
