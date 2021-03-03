@@ -1262,7 +1262,7 @@ def reconstruit(session_key,save=False,load=False):
                 listeBlocks.addTick(theTime)
 
 
-        evtPrec=evtType
+            evtPrec=evtType
     #on parcours et on affiche les commandes
     commandes=[]
     nb_ticks=len(listeBlocks.ticks)
