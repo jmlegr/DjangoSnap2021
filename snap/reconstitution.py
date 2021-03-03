@@ -1195,8 +1195,6 @@ def reconstruit(session_key,limit=None,save=False,load=False):
             if spr.type=="UNDROP":
                 history="UNDROP"
                 action+=" UNDROP"
-                if theTime>=256611:
-                    print()
                 s=listeBlocks.undrop()
                 if s['type']=="DROPEX":
                     dspr=EvenementENV.objects.get(id=s['spr'])
@@ -1413,8 +1411,6 @@ def reconstruit(session_key,limit=None,save=False,load=False):
 
                     elif dspr.location==None:
                         #on récupère l'ancien node
-                        if theTime>10167:
-                            print()
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],deleted=deleted,veryLast=deleted)
                         if ancienNode.prevBlockId is None and ancienNode.conteneurBlockId is None:
                             #c'est un nomove
@@ -1507,8 +1503,6 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                 listeBlocks.addTick(theTime)
                         #soucis; faut il oprendre la derniere modification? la modif faite au temps du drop?
             elif spr.type=="REDROP":
-                if theTime>261000:
-                    print()
                 history="REDROP"
                 action+=" REDROP"
                 s=listeBlocks.redrop()
@@ -1622,8 +1616,6 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     listeBlocks.recordDrop(spr, theTime)
                     #attention, si le suivant est un newval sur un même bloc, c'est une suppresionn+silent-replaced
                 else:
-                    if theTime > 320000:
-                            print() 
                     if spr.location:
                         action+=' '+spr.location
                     if spr.typeMorph=='ReporterBlockMorph':
@@ -1663,8 +1655,6 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         lastConteneur=None
                         #newNode.setConteneur(None)
                     if spr.location=='bottom':
-                        if theTime > 480915:
-                            print()
                         #c'est un bloc ajouté à la suite d'un autre
                         #on vérifie d'abord s'il n'a pas été remis à sa place
                         if newNode.prevBlockId=='%s' % spr.targetId:
@@ -2012,8 +2002,6 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                 c'est un reporter nouveau(NEW) déplacé dans un inputSlotMorph de l'element targetId,
                 ou un nouveau inputSlot dans le cas d'un remplacement silencieux (isSlot=True)
                 """
-                if theTime>387380:
-                    print()
                 if isSlot:
                     #c'est un remplacement silencieux
                     if history is None:
@@ -2040,9 +2028,9 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     if not oldInput.deleted:
                         if oldInput.typeMorph in ['InputSlotMorph','ColorSlotMorph','BooleanSlotMorph']:
                             #remplacement silencieux d'une valeur et non d'un bloc
-                            listeBlocks.liste.append(oldInput)
+                            listeBlocks.append(oldInput)
                         else:
-                            listeBlocks.liste.append(oldInput)
+                            listeBlocks.append(oldInput)
                             listeBlocks.setFirstBlock(oldInput)
                     else:
                         #on fixe le temps du DEL d'un input avec le replaced-silent (sinon on essaye de récupérer un input insexistant)
@@ -2093,8 +2081,6 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                 c'est un reporter existant déplacé,
                 si c'est un commentMorph, c'est un bug, sans doute changement de target, on ignore
                 """
-                if theTime>256962:
-                    print()
                 #on récupère le parent
                 parentNode=listeBlocks.lastNode(spr.targetId,theTime).copy(theTime,action)
                 listeBlocks.append(parentNode)
