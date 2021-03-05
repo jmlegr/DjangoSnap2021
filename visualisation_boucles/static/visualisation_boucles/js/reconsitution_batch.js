@@ -100,6 +100,7 @@ const updateProgress=(task_id,overlay,fun)=>{
                         .html(`<span style="font-size:0.7em">${session.session_key}:</span>${data.data.state}`)
                     res.select(`#task_${task_id}`).select('progress').attr("value",null)
                     if (data.data.state=="FAILURE" || data.data.state=='REVOKED') {
+                        notifBot(`${data.data.state} sur ${session.session_key}\n(${session.user_nom}, le ${session.debut.toLocaleString()})`)
                         fun(task_id,data.data,overlay)
                     } else if (!stop) setTimeout(updateProgress,500,task_id,overlay,fun)
                 }
@@ -193,8 +194,9 @@ function reconstitution_batch(sessions,overlay) {
         stop=true
         tasks.forEach(t=>{
             //on annule al tache
-            fetch(urls.task_cancel+'/'+t).then(r=>console.log('tache annulée',t,r))
-
+            fetch(urls.task_cancel+'/'+t).then(r=>{
+                //console.log('tache annulée',t,r)
+                })
         })
         overlay.style('visibility','hidden').style('display','none')
         overlay.select('#progTitle').html(null)
