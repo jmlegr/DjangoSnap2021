@@ -774,7 +774,7 @@ var lance = function () {
                     alert("Sélectionner une et une seule session!")
                 } else {
                     switch (option) {
-                        case "batch": reconstitution_batch(liste.map(d=>d.session_key),d3.select('#overlayDiv2'))   ; break;
+                        case "batch": reconstitution_batch(liste,d3.select('#overlayDiv2'))   ; break;
                     case "normal": reconstructionTask.lance({
                                         data:liste.map(d=>d.session_key)[0],
                                         ajout_url:liste.map(d=>d.session_key)[0]+"/?load"

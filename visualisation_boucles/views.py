@@ -304,7 +304,8 @@ def celery_listeblock(request,session_key=None):
     #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
     save='save'in request.GET
     load='load' in request.GET
-    job=reconstruit.delay(session_key,save=save,load=load)
+    nosend='nosend' in request.GET
+    job=reconstruit.delay(session_key,save=save,load=load,nosend=nosend)
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
 
 
@@ -323,8 +324,8 @@ def task_state(request,task_id=None):
     data = 'Fail'
     task = AsyncResult(task_id)
     #print(task.state,task.result)
-    if task.state=='REVOKED':
-        data={'state':task.state}
+    if task.state=='REVOKED' or task.state=='FAILURE':
+        data={'result':None,'state':task.state}
     else:
         data = {'result':task.result,'state':task.state}
     return Response({'task_id':task_id,'data':data})       

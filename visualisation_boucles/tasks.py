@@ -26,7 +26,7 @@ def aff(*str):
         print(*str)
 
 @shared_task
-def reconstruit(session_key,save=False,load=False):
+def reconstruit(session_key,save=False,load=False,nosend=False):
     """
     Reconstruit l'histoire du programme
     pour chanque block, on ajoute un attribut truc qui indique les changements:
@@ -1338,6 +1338,11 @@ def reconstruit(session_key,save=False,load=False):
     else:
         created=False
     current_task.update_state(state='Envoi')
+    if nosend:
+        return {"infos":infos,
+                "session":session_key,
+                "created":created,
+            }
     return {"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
