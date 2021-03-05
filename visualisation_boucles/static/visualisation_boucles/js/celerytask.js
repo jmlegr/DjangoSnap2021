@@ -40,7 +40,7 @@ CeleryTask.prototype.lance=function(config) {
     /**
     * à déplacer dans programme.js plutot
     **/
-    this.overlay.select("#fermerBtn")                        
+    this.overlay.select("#fermerBtn").style('vsisibility','visible')
     .on("click",function() {
         me.overlay.style("visibility","hidden").style("display","none")
     })

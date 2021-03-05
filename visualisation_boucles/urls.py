@@ -23,7 +23,7 @@ urlpatterns = [
     path('tolisteblock_cancel/<str:task_id>/', views.listeblock_cancel,name='listeblock_cancel'),
     path('task_state/<str:task_id>/',views.task_state,name='task_state'),
     path('task_cancel/<str:task_id>/',views.task_cancel,name='task_cancel'),
-    path('testadd', views.testadd,name='testadd'),
+    path('testadd/', views.testadd,name='testadd'),
     path('graph_boucles/',views.graph_boucles,name='graph_boucles'),
     path('celrep/',views.reperes,name="reperes"),
     ]

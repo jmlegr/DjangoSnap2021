@@ -342,8 +342,11 @@ def testadd(request):
             'task_id':job_id,
         }
         return Response(context)
-    data=request.data['data']
-    job=add.delay(data["x"],data["y"],data["n"])
+    if request.data != {}:
+        data=request.data['data']
+    else:
+        data=request.query_params
+    job=add.delay(int(data["x"]),int(data["y"]),int(data["n"]))
     return HttpResponseRedirect(reverse('testadd')+'?job='+job.id)
 
 @api_view(('POST','GET'))

@@ -17,6 +17,7 @@ import {locale} from './locale.js'
 import {affActions,truc} from './drops.js'
 import {initSessionStackedBarChart} from './sessionstackedbar.js'
 import {CeleryTask} from './celerytask.js'
+import {reconstitution_batch} from "./reconsitution_batch.js";
 
 var margin = {
         top: 30,
@@ -768,11 +769,12 @@ var lance = function () {
                     })
                 }
             } else if (valueSelected=="reconstitution"){
-                if (liste.length!=1) {
+                if (liste.length!=1 &&option!='batch') {
                     //console.log("data",liste,liste.map(d=>d.session_key),{session_keys:liste.map(d=>d.session_key)})
                     alert("Sélectionner une et une seule session!")
                 } else {
                     switch (option) {
+                        case "batch": reconstitution_batch(liste.map(d=>d.session_key),d3.select('#overlayDiv2'))   ; break;
                     case "normal": reconstructionTask.lance({
                                         data:liste.map(d=>d.session_key)[0],
                                         ajout_url:liste.map(d=>d.session_key)[0]+"/?load"
