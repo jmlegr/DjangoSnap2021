@@ -5,12 +5,53 @@ function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
 }
 
-const tab=[],max=5
+let tab=[],max=5
 let tasks=[]; //memorise les taskids en cours
 //for (let i=0;i<100;i++) t.push(`nb_${i}`)
 let nb=0
 let stop=false; //si vrai on arrête tout
+let notifSend=false
+let tempsdepart=null,
+    tempsfin=null,
+    nbsessions=null
 
+import {telegramBot} from "./codesBot.js";
+
+const notifBot=(msg)=>{
+    let headers=new Headers()
+    headers.append( "Content-Type", "application/json")
+    fetch('https://api.telegram.org/'+telegramBot.token+'/sendMessage',
+            {
+            method : 'POST',
+            headers:headers,
+            body : JSON.stringify({chat_id: telegramBot.chat_Id, text: msg})
+        }).then((r)=>r.json())
+        .catch(err=>console.log('erreuer',err))
+}
+function dateDiff(date1, date2){
+    var diff = {}                           // Initialisation du retour
+    var tmp = date1 - date2;
+
+    tmp = Math.floor(tmp/1000);             // Nombre de secondes entre les 2 dates
+    diff.sec = tmp % 60;                    // Extraction du nombre de secondes
+
+    tmp = Math.floor((tmp-diff.sec)/60);    // Nombre de minutes (partie entière)
+    diff.min = tmp % 60;                    // Extraction du nombre de minutes
+
+    tmp = Math.floor((tmp-diff.min)/60);    // Nombre d'heures (entières)
+    diff.hour = tmp % 24;                   // Extraction du nombre d'heures
+
+    tmp = Math.floor((tmp-diff.hour)/24);   // Nombre de jours restants
+    diff.day = tmp;
+
+    return diff;
+}
+const affDateDiff=(diff)=>{
+    return (diff.day!=0?`${diff.day} jours,`:'')
+            + (diff.hour!=0?`${diff.hour}h ,`:'')
+            + (diff.min!=0?`${diff.min}min `:'')
+            + diff.sec+' s.'
+}
 
 const lancement=(overlay)=> {
     const res=overlay.select('#resultats')
@@ -49,7 +90,7 @@ const updateProgress=(task_id,overlay,fun)=>{
             if (data.data.state!='SUCCESS') {
                 res.select(`#task_${task_id}`).select('label')
                     .text(`${task_id}:${data.data.result.percent_task}%`)
-                res.select(`#task_${task_id}`).select('progress').attr("value",data.data.result.percent_task).text('oo')
+                res.select(`#task_${task_id}`).select('progress').attr("value",data.data.result.percent_task)
                 if (!stop) setTimeout(updateProgress,500,task_id,overlay,fun)
                 //return Promise.reject('pas fini')
             }
@@ -83,6 +124,7 @@ const annule=(task,overlay)=>{
     tasks=tasks.filter(d=>d!=task)
     nb-=1
     updatetete(overlay)
+    notifBot(`Tache ${task} annulée le `+new Date().toLocaleString())
     if (tab.length>0 && nb<max && !stop) {
         lancement(overlay).then(t=>updateProgress(t,overlay,fini))
     }
@@ -98,6 +140,16 @@ const fini=(task,r,overlay)=>{
     updatetete(overlay)
     if (tab.length>0 && nb<max && !stop) {
         lancement(overlay).then(t=>updateProgress(t,overlay,fini))
+    } else if (tab.length==0 && !notifSend && nb>0) {
+        notifSend=true
+        tempsfin=new Date()
+
+        notifBot("Rendu batch terminé le "+new Date().toLocaleString()
+            +`\n${nbsessions} sessions en `+affDateDiff(dateDiff(tempsfin,tempsdepart)))
+
+    } else if (stop && !notifSend) {
+        notifSend=true
+        notifBot("Rendu batch annulé le "+new Date().toLocaleString())
     }
 }
 
@@ -132,14 +184,19 @@ function reconstitution_batch(sessions,overlay) {
     divresult.append('div').attr("id",'encours')
     divresult.append('div').attr("id",'fini').style('display','flex').style('flex-wrap','wrap').attr('width','200px').style('background-color','#b2eafe')
 
+    //tab=sessions
+    console.log('session',sessions)
 
-    for (let i=0;i<100;i++) tab.push(`nb_${i}`)
+    for (let i=0;i<160;i++) tab.push(`nb_${i}`)
     nb=0
     stop=false
+    notifSend=false
+    tempsdepart=new Date()
+    nbsessions=sessions.length
     let tete=overlay.select('#divtete')
     tete.append('label').attr('for','progress').html('Reste: <span>#</span>/'+tab.length)
     tete.append('progress').attr('id','progress').attr('max',tab.length).attr('value',0)
-
+    notifBot(`Rendu batch de ${nbsessions} sessions lancé le `+tempsdepart.toLocaleString())
     for (let j = 0; j < max; j++) lancement(overlay).then(t => updateProgress(t,overlay, fini))
 }
 //lancement().then(t=>updateProgress(t)).then(r=>console.log('result',r))
