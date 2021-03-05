@@ -54,6 +54,10 @@
     background-color: #a6daac;
 }
 
+#dc-table-graph td._13 {
+    width:50px;
+    font-size:0.5em;
+}
 .tippy-content p {
 	line-height: 1;
 	margin: 0 0 2px;

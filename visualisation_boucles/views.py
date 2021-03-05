@@ -15,7 +15,8 @@ from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer,\
     StaticHTMLRenderer
 from django.db.models.aggregates import Min, Max, Count
 import itertools
-from django.http.response import HttpResponse, HttpResponseRedirect
+from django.http.response import HttpResponse, HttpResponseRedirect,\
+    JsonResponse
 from DjangoSnap.celery import app
 import json
 from celery.result import AsyncResult
@@ -23,6 +24,7 @@ from celery.result import AsyncResult
 from django.urls.base import reverse
 from visualisation_boucles.tasks import reconstruit, add, celery_graph_boucles, celery_liste_reperes
 from django.db.models.query import prefetch_one_level
+from pymongo.mongo_client import MongoClient
 # Create your views here.
 def choixbase(request):
     """
@@ -398,3 +400,24 @@ def reperes(request):
     print("data",data)
     job=celery_liste_reperes.delay(data)
     return HttpResponseRedirect(reverse('graph_boucles')+'?job='+job.id)
+
+@api_view(('POST','GET'))
+@renderer_classes((JSONRenderer,))
+def sessionsReconstruites(request):
+    sessions=request.query_params
+    db=MongoClient().sierpinski_db
+    collection=db.reconstructions
+    p=collection.find({"session_key":{'$in':[k for k in sessions.keys()]}
+                       ,"commandes":{ "$exists": False}})
+    s=[{'session_key':d['session_key'],
+        'date':d['date']} for d in p ]
+    return JsonResponse({'ok':s})
+'''
+    if load:
+        #chargement de la reconstruction (si elle existe) depuis une base mongodb
+        current_task.update_state(state='Chargement')
+        db=MongoClient().sierpinski_db
+        collection=db.reconstructions
+        #on récupère les metadata (le document qui n'a pas de commandes)
+        p=collection.find_one({"session_key":session_key,"commandes":{ "$exists": False}})
+    '''

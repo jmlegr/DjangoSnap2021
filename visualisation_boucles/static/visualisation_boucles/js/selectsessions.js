@@ -152,6 +152,11 @@ var lance = function () {
             e.programme=e.loads?e.loads.split(','):[]
         })
         console.log("recp",data)
+        //on récupère les session sauvegardées
+        xsend('sessionsMongo/?'+data.map(d=>d.session_key).join('&'),csrf_token)
+            .then(r=>{
+                r.ok.forEach(d=>data.find(e=>e.session_key==d.session_key).sessionMongo=new Date(d.date))
+            })
         var sessionsClasse = d3.nest().key(d => d.classe_id).entries(data)
         // console.log("par classe",sessionsClasse)
         var sessionsHeures = d3.nest().key(d => `${d.classe_nom}(${d.classe_id})`).sortKeys(d3.ascending).key(d => d3.timeHour(d.debut)).sortKeys((a, b) => new Date(a) - new Date(b)).entries(data)
@@ -398,6 +403,10 @@ var lance = function () {
                                                 label: 'prgs',
                                                 format: d => d.loads
                                             },
+                                            {
+                                                label:'saved',
+                                                format: d=>d.sessionMongo?d.sessionMongo.toLocaleString():''
+                                            }
                                             ])
                                             .sortBy(d => d.user)
                                             .size(Infinity) // ou ngx.size()

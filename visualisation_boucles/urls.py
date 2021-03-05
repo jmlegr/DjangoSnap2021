@@ -26,6 +26,7 @@ urlpatterns = [
     path('testadd/', views.testadd,name='testadd'),
     path('graph_boucles/',views.graph_boucles,name='graph_boucles'),
     path('celrep/',views.reperes,name="reperes"),
+    path('sessionsMongo/',views.sessionsReconstruites,name='sessions_reconstruites')
     ]
 
 urlpatterns += [
