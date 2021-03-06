@@ -207,11 +207,8 @@ const graphDebug = (result,div) => {
         }
     }
     /**
-     * initialisation et raz du contenu
+     * initialisation
      */
-    div.select('#progTitle').html(null)
-    div.select('#divtete').html(null)
-    div.select('#resultats').html(null)
     div.select('#progTitle').append('span').text(`debug de ${result.infos.user} le ${result.infos.date} (${result.session})`)
     div.select('#fermerBtn').on('click',()=>{
         div.style('visibility','hidden').style('display','none')
