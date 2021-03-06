@@ -2,3 +2,5 @@
 *.pyc
 /snap/static/snap/nbproject/private/
 media/
+
+visualisation_boucles/static/visualisation_boucles/js/codesBot.js
