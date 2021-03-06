@@ -15,7 +15,8 @@ from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer,\
     StaticHTMLRenderer
 from django.db.models.aggregates import Min, Max, Count
 import itertools
-from django.http.response import HttpResponse, HttpResponseRedirect
+from django.http.response import HttpResponse, HttpResponseRedirect,\
+    JsonResponse
 from DjangoSnap.celery import app
 import json
 from celery.result import AsyncResult
@@ -23,6 +24,7 @@ from celery.result import AsyncResult
 from django.urls.base import reverse
 from visualisation_boucles.tasks import reconstruit, add, celery_graph_boucles, celery_liste_reperes
 from django.db.models.query import prefetch_one_level
+from pymongo.mongo_client import MongoClient
 # Create your views here.
 def choixbase(request):
     """
@@ -304,7 +306,8 @@ def celery_listeblock(request,session_key=None):
     #job = add.delay(random.randint(1,100),random.randint(2,100),random.randint(100000,500000))
     save='save'in request.GET
     load='load' in request.GET
-    job=reconstruit.delay(session_key,save=save,load=load)
+    nosend='nosend' in request.GET
+    job=reconstruit.delay(session_key,save=save,load=load,nosend=nosend)
     return HttpResponseRedirect(reverse('celery_listeblock') + '?job=' + job.id)
 
 
@@ -323,8 +326,8 @@ def task_state(request,task_id=None):
     data = 'Fail'
     task = AsyncResult(task_id)
     #print(task.state,task.result)
-    if task.state=='REVOKED':
-        data={'state':task.state}
+    if task.state=='REVOKED' or task.state=='FAILURE':
+        data={'result':None,'state':task.state}
     else:
         data = {'result':task.result,'state':task.state}
     return Response({'task_id':task_id,'data':data})       
@@ -342,8 +345,11 @@ def testadd(request):
             'task_id':job_id,
         }
         return Response(context)
-    data=request.data['data']
-    job=add.delay(data["x"],data["y"],data["n"])
+    if request.data != {}:
+        data=request.data['data']
+    else:
+        data=request.query_params
+    job=add.delay(int(data["x"]),int(data["y"]),int(data["n"]))
     return HttpResponseRedirect(reverse('testadd')+'?job='+job.id)
 
 @api_view(('POST','GET'))
@@ -394,3 +400,24 @@ def reperes(request):
     print("data",data)
     job=celery_liste_reperes.delay(data)
     return HttpResponseRedirect(reverse('graph_boucles')+'?job='+job.id)
+
+@api_view(('POST','GET'))
+@renderer_classes((JSONRenderer,))
+def sessionsReconstruites(request):
+    sessions=request.query_params
+    db=MongoClient().sierpinski_db
+    collection=db.reconstructions
+    p=collection.find({"session_key":{'$in':[k for k in sessions.keys()]}
+                       ,"commandes":{ "$exists": False}})
+    s=[{'session_key':d['session_key'],
+        'date':d['date']} for d in p ]
+    return JsonResponse({'ok':s})
+'''
+    if load:
+        #chargement de la reconstruction (si elle existe) depuis une base mongodb
+        current_task.update_state(state='Chargement')
+        db=MongoClient().sierpinski_db
+        collection=db.reconstructions
+        #on récupère les metadata (le document qui n'a pas de commandes)
+        p=collection.find_one({"session_key":session_key,"commandes":{ "$exists": False}})
+    '''

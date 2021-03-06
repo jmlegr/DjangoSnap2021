@@ -1642,7 +1642,7 @@ class SimpleListeBlockSnap:
                     multiArgNode=self.lastNode(block.inputs['%s'%i],thetime,veryLast=True)
                     res,repl,changed=self.parcoursBlock(multiArgNode.JMLid,thetime,toHtml)
                     change=changed if changed else change
-                    words+="["+repl+"]"
+                    words+="[%s]" %repl
                     nom=nom.replace(e,'%s' % words,1)
                     i+=1
         else:

@@ -10,6 +10,15 @@ import {parcoursCommande} from './programme.js'
  */
 const graphDebug = (result,div) => {
     /**
+     * iniialisation
+     *
+     */
+    div.style('visibility','visible').style('display','initial')
+    div.select('#progTitle').html(null)
+    div.select('#divtete').html(null)
+    div.select('#resultats').html(null)
+
+    /**
      * modifie l'objet reçu par SimpleEvenementSerializer
      * @param obj
      * @returns {*}
@@ -28,7 +37,7 @@ const graphDebug = (result,div) => {
                 obj.toString=()=>{
                     let r=`SPR-${obj.data.type} Block: ${obj.data.blockId}`
                     r+=obj.data.location?` loc: ${obj.data.location}`:''
-                    r+=obj.data.targetId?` target: ${obj.data.targetid}`:''
+                    r+=obj.data.targetId?` target: ${obj.data.targetId}`:''
                     r+=obj.data.detail?` detail: ${obj.data.detail}}`:''
                     r+=obj.data.parentId?` parent: ${obj.data.parentId}`:''
                     r+=obj.data.nextBlockId?` next: ${obj.data.nextBlockId}`:''
@@ -83,11 +92,17 @@ const graphDebug = (result,div) => {
     const update= v=> {
         div.select('#evt')
             .datum(donnees[v].infos)
-            .text(e=>`${e.evt.evenement_type}-${e.evt.type}`)
+            .text(e=>{
+                if (e.evt.evenement_type=="EPR") return `${e.evt.evenement_type}-${e.evt.type} ${e.epr.detail}`
+                else if (e.evt.evenement_type=="SPR") return `${e.evt.evenement_type}-${e.evt.type} (${e.spr.blockSpec}) ${e.spr.blockId}`+
+                                `>${e.spr.location}:${e.spr.targetId}`
+                else return `${e.evt.evenement_type}-${e.evt.type}`
+            })
         tippy('#evt', {
             maxWidth: 750,
             hideOnClick: true,
             trigger:'click',
+            allowHTML: true,
             content: 'loading...',
             async onShow(instance) {
                 let r = '',
@@ -98,22 +113,33 @@ const graphDebug = (result,div) => {
                     if (state.isFetching || !state.canFetch) return
                     state.isFetching = true
                     state.canFetch = false
-                    try {
-                        const response = await fetch(d3.select(instance.reference).datum().epr.snp.image)
-                        const blob = await response.blob()
-                        const url = URL.createObjectURL(blob)
-                        if (instance.state.isVisible) {
+                        const responseImg= fetch(d3.select(instance.reference).datum().epr.snp.image)
+                        const responseEvs=fetch('/snap/testr/'+d.evenement)
+                        const divimg=responseImg.then(response=> response.blob())
+                            .then(blob=>{
+                            //const blob=response.blob()
+                            const url = URL.createObjectURL(blob)
                             const img = new Image()
                             img.width = 300
                             img.height = 300
                             img.src = url
-                            instance.setContent(img)
-                        }
-                    } catch (e) {
-                        instance.setContent(`Fetch failed. ${e}`)
-                    } finally {
-                        state.isFetching = false
-                    }
+                            return img
+                        });
+                        const divevt=responseEvs.then(response => response.json())
+                            .then(response=>{
+                                let rr=''
+                                response.evts_proches.sort((a,b)=>d3.ascending(a.numero,b.numero)).forEach(e=>{
+                                    e=setDataType(e)
+                                    let dn=e.numero-response.n_evt
+                                    rr+=`<p class="debug_tippy dn_${dn}">[${dn}] n°${e.numero} id${e.id} `+e.toString()+'</p>'
+                                })
+                                return`</p>Évènement n°${response.n_evt}</p>`+rr
+                        })
+                        Promise.all([divimg,divevt]).then(([img,txt])=>{
+                            instance.setContent(img.outerHTML+txt)
+                        }).finally(()=>{
+                            state.isFetching = false;
+                        })
                 } else {
                     fetch('/snap/testr/'+d.evenement)
                         .then(response => response.json())
@@ -138,7 +164,11 @@ const graphDebug = (result,div) => {
         if (blocks.length>0) {
 
             let divblocks=divProgs.selectAll('.blockcommands').data(blocks)
-            divblocks.enter().append('div').attr('class',d=>`debug blockcommands ${d}`).text(d=>d)
+            divblocks.enter().append('div')
+                .merge(divblocks)
+                .attr('class',d=>'debug blockcommands '+d)
+                //.attr('id', d=>d)
+                .text(d=>d)
             divblocks.exit().remove()
             blocks.forEach(block=>{
                 let hasChanged=donnees[v][block].commandes.some(ez=>ez.change.includes("AAchange"))
@@ -177,15 +207,35 @@ const graphDebug = (result,div) => {
         }
     }
     /**
-     * initialisation et raz du contenu
+     * initialisation
      */
     div.select('#progTitle').append('span').text(`debug de ${result.infos.user} le ${result.infos.date} (${result.session})`)
     div.select('#fermerBtn').on('click',()=>{
-        div.style('visibility','hidden')
-        div.select('#progTitle').html(null)
-        div.select('#divtete').html(null)
-        div.select('#resultats').html(null)
+        div.style('visibility','hidden').style('display','none')
+
     });
+    div.on('keydown',()=>{
+        //on change le tick sur fleche droite ou gauche
+        if (['ArrowLeft','ArrowRight'].includes(d3.event.key)) {
+            d3.event.preventDefault()
+            const node=div.select('#selectTick').node()
+            if (d3.event.key=='ArrowRight' && node.selectedIndex+1<node.options.length) {
+                node.options[node.selectedIndex+1].selected=true
+            } else if (d3.event.key=='ArrowLeft' && node.selectedIndex>0) {
+                node.options[node.selectedIndex - 1].selected = true
+            }
+            div.select('#selectTick').dispatch('change')
+        }
+    })
+    div.on('focus',()=>console.log('focus'))
+    /*div.on("click",(d,v,i)=>{
+        console.log("click",d,v,i,d3.event)
+        d3.select(d3.event.target).node().focus();
+    })
+    */
+    div.attr('tabindex',0)
+    div.node().focus()
+
     /**
      * préparation des données (depuis programme.js granphNbstack)
      */
@@ -219,7 +269,7 @@ const graphDebug = (result,div) => {
     /**
      * ajout du select pour les ticks
      */
-    div.select("#divtete").append('select').on('change',()=>update(div.select('select').property('value')))
+    div.select("#divtete").append('select').attr('id','selectTick').on('change',()=>update(div.select('select').property('value')))
         .selectAll('option')
         .data(tabTemps)
         .enter().append('option').attr('value',(d,r)=>r).text(d=>d)

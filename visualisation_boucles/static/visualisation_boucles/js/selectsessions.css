@@ -1,5 +1,6 @@
 .xaxis text {
     text-anchor: end !important;
+    font-size: 0.7em;
     transform: rotate(-75deg) translateY(-1.5em);
 }
 
@@ -53,6 +54,10 @@
     background-color: #a6daac;
 }
 
+#dc-table-graph td._13 {
+    width:50px;
+    font-size:0.5em;
+}
 .tippy-content p {
 	line-height: 1;
 	margin: 0 0 2px;
@@ -103,7 +108,7 @@ pointer-events: none;
     width: 72%;
     height: 72%;
     background-color: #bbbbda;
-    z-index:999;
+    z-index:989;
     visibility: hidden;
 }
 #overlayDiv2 {
@@ -119,6 +124,11 @@ pointer-events: none;
     background-color: gainsboro;
     z-index:990;
     visibility: hidden;
+}
+
+
+#overlayDiv2:focus-within {
+    border: 4px solid darkgray;
 }
 #actionsDiv {
 	float:left
