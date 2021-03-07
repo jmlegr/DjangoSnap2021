@@ -282,12 +282,13 @@ ThreadManager.prototype.startProcess = function (
             processes:liste
             });
     }
-         * ou mieux: (proc.topBlock instanceof ReporterBlockMorph ||
+
     var ide = top.parentThatIsA(IDE_Morph);    
     if (jml.SnapAtStart) {
         /**
          * TODO: ne pas envoyer si top.category="operators" ou top.selector="reportGetVar"         *
-                    proc.isShowingResult) 
+
+         * ou mieux: (proc.topBlock instanceof ReporterBlockMorph ||proc.isShowingResult)
          */
         ide.uploadCanvas(ide.stage.fullImageClassic(),'START'+(click?'CLIC':'')+top.JMLid);
     }
