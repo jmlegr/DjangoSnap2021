@@ -412,12 +412,3 @@ def sessionsReconstruites(request):
     s=[{'session_key':d['session_key'],
         'date':d['date']} for d in p ]
     return JsonResponse({'ok':s})
-'''
-    if load:
-        #chargement de la reconstruction (si elle existe) depuis une base mongodb
-        current_task.update_state(state='Chargement')
-        db=MongoClient().sierpinski_db
-        collection=db.reconstructions
-        #on récupère les metadata (le document qui n'a pas de commandes)
-        p=collection.find_one({"session_key":session_key,"commandes":{ "$exists": False}})
-    '''
