@@ -1956,7 +1956,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         #on récupère les noeuds
                         nodes=listeBlocks.getNodes(evtPrec.evenement.time-dtime)
                         for n in nodes:
-                            node=listeBlocks.getNode(n.JMLid, theTime)
+                            node=listeBlocks.lastNode(n.JMLid, theTime)
                             if node is not None:
                                 #le noeud est aussi impacté à ce temps, on ne le rajoute pas
                                 try:
