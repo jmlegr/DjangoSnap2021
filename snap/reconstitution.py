@@ -1106,6 +1106,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                 else:
                     eprInfos['%s' % theTime]={'type':epr.type,
                                               'detail':'{}({})'.format(epr.topBlockSelector,epr.topBlockId),
+                                              'click':epr.click
                                               }
                 listeBlocks.addTick(theTime)
             elif epr.type in ['ASK','ANSW']:
