@@ -1000,7 +1000,7 @@ def reconstruit(session_key,save=False,load=False,nosend=False):
                         #on ne prend en compte ce changement que s'il ne s'agit pas d'un simple déplacement
                         if lastPrevBlock is not None:
                             newNode.change='(%s)inserted_%s' % (spr.type,spr.location)
-                            newNode.setPrevBlock(None)
+                            #newNode.setPrevBlock(None)
                             #listeBlocks.append(newNode)
                             newLastPrevBlock=lastPrevBlock.copy(theTime)
                             newLastPrevBlock.setNextBlock(None)
@@ -1008,6 +1008,7 @@ def reconstruit(session_key,save=False,load=False,nosend=False):
                             listeBlocks.append(newLastPrevBlock)
                             if spr.detail=="DropDel":
                                 #si c'est un drop précédent un del (dropdel), seul le bloc est déplacé,
+                                #on ne modifie pas newNode.prevBlock, 
                                 #il faut mettre à jour prevblock et nextblock
                                 nextBlock=listeBlocks.lastNode(newNode.nextBlockId,theTime)
                                 if nextBlock is not None:
@@ -1015,6 +1016,9 @@ def reconstruit(session_key,save=False,load=False,nosend=False):
                                     listeBlocks.append(newNextBlock)
                                     newNextBlock.truc="prev"
                                     newLastPrevBlock.setNextBlock(newNextBlock)
+                            else:
+                                #c'est un drop sans del après
+                                newNode.setPrevBlock(None)
                         else:
                             #c'est un bloc de tête, on vérifie s'il n'était pas wrapped
                             if lastConteneur is not None:
