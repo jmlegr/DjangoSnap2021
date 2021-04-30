@@ -1351,7 +1351,8 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                         conteneur.truc="contenu"
                         listeBlocks.append(conteneur)
                         ancienNode=listeBlocks.lastNode(newNode.JMLid,s['time'],veryLast=deleted)
-                        if ancienNode.conteneurBlockId==newNode.targetId:
+                        #if ancienNode.conteneurBlockId==newNode.targetId:
+                        if ancienNode.conteneurBlockId==dspr.targetId:
                             #c'est un drop nomove
                             newNode.truc+=' nomove'
                         else:
@@ -1385,7 +1386,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                                 conteneur.setWrapped(contenu)
                             else:
                                 conteneur.setWrapped(None)
-                                newNode.unwrap()
+                                #newNode.unwrap()
                     elif dspr.location=='wrap':
                         #on remet le block conteneur a sa place (et donc maj de son prevBlock
                         # pas de nomove normalement
