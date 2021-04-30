@@ -279,10 +279,14 @@ def reconstruit(session_key,save=False,load=False,nosend=False):
                     listeBlocks.recordDrop(env,theTime)
                 evtPrec=evtType
             if env.type=='AFFVAR':
-                evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueBool':env.valueBool}
+                #evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueBool':env.valueBool}
+                evtTypeInfos['%s' % theTime]['valueChar']=env.valueChar
+                evtTypeInfos['%s' % theTime]['valueBool']=env.valueBool
                 listeBlocks.addTick(theTime)
             if env.type=='BUBBLE':
-                evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueInt':env.valueInt}
+                #evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueInt':env.valueInt}
+                evtTypeInfos['%s' % theTime]['valueChar']=env.valueChar
+                evtTypeInfos['%s' % theTime]['valueInt']=env.valueInt                
                 listeBlocks.addTick(theTime)
             #on ne prend en compte que certains évnènements ENV, sinon souci par ex. pour undrop+dropex
             #evtPrec=evtType
@@ -1332,6 +1336,7 @@ def reconstruit(session_key,save=False,load=False,nosend=False):
             #on enlève les éventuelles commandes vides (par exemple un DROP+DEL ne fera qu'un evenement)
             if c is None or c['evt'] is None:
                 commandes.remove(c)
+                
         commandes.sort(key=lambda c: c['evt']['realtime'] )
         cmds=collection.insert_many([{'session_key':session_key,
                                       'etape':i,

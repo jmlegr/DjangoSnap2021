@@ -1166,10 +1166,14 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     listeBlocks.recordDrop(env,theTime)
                 evtPrec=evtType
             if env.type=='AFFVAR':
-                evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueBool':env.valueBool}
+                #evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueBool':env.valueBool}
+                evtTypeInfos['%s' % theTime]['valueChar']=env.valueChar
+                evtTypeInfos['%s' % theTime]['valueBool']=env.valueBool
                 listeBlocks.addTick(theTime)
             if env.type=='BUBBLE':
-                evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueInt':env.valueInt}
+                #evtTypeInfos['%s' % theTime]={'type':env.type,'detail':env.detail,'valueChar':env.valueChar,'valueInt':env.valueInt}
+                evtTypeInfos['%s' % theTime]['valueChar']=env.valueChar
+                evtTypeInfos['%s' % theTime]['valueInt']=env.valueInt                
                 listeBlocks.addTick(theTime)
             #on ne prend en compte que certains évnènements ENV, sinon souci par ex. pour undrop+dropex
             #evtPrec=evtType
@@ -2202,7 +2206,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
     #for i in listeBlocks.liste:
     #    print(i)
     #print('-----------------------------------------------------------------------------------------')
-    #sauvegarde dans la base (avec écrasement)
+    #sauvegarde dans la base (avec écrasement)    
     return {"commandes":commandes,
                      "scripts":listeBlocks.firstBlocks,
                      #"data":listeBlocks.toJson(),
