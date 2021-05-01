@@ -550,6 +550,7 @@ def reconstruit(session_key,save=False,load=False,nosend=False):
                             #on ressort tous les blocs suivants
                             #nextNode=ancienNode
                             nextNode=newNode
+                            node=None
                             while nextNode.nextBlockId is not None:
                                 node=nextNode
                                 nextNode=listeBlocks.lastNode(nextNode.nextBlockId,theTime,deleted=True).copy(theTime)
@@ -560,7 +561,7 @@ def reconstruit(session_key,save=False,load=False,nosend=False):
                                 if deleted: break
                             if nextNode.JMLid != newNode.JMLid:
                                 nextNode.truc="prev"
-                            if node.JMLid != newNode.JMLid:
+                            if node is not None and node.JMLid != newNode.JMLid:
                                 node.truc="lastnode m9"
                             else:
                                 newNode.truc+=" lastnode m10"
