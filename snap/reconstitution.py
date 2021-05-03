@@ -1465,9 +1465,27 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     #on récupère le parent
                     parentNode=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime,action)
                     listeBlocks.append(parentNode)
-                    newInputNode=listeBlocks.lastNode(dspr.detail,theTime).copy(theTime)
+                    #newInputNode=listeBlocks.lastNode(dspr.detail,theTime).copy(theTime)
+                    newInputNode=listeBlocks.lastNode(dspr.detail,s['time'],veryLast=True)
+                    ancTime=newInputNode.time
+                    #d'où vient l'input?
+                    if (newInputNode.parentBlockId is not None):
+                        #il est déplacé, on récupère l'ancien parent et  inputs
+                        ancParentNode=listeBlocks.lastNode(newInputNode.parentBlockId,ancTime).copy(theTime,action)
+                        listeBlocks.append(ancParentNode)
+                        for i in ancParentNode.inputs:
+                            oldInput=listeBlocks.lastNode(ancParentNode.inputs[i],ancTime).copy(theTime,action)
+                            if i==newInputNode.rang:
+                                oldInput.change='val_replaced'
+                            listeBlocks.append(oldInput)
+                    
+                        
+                    #on met à jour newInput 
+                    newInputNode=newInputNode.copy(theTime,action)   
                     newInputNode.change='val_newval'
                     listeBlocks.append(newInputNode)
+                    #on change l'input
+                    parentNode.addInput(newInputNode)
                     #on récupère et modifie l'input modifié
                     oldInput=listeBlocks.lastNode(dspr.blockId,theTime).copy(theTime)
                     oldInput.change='val_replaced'
@@ -1478,8 +1496,7 @@ def reconstruit(session_key,limit=None,save=False,load=False):
                     else:
                         listeBlocks.liste.append(oldInput)
                         listeBlocks.setFirstBlock(oldInput)
-                    #on change l'input
-                    parentNode.addInput(newInputNode)
+                    
                 elif dspr.type=="DROPVAL":
                     #on récupère le parent
                     parentNode=listeBlocks.lastNode(dspr.targetId,theTime).copy(theTime,action)
