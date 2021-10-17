@@ -253,7 +253,11 @@ p.command {
 	background-color: silver;
 }
  span.val_changed, .answ span , span.val_added {
-	background-color: teal;
+	background-color: tomato;
+}
+span.val_newval, span.val_replaced {
+    font-size:20;
+    background-color: black;
 }
 p.action {
 	font-style: italic;
